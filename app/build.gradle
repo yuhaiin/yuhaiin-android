@@ -1,0 +1,39 @@
+apply plugin: 'com.android.application'
+
+android {
+    compileSdkVersion 31
+    defaultConfig {
+        applicationId "io.github.asutorufa.socks"
+        minSdkVersion 21
+        targetSdkVersion 31
+        versionCode 5
+        versionName "0.6.1"
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    splits {
+        abi {
+            enable true
+        }
+    }
+}
+
+
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.aar', '*.jar'])
+
+    def preference_version = "1.2.0"
+    // Java language implementation
+    implementation "androidx.preference:preference:$preference_version"
+
+
+    implementation 'com.google.android.material:material:1.7.0-alpha01'
+
+    implementation project(":yuhaiin");
+}
