@@ -12,5 +12,4 @@
             android:minWidth="48dp"
             android:minHeight="48dp"
     />
-
 </LinearLayout>

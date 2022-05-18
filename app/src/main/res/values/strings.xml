@@ -6,8 +6,9 @@
     <string name="profile">Profile</string>
     <string name="prof_default">Default</string>
 
-    <string name="yuhaiin" translatable="false">Yuhaiin</string>
-    <string name="yuhaiin_host" translatable="false">Api Host(gRPC and HTTP listen host)</string>
+    <string name="yuhaiin" translatable="false">yuhaiin</string>
+    <string name="yuhaiin_host" translatable="false">yuhaiin Host</string>
+    <string name="yuhaiin_host_summary" translatable="false">gRPC and HTTP listen host</string>
 
     <string name="connection">Connection</string>
     <string name="http_server_port" translatable="false">HTTP Port</string>
