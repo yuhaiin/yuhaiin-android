@@ -103,7 +103,8 @@ public class ProfileFragment extends PreferenceFragmentCompat implements Prefere
     };
     private IVpnService mBinder;
 
-    private ListPreference mPrefProfile, mPrefRoutes;
+    private DropDownPreference mPrefProfile;
+    private DropDownPreference mPrefRoutes;
     private EditTextPreference mPrefHttpServerPort;
     private EditTextPreference mPrefSocks5ServerPort;
     private EditTextPreference mPrefUsername;

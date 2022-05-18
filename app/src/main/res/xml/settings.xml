@@ -1,13 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+<androidx.preference.PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <ListPreference
+    <DropDownPreference
         android:key="profile"
         android:title="@string/profile"/>
 
     <PreferenceCategory
-        android:title="@string/yuhaiin"
-        >
+        android:title="@string/yuhaiin">
 
         <EditTextPreference
                 android:key="yuhaiin_host"
@@ -73,7 +72,7 @@
     <PreferenceCategory
         android:title="@string/advanced">
 
-        <ListPreference
+        <DropDownPreference
             android:key="adv_route"
             android:title="@string/adv_route"
             android:entries="@array/adv_routes"
@@ -112,4 +111,4 @@
 
     </PreferenceCategory>
 
-</PreferenceScreen>
+</androidx.preference.PreferenceScreen>
