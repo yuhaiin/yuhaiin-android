@@ -10,8 +10,8 @@
     <string name="yuhaiin_host" translatable="false">Api Host(gRPC and HTTP listen host)</string>
 
     <string name="connection">Connection</string>
-    <string name="server_ip">Server Host</string>
-    <string name="server_port">Local Port</string>
+    <string name="http_server_port" translatable="false">HTTP Port</string>
+    <string name="socks5_server_port" translatable="false">Socks5 Port</string>
     <string name="ipv6_proxy">IPv6</string>
     <string name="ipv6_proxy_sum">Enable IPv6 forwarding. If the server supports IPv6, you can access IPv6 contents from IPv4 network with this enabled.</string>
     <string name="udp_proxy">UDP Forwarding</string>
@@ -28,8 +28,8 @@
     <string name="adv_route_all">All (Default)</string>
     <string name="adv_route_non_chn">Non-Chinese IPs</string>
     <string name="adv_route_non_local" translatable="false">Non-Local IPs</string>
-    <string name="adv_dns">DNS Server</string>
-    <string name="adv_dns_port">DNS Port (TCP)</string>
+    <string name="adv_fake_dns_cidr" translatable="false">Fake DNS CIDR</string>
+    <string name="adv_dns_port">DNS Port</string>
     <string name="adv_auto_connect">Connect on Boot</string>
     <string name="adv_per_app">Per-app Proxy</string>
     <string name="adv_app_bypass">Bypass Mode</string>
