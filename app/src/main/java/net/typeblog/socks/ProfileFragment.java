@@ -104,11 +104,11 @@ public class ProfileFragment extends PreferenceFragmentCompat implements Prefere
     private IVpnService mBinder;
 
     private ListPreference mPrefProfile, mPrefRoutes;
-    private EditTextPreference mPrefServer;
-    private EditTextPreference mPrefPort;
+    private EditTextPreference mPrefHttpServerPort;
+    private EditTextPreference mPrefSocks5ServerPort;
     private EditTextPreference mPrefUsername;
     private EditTextPreference mPrefPassword;
-    private EditTextPreference mPrefDns;
+    private EditTextPreference mPrefFakeDnsCidr;
     private EditTextPreference mPrefDnsPort;
     private MultiSelectListPreference mPrefAppList;
 //    private EditTextPreference mPrefUDPGW;mPrefUDP
@@ -179,16 +179,18 @@ public class ProfileFragment extends PreferenceFragmentCompat implements Prefere
             mManager.switchDefault(name);
             reload();
             return true;
-        } else if (p == mPrefServer) {
-            mProfile.setServer(newValue.toString());
-            resetTextN(mPrefServer, newValue);
+        } else if (p == mPrefHttpServerPort) {
+            if (TextUtils.isEmpty(newValue.toString()))
+                return false;
+            mProfile.setHttpServerPort(Integer.parseInt(newValue.toString()));
+            resetTextN(mPrefHttpServerPort, newValue);
             return true;
-        } else if (p == mPrefPort) {
+        } else if (p == mPrefSocks5ServerPort) {
             if (TextUtils.isEmpty(newValue.toString()))
                 return false;
 
-            mProfile.setPort(Integer.parseInt(newValue.toString()));
-            resetTextN(mPrefPort, newValue);
+            mProfile.setSocks5ServerPort(Integer.parseInt(newValue.toString()));
+            resetTextN(mPrefSocks5ServerPort, newValue);
             return true;
         } else if (p == mPrefUserpw) {
             mProfile.setIsUserpw(Boolean.parseBoolean(newValue.toString()));
@@ -205,9 +207,9 @@ public class ProfileFragment extends PreferenceFragmentCompat implements Prefere
             mProfile.setRoute(newValue.toString());
             resetListN(mPrefRoutes, newValue);
             return true;
-        } else if (p == mPrefDns) {
-            mProfile.setDns(newValue.toString());
-            resetTextN(mPrefDns, newValue);
+        } else if (p == mPrefFakeDnsCidr) {
+            mProfile.setFakeDnsCidr(newValue.toString());
+            resetTextN(mPrefFakeDnsCidr, newValue);
             return true;
         } else if (p == mPrefDnsPort) {
             if (TextUtils.isEmpty(newValue.toString()))
@@ -293,13 +295,13 @@ public class ProfileFragment extends PreferenceFragmentCompat implements Prefere
 
     private void initPreferences() {
         mPrefProfile = findPreference(PREF_PROFILE);
-        mPrefServer = findPreference(PREF_SERVER_IP);
-        mPrefPort = findPreference(PREF_SERVER_PORT);
+        mPrefHttpServerPort = findPreference(PREF_HTTP_SERVER_PORT);
+        mPrefSocks5ServerPort = findPreference(PREF_SOCKS5_SERVER_PORT);
         mPrefUserpw = findPreference(PREF_AUTH_USERPW);
         mPrefUsername = findPreference(PREF_AUTH_USERNAME);
         mPrefPassword = findPreference(PREF_AUTH_PASSWORD);
         mPrefRoutes = findPreference(PREF_ADV_ROUTE);
-        mPrefDns = findPreference(PREF_ADV_DNS);
+        mPrefFakeDnsCidr = findPreference(PREF_ADV_FAKE_DNS_CIDR);
         mPrefDnsPort = findPreference(PREF_ADV_DNS_PORT);
         mPrefPerApp = findPreference(PREF_ADV_PER_APP);
         mPrefAppBypass = findPreference(PREF_ADV_APP_BYPASS);
@@ -312,13 +314,13 @@ public class ProfileFragment extends PreferenceFragmentCompat implements Prefere
         mPrefYuhaiinHost =  findPreference(PREF_YUHAIIN_HOST);
 
         mPrefProfile.setOnPreferenceChangeListener(this);
-        mPrefServer.setOnPreferenceChangeListener(this);
-        mPrefPort.setOnPreferenceChangeListener(this);
+        mPrefHttpServerPort.setOnPreferenceChangeListener(this);
+        mPrefSocks5ServerPort.setOnPreferenceChangeListener(this);
         mPrefUserpw.setOnPreferenceChangeListener(this);
         mPrefUsername.setOnPreferenceChangeListener(this);
         mPrefPassword.setOnPreferenceChangeListener(this);
         mPrefRoutes.setOnPreferenceChangeListener(this);
-        mPrefDns.setOnPreferenceChangeListener(this);
+        mPrefFakeDnsCidr.setOnPreferenceChangeListener(this);
         mPrefDnsPort.setOnPreferenceChangeListener(this);
         mPrefPerApp.setOnPreferenceChangeListener(this);
         mPrefAppBypass.setOnPreferenceChangeListener(this);
@@ -349,17 +351,18 @@ public class ProfileFragment extends PreferenceFragmentCompat implements Prefere
 //        mPrefUDP.setChecked(mProfile.hasUDP());
         mPrefAuto.setChecked(mProfile.autoConnect());
 
-        mPrefServer.setText(mProfile.getServer());
-        mPrefPort.setText(String.valueOf(mProfile.getPort()));
+        mPrefHttpServerPort.setText(String.valueOf(mProfile.getHttpServerPort()));
+        mPrefSocks5ServerPort.setText(String.valueOf(mProfile.getSocks5ServerPort()));
         mPrefUsername.setText(mProfile.getUsername());
         mPrefPassword.setText(mProfile.getPassword());
-        mPrefDns.setText(mProfile.getDns());
+        mPrefFakeDnsCidr.setText(mProfile.getFakeDnsCidr());
         mPrefDnsPort.setText(String.valueOf(mProfile.getDnsPort()));
 //        mPrefUDPGW.setText(mProfile.getUDPGW());
 
         mPrefYuhaiinHost.setText(mProfile.getYuhaiinHost());
 
-        resetText(mPrefServer, mPrefPort, mPrefUsername, mPrefPassword, mPrefDns, mPrefDnsPort,mPrefYuhaiinHost);//mPrefUDPGW
+        resetText(mPrefHttpServerPort, mPrefSocks5ServerPort,
+                mPrefUsername, mPrefPassword, mPrefFakeDnsCidr, mPrefDnsPort,mPrefYuhaiinHost);//mPrefUDPGW
 
         updateAppList();
     }

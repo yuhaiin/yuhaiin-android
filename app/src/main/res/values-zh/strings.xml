@@ -7,8 +7,6 @@
     <string name="prof_default">默认</string>
 
     <string name="connection">连接</string>
-    <string name="server_ip">服务器地址</string>
-    <string name="server_port">本地端口</string>
     <string name="ipv6_proxy">IPv6</string>
     <string name="ipv6_proxy_sum">启用IPv6转发。如果服务器支持IPv6，启用该选项后你可以通过IPv4网络访问IPv6内容。</string>
     <string name="udp_proxy">UDP转发</string>
@@ -24,7 +22,6 @@
     <string name="adv_route">路由</string>
     <string name="adv_route_all">全部（默认）</string>
     <string name="adv_route_non_chn">不代理国内IP</string>
-    <string name="adv_dns">DNS服务器</string>
     <string name="adv_dns_port">DNS端口（TCP）</string>
     <string name="adv_auto_connect">开机自动连接</string>
     <string name="adv_per_app">分应用代理</string>

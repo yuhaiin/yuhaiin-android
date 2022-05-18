@@ -79,10 +79,10 @@ public class Utility {
             public void run() {
                 Intent i = new Intent(context, SocksVpnService.class)
                         .putExtra(INTENT_NAME, profile.getName())
-                        .putExtra(INTENT_SERVER, profile.getServer())
-                        .putExtra(INTENT_PORT, profile.getPort())
+                        .putExtra(INTENT_HTTP_SERVER_PORT, profile.getHttpServerPort())
+                        .putExtra(INTENT_SOCKS5_SERVER_PORT, profile.getSocks5ServerPort())
                         .putExtra(INTENT_ROUTE, profile.getRoute())
-                        .putExtra(INTENT_DNS, profile.getDns())
+                        .putExtra(INTENT_FAKE_DNS_CIDR, profile.getFakeDnsCidr())
                         .putExtra(INTENT_DNS_PORT, profile.getDnsPort())
                         .putExtra(INTENT_PER_APP, profile.isPerApp())
                         .putExtra(INTENT_IPV6_PROXY, profile.hasIPv6())

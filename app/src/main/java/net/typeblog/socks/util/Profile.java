@@ -19,20 +19,20 @@ public class Profile {
         return mName;
     }
 
-    public String getServer() {
-        return mPref.getString(key("server"), "127.0.0.1");
+    public int getHttpServerPort() {
+        return mPref.getInt(key("http_server_port"), 8188);
     }
 
-    public void setServer(String server) {
-        mPref.edit().putString(key("server"), server).apply();
+    public void setHttpServerPort(int server) {
+        mPref.edit().putInt(key("http_server_port"), server).apply();
     }
 
-    public int getPort() {
-        return mPref.getInt(key("port"), 1080);
+    public int getSocks5ServerPort() {
+        return mPref.getInt(key("socks5_server_port"), 1080);
     }
 
-    public void setPort(int port) {
-        mPref.edit().putInt(key("port"), port).apply();
+    public void setSocks5ServerPort(int port) {
+        mPref.edit().putInt(key("socks5_server_port"), port).apply();
     }
 
     public boolean isUserPw() {
@@ -67,16 +67,16 @@ public class Profile {
         mPref.edit().putString(key("route"), route).apply();
     }
 
-    public String getDns() {
-        return mPref.getString(key("dns"), "1.1.1.1");
+    public String getFakeDnsCidr() {
+        return mPref.getString(key("fake_dns_cidr"), "192.0.2.1/24");
     }
 
-    public void setDns(String dns) {
-        mPref.edit().putString(key("dns"), dns).apply();
+    public void setFakeDnsCidr(String dns) {
+        mPref.edit().putString(key("fake_dns_cidr"), dns).apply();
     }
 
     public int getDnsPort() {
-        return mPref.getInt(key("dns_port"), 53);
+        return mPref.getInt(key("dns_port"), 35353);
     }
 
     public void setDnsPort(int port) {

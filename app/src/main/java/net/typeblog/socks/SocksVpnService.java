@@ -71,12 +71,12 @@ public class SocksVpnService extends VpnService {
         }
 
         final String name = intent.getStringExtra(INTENT_NAME);
-        final String server = intent.getStringExtra(INTENT_SERVER);
-        final int port = intent.getIntExtra(INTENT_PORT, 1080);
+        final int httpServerPort = intent.getIntExtra(INTENT_HTTP_SERVER_PORT,8188);
+        final int socks5ServerPort = intent.getIntExtra(INTENT_SOCKS5_SERVER_PORT, 1080);
         final String username = intent.getStringExtra(INTENT_USERNAME);
         final String passwd = intent.getStringExtra(INTENT_PASSWORD);
         final String route = intent.getStringExtra(INTENT_ROUTE);
-        final String dns = intent.getStringExtra(INTENT_DNS);
+        final String fakeDnsCidr = intent.getStringExtra(INTENT_FAKE_DNS_CIDR);
         final int dnsPort = intent.getIntExtra(INTENT_DNS_PORT, 53);
         final boolean perApp = intent.getBooleanExtra(INTENT_PER_APP, false);
         final boolean appBypass = intent.getBooleanExtra(INTENT_APP_BYPASS, false);
@@ -117,7 +117,7 @@ public class SocksVpnService extends VpnService {
                 .build());
 
         // Create an fd.
-        configure(name, route, perApp, appBypass, appList, ipv6);
+        configure(name, route,fakeDnsCidr,httpServerPort, perApp, appBypass, appList, ipv6);
 
         int fd = mInterface.getFd();
 
@@ -125,7 +125,7 @@ public class SocksVpnService extends VpnService {
             Log.d(TAG, "fd: " + fd);
 
         if (mInterface != null)
-            start(yuhaiinHost, server, port, username, passwd, dns, dnsPort, ipv6);
+            start(yuhaiinHost, httpServerPort, socks5ServerPort, username, passwd, fakeDnsCidr, dnsPort, ipv6);
 
         return START_STICKY;
     }
@@ -169,7 +169,7 @@ public class SocksVpnService extends VpnService {
 
 
 
-    private void configure(String name, String route, boolean perApp, boolean bypass, String[] apps, boolean ipv6) {
+    private void configure(String name, String route,String fakedns,int httpserverport, boolean perApp, boolean bypass, String[] apps, boolean ipv6) {
         Builder b = new Builder();
         b.setMtu(1500)
                 .setSession(name)
@@ -184,6 +184,7 @@ public class SocksVpnService extends VpnService {
         }
 
         Routes.addRoutes(this, b, route);
+        Routes.addRoute(b,fakedns);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             if (mg == null) mg = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
@@ -195,6 +196,9 @@ public class SocksVpnService extends VpnService {
         }
 
         if (Build.VERSION.SDK_INT >= 29) b.setMetered(false);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && httpserverport != 0) {
+            b.setHttpProxy(ProxyInfo.buildDirectProxy("127.0.0.1",httpserverport));
+        }
 
         // Add the default DNS
         // Note that this DNS is just a stub.
@@ -269,15 +273,18 @@ public class SocksVpnService extends VpnService {
         }
     };
 
-    private void start(String yuhaiinHost,String server, int port, String user, String passwd, String dns, int dnsPort, boolean ipv6) {
-        if (!Objects.equals(yuhaiinHost, "")) {
+    private void start(String host,int httpport, int socks5port, String user, String passwd, String fakeDnsCidr, int dnsPort, boolean ipv6) {
+        if (!Objects.equals(host, "")) {
             try {
-                yuhaiin = new yuhaiin(yuhaiinHost,
+                yuhaiin = new yuhaiin(host,
                         this.getExternalFilesDir("yuhaiin").getAbsolutePath(),
-                        dns+":"+dnsPort,server+":"+port);
+                        "127.0.0.1:"+dnsPort,
+                        "127.0.0.1:"+socks5port,
+                        "127.0.0.1:"+httpport,fakeDnsCidr,
+                        !Objects.equals(fakeDnsCidr, ""));
                 yuhaiin.start();
-//                yuhaiin = Utility.startYuhaiin(this, yuhaiinHost);
-                Toast.makeText(this, "start yuhaiin success, listen at: " + yuhaiinHost + ".", Toast.LENGTH_LONG).show();
+//                yuhaiin = Utility.startYuhaiin(this, host);
+                Toast.makeText(this, "start yuhaiin success, listen at: " + host + ".", Toast.LENGTH_LONG).show();
             }catch (Exception e){
                 e.printStackTrace();
                 Log.d(TAG, "failed to start yuhaiin");
@@ -291,13 +298,13 @@ public class SocksVpnService extends VpnService {
                 "%s/libtun2socks.so"
                         + " --netif-ipaddr "+PRIVATE_VLAN4_ROUTER
 //                        + " --netif-netmask 255.255.255.252"
-                        + " --socks-server-addr %s:%d"
+                        + " --socks-server-addr 127.0.0.1:%d"
 //                        + " --tunfd %d"
                         + " --tunmtu 1500"
                         + " --loglevel debug"
 //                        + " --pid %s/tun2socks.pid"
                         + " --sock-path %s/sock_path"
-                , getApplicationInfo().nativeLibraryDir, server, port, getApplicationInfo().dataDir);
+                , getApplicationInfo().nativeLibraryDir, socks5port, getApplicationInfo().dataDir);
 
         if (user != null) {
             command += " --username " + user;
@@ -308,7 +315,7 @@ public class SocksVpnService extends VpnService {
             command += " --netif-ip6addr "+PRIVATE_VLAN6_ROUTER;
         }
 
-        command += " --dnsgw "+dns+":"+dnsPort+" --enable-udprelay";
+        command += " --dnsgw 127.0.0.1:"+dnsPort+" --enable-udprelay";
 
         if (DEBUG) {
             Log.d(TAG, command);
