@@ -28,29 +28,38 @@ import static net.typeblog.socks.BuildConfig.DEBUG;
 import static net.typeblog.socks.util.Constants.*;
 
 public class SocksVpnService extends VpnService {
-    class VpnBinder extends IVpnService.Stub {
-        @Override
-        public boolean isRunning() {
-            return mRunning;
-        }
-
-        @Override
-        public void stop() {
-            stopMe();
-        }
-    }
-
-    private static int VPN_MTU = 1500;
     private static final String PRIVATE_VLAN4_CLIENT = "172.19.0.1";
     private static final String PRIVATE_VLAN4_ROUTER = "172.19.0.2";
-    private static String PRIVATE_VLAN6_CLIENT = "fdfe:dcba:9876::1";
     private static final String PRIVATE_VLAN6_ROUTER = "fdfe:dcba:9876::2";
     private static final String TAG = SocksVpnService.class.getSimpleName();
+    private static int VPN_MTU = 1500;
+    private static String PRIVATE_VLAN6_CLIENT = "fdfe:dcba:9876::1";
+    private final IBinder mBinder = new VpnBinder();
+    private final ConnectivityManager.NetworkCallback defaultNetworkCallback = new ConnectivityManager.NetworkCallback() {
+        @Override
+        public void onAvailable(@NonNull Network network) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1) {
+                setUnderlyingNetworks(new Network[]{network});
+            }
+        }
 
+        @Override
+        public void onCapabilitiesChanged(@NonNull Network network, @NonNull NetworkCapabilities networkCapabilities) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1) {
+                setUnderlyingNetworks(new Network[]{network});
+            }
+        }
+
+        @Override
+        public void onLost(@NonNull Network network) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1) {
+                setUnderlyingNetworks(null);
+            }
+        }
+    };
+    ConnectivityManager mg;
     private ParcelFileDescriptor mInterface;
     private boolean mRunning = false;
-    private final IBinder mBinder = new VpnBinder();
-
     private Thread yuhaiin;
     private Process tun2socks;
 
@@ -71,7 +80,7 @@ public class SocksVpnService extends VpnService {
         }
 
         final String name = intent.getStringExtra(INTENT_NAME);
-        final int httpServerPort = intent.getIntExtra(INTENT_HTTP_SERVER_PORT,8188);
+        final int httpServerPort = intent.getIntExtra(INTENT_HTTP_SERVER_PORT, 8188);
         final int socks5ServerPort = intent.getIntExtra(INTENT_SOCKS5_SERVER_PORT, 1080);
         final String username = intent.getStringExtra(INTENT_USERNAME);
         final String passwd = intent.getStringExtra(INTENT_PASSWORD);
@@ -117,7 +126,7 @@ public class SocksVpnService extends VpnService {
                 .build());
 
         // Create an fd.
-        configure(name, route,fakeDnsCidr,httpServerPort, perApp, appBypass, appList, ipv6);
+        configure(name, route, fakeDnsCidr, httpServerPort, perApp, appBypass, appList, ipv6);
 
         int fd = mInterface.getFd();
 
@@ -147,11 +156,11 @@ public class SocksVpnService extends VpnService {
 
         stopMe();
     }
-    ConnectivityManager mg;
+
     private void stopMe() {
         stopForeground(true);
 //        if (yuhaiin != null) yuhaiin.destroy();
-        if (yuhaiin!= null) {
+        if (yuhaiin != null) {
             yuhaiin.interrupt();
             yuhaiin = null;
         }
@@ -167,9 +176,7 @@ public class SocksVpnService extends VpnService {
     }
 
 
-
-
-    private void configure(String name, String route,String fakedns,int httpserverport, boolean perApp, boolean bypass, String[] apps, boolean ipv6) {
+    private void configure(String name, String route, String fakedns, int httpserverport, boolean perApp, boolean bypass, String[] apps, boolean ipv6) {
         Builder b = new Builder();
         b.setMtu(1500)
                 .setSession(name)
@@ -184,7 +191,7 @@ public class SocksVpnService extends VpnService {
         }
 
         Routes.addRoutes(this, b, route);
-        Routes.addRoute(b,fakedns);
+        Routes.addRoute(b, fakedns);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             if (mg == null) mg = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
@@ -197,7 +204,7 @@ public class SocksVpnService extends VpnService {
 
         if (Build.VERSION.SDK_INT >= 29) b.setMetered(false);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && httpserverport != 0) {
-            b.setHttpProxy(ProxyInfo.buildDirectProxy("127.0.0.1",httpserverport));
+            b.setHttpProxy(ProxyInfo.buildDirectProxy("127.0.0.1", httpserverport));
         }
 
         // Add the default DNS
@@ -234,7 +241,7 @@ public class SocksVpnService extends VpnService {
                 }
             } else {
                 for (String p : apps) {
-                    if (TextUtils.isEmpty(p)|| p.trim().equals(getApplicationInfo().packageName)) {
+                    if (TextUtils.isEmpty(p) || p.trim().equals(getApplicationInfo().packageName)) {
                         continue;
                     }
 
@@ -250,42 +257,19 @@ public class SocksVpnService extends VpnService {
         mInterface = b.establish();
     }
 
-    private final ConnectivityManager.NetworkCallback defaultNetworkCallback = new ConnectivityManager.NetworkCallback() {
-        @Override
-        public void onAvailable(@NonNull Network network) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1) {
-                setUnderlyingNetworks(new Network[]{network});
-            }
-        }
-
-        @Override
-        public void onCapabilitiesChanged(@NonNull Network network, @NonNull NetworkCapabilities networkCapabilities) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1) {
-                setUnderlyingNetworks(new Network[]{network});
-            }
-        }
-
-        @Override
-        public void onLost(@NonNull Network network) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1) {
-                setUnderlyingNetworks(null);
-            }
-        }
-    };
-
-    private void start(String host,int httpport, int socks5port, String user, String passwd, String fakeDnsCidr, int dnsPort, boolean ipv6) {
+    private void start(String host, int httpport, int socks5port, String user, String passwd, String fakeDnsCidr, int dnsPort, boolean ipv6) {
         if (!Objects.equals(host, "")) {
             try {
                 yuhaiin = new yuhaiin(host,
                         this.getExternalFilesDir("yuhaiin").getAbsolutePath(),
-                        "127.0.0.1:"+dnsPort,
-                        "127.0.0.1:"+socks5port,
-                        "127.0.0.1:"+httpport,fakeDnsCidr,
+                        "127.0.0.1:" + dnsPort,
+                        "127.0.0.1:" + socks5port,
+                        "127.0.0.1:" + httpport, fakeDnsCidr,
                         !Objects.equals(fakeDnsCidr, ""));
                 yuhaiin.start();
 //                yuhaiin = Utility.startYuhaiin(this, host);
                 Toast.makeText(this, "start yuhaiin success, listen at: " + host + ".", Toast.LENGTH_LONG).show();
-            }catch (Exception e){
+            } catch (Exception e) {
                 e.printStackTrace();
                 Log.d(TAG, "failed to start yuhaiin");
                 Toast.makeText(this, "start yuhaiin failed.", Toast.LENGTH_LONG).show();
@@ -296,7 +280,7 @@ public class SocksVpnService extends VpnService {
 
         String command = String.format(Locale.US,
                 "%s/libtun2socks.so"
-                        + " --netif-ipaddr "+PRIVATE_VLAN4_ROUTER
+                        + " --netif-ipaddr " + PRIVATE_VLAN4_ROUTER
 //                        + " --netif-netmask 255.255.255.252"
                         + " --socks-server-addr 127.0.0.1:%d"
 //                        + " --tunfd %d"
@@ -312,10 +296,10 @@ public class SocksVpnService extends VpnService {
         }
 
         if (ipv6) {
-            command += " --netif-ip6addr "+PRIVATE_VLAN6_ROUTER;
+            command += " --netif-ip6addr " + PRIVATE_VLAN6_ROUTER;
         }
 
-        command += " --dnsgw 127.0.0.1:"+dnsPort+" --enable-udprelay";
+        command += " --dnsgw 127.0.0.1:" + dnsPort + " --enable-udprelay";
 
         if (DEBUG) {
             Log.d(TAG, command);
@@ -323,8 +307,8 @@ public class SocksVpnService extends VpnService {
 
         try {
             tun2socks = Utility.exec(command);
-            Toast.makeText(this,"start tun2socks success.",Toast.LENGTH_LONG).show();
-        }catch (Exception e){
+            Toast.makeText(this, "start tun2socks success.", Toast.LENGTH_LONG).show();
+        } catch (Exception e) {
             e.printStackTrace();
             stopMe();
             return;
@@ -332,36 +316,48 @@ public class SocksVpnService extends VpnService {
 
         // Try to send the Fd through socket.
         try {
-            Log.d(TAG, "send sock_path:"+new File(getApplicationInfo().dataDir + "/sock_path").getAbsolutePath());
+            Log.d(TAG, "send sock_path:" + new File(getApplicationInfo().dataDir + "/sock_path").getAbsolutePath());
 //            System.sendfd(mInterface.getFd(),new File(getApplicationInfo().dataDir + "/sock_path").getAbsolutePath());
             sendFd(new File(getApplicationInfo().dataDir + "/sock_path").getAbsolutePath());
-            mRunning =true;
-           return;
-        }catch (Exception e){
+            mRunning = true;
+            return;
+        } catch (Exception e) {
             e.printStackTrace();
         }
 
         // Should not get here. Must be a failure.
         stopMe();
     }
-
+    
     private void sendFd(String path) throws IOException, InterruptedException {
-       int tries = 0;
-       FileDescriptor fd = mInterface.getFileDescriptor();
-           while (true) {
-               try {
-                   Thread.sleep(70L * tries);
-                   Log.d(TAG, "sdFd tries: " + tries);
-                   try (LocalSocket localSocket = new LocalSocket()) {
-                       localSocket.connect(new LocalSocketAddress(path, LocalSocketAddress.Namespace.FILESYSTEM));
-                       localSocket.setFileDescriptorsForSend(new FileDescriptor[]{fd});
-                       localSocket.getOutputStream().write(42);
-                   }
-                   break;
-               } catch (Exception e) {
-                   if (tries > 5) throw e;
-                   tries += 1;
-               }
-           }
+        int tries = 0;
+        FileDescriptor fd = mInterface.getFileDescriptor();
+        while (true) {
+            try {
+                Thread.sleep(70L * tries);
+                Log.d(TAG, "sdFd tries: " + tries);
+                try (LocalSocket localSocket = new LocalSocket()) {
+                    localSocket.connect(new LocalSocketAddress(path, LocalSocketAddress.Namespace.FILESYSTEM));
+                    localSocket.setFileDescriptorsForSend(new FileDescriptor[]{fd});
+                    localSocket.getOutputStream().write(42);
+                }
+                break;
+            } catch (Exception e) {
+                if (tries > 5) throw e;
+                tries += 1;
+            }
+        }
+    }
+
+    class VpnBinder extends IVpnService.Stub {
+        @Override
+        public boolean isRunning() {
+            return mRunning;
+        }
+
+        @Override
+        public void stop() {
+            stopMe();
+        }
     }
 }

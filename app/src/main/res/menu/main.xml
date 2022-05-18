@@ -1,19 +1,23 @@
-<menu xmlns:app="http://schemas.android.com/apk/res-auto" xmlns:android="http://schemas.android.com/apk/res/android">
+<menu
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        android:fitsSystemWindows="true">
 
     <item
-        android:id="@+id/prof_add"
-        android:title="@string/prof_add"
-        app:actionViewClass="androidx.appcompat.view.menu.ActionMenuItemView"/>
+            android:id="@+id/prof_add"
+            android:title="@string/prof_add"
+            app:actionViewClass="androidx.appcompat.view.menu.ActionMenuItemView"/>
 
     <item
-        android:id="@+id/prof_del"
-        android:title="@string/prof_del"
-        app:actionViewClass="androidx.appcompat.view.menu.ActionMenuItemView"/>
+            android:id="@+id/prof_del"
+            android:title="@string/prof_del"
+            app:actionViewClass="androidx.appcompat.view.menu.ActionMenuItemView"/>
 
     <item
             android:id="@+id/switch_main"
             android:title="@string/switch_main"
             app:actionViewClass="androidx.appcompat.widget.SwitchCompat"
-            android:actionLayout="@layout/action_switch" app:showAsAction="always"/>
+            android:actionLayout="@layout/action_switch"
+            app:showAsAction="always"/>
 
 </menu>

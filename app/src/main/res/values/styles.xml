@@ -1,8 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="AppTheme" parent="@android:style/Theme.Material">
-        <item name="android:colorPrimary">#5C6BC0</item>
-        <item name="android:colorPrimaryDark">#3949AB</item>
-        <item name="android:colorAccent">#FFC107</item>
+    <style name="AppTheme.AlertDialogTheme" parent="ThemeOverlay.Material3.MaterialAlertDialog">
+        <item name="dialogCornerRadius">20dp</item>
+    </style>
+
+    <style name="AppTheme" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="alertDialogTheme">@style/AppTheme.AlertDialogTheme</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:popupTheme">@style/AppTheme.AlertDialogTheme</item>
+        <item name="popupWindowStyle">@style/AppTheme.AlertDialogTheme</item>
     </style>
 </resources>

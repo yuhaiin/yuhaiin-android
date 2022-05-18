@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.preference.PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <DropDownPreference
+    <ListPreference
         android:key="profile"
         android:title="@string/profile"/>
 
@@ -11,6 +11,7 @@
         <EditTextPreference
                 android:key="yuhaiin_host"
                 android:title="@string/yuhaiin_host"
+                android:summary="@string/yuhaiin_host_summary"
                 android:singleLine="true"/>
     </PreferenceCategory>
 
@@ -28,10 +29,10 @@
             android:inputType="number"
             android:singleLine="true"/>
 
-        <CheckBoxPreference
-            android:key="ipv6_proxy"
-            android:title="@string/ipv6_proxy"
-            android:summary="@string/ipv6_proxy_sum"/>
+        <SwitchPreference
+                android:key="ipv6_proxy"
+                android:title="@string/ipv6_proxy"
+                android:summary="@string/ipv6_proxy_sum" android:layout_height="wrap_content"/>
 
 <!--        <CheckBoxPreference-->
 <!--            android:key="udp_proxy"-->
@@ -49,7 +50,7 @@
     <PreferenceCategory
         android:title="@string/authentication">
 
-        <CheckBoxPreference
+        <SwitchPreference
             android:key="auth_userpw"
             android:title="@string/auth_userpw"
             android:defaultValue="false"/>
@@ -89,15 +90,15 @@
             android:inputType="number"
             android:singleLine="true"/>
 
-        <CheckBoxPreference
+        <SwitchPreference
             android:key="adv_auto_connect"
             android:title="@string/adv_auto_connect"/>
 
-        <CheckBoxPreference
+        <SwitchPreference
             android:key="adv_per_app"
             android:title="@string/adv_per_app"/>
 
-        <CheckBoxPreference
+        <SwitchPreference
             android:key="adv_app_bypass"
             android:title="@string/adv_app_bypass"
             android:summary="@string/adv_app_bypass_sum"
@@ -110,5 +111,4 @@
             android:dependency="adv_per_app"/>
 
     </PreferenceCategory>
-
 </androidx.preference.PreferenceScreen>

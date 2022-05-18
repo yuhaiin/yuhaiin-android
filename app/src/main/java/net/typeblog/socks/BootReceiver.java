@@ -5,10 +5,10 @@ import android.content.Context;
 import android.content.Intent;
 import android.net.VpnService;
 import android.util.Log;
-
 import net.typeblog.socks.util.Profile;
 import net.typeblog.socks.util.ProfileManager;
 import net.typeblog.socks.util.Utility;
+
 import static net.typeblog.socks.BuildConfig.DEBUG;
 
 public class BootReceiver extends BroadcastReceiver {
