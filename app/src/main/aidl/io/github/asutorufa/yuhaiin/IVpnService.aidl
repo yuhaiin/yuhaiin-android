@@ -1,4 +1,4 @@
-package net.typeblog.socks;
+package io.github.asutorufa.yuhaiin;
 
 interface IVpnService
 {

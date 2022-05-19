@@ -1,13 +1,15 @@
 apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
 
 android {
     compileSdkVersion 31
     defaultConfig {
-        applicationId "io.github.asutorufa.socks"
+        applicationId "io.github.asutorufa.yuhaiin"
         minSdkVersion 21
         targetSdkVersion 31
         versionCode 5
         versionName "0.6.1"
+        multiDexEnabled true
     }
     buildTypes {
         release {
@@ -16,14 +18,14 @@ android {
         }
     }
 
-    buildFeatures {
-        compose true
-    }
-
     splits {
         abi {
             enable true
         }
+    }
+
+    sourceSets {
+        main.java.srcDirs += 'src/main/kotlin'
     }
 }
 
@@ -34,7 +36,7 @@ dependencies {
 
     def preference_version = "1.2.0"
     // Java language implementation
-    implementation "androidx.preference:preference:$preference_version"
+    implementation "androidx.preference:preference-ktx:$preference_version"
 
 
     implementation 'com.google.android.material:material:1.7.0-alpha01'
