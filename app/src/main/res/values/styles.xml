@@ -6,9 +6,8 @@
 
     <style name="AppTheme" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="alertDialogTheme">@style/AppTheme.AlertDialogTheme</item>
-        <item name="android:statusBarColor">@android:color/transparent</item>
+        <!--        <item name="android:statusBarColor">@android:color/transparent</item>-->
         <item name="android:navigationBarColor">@android:color/transparent</item>
-        <item name="android:popupTheme">@style/AppTheme.AlertDialogTheme</item>
-        <item name="popupWindowStyle">@style/AppTheme.AlertDialogTheme</item>
+        <item name="switchStyle">@style/Widget.Material3.CompoundButton.Switch</item>
     </style>
 </resources>

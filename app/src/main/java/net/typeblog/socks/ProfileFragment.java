@@ -5,7 +5,10 @@ import android.app.Activity;
 import android.content.*;
 import android.content.pm.PackageInfo;
 import android.net.VpnService;
-import android.os.*;
+import android.os.Bundle;
+import android.os.IBinder;
+import android.os.RemoteException;
+import android.text.InputType;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.*;
@@ -29,36 +32,13 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 
+import static net.typeblog.socks.BuildConfig.DEBUG;
 import static net.typeblog.socks.util.Constants.*;
 
 public class ProfileFragment extends PreferenceFragmentCompat implements Preference.OnPreferenceClickListener, Preference.OnPreferenceChangeListener, CompoundButton.OnCheckedChangeListener {
+    private final Context context;
     private ProfileManager mManager;
     private Profile mProfile;
-    private SwitchCompat mSwitch;
-    private boolean mRunning = false, mStarting = false, mStopping = false;
-    private IVpnService mBinder;
-
-    private final ServiceConnection mConnection = new ServiceConnection() {
-        @Override
-        public void onServiceConnected(ComponentName p1, IBinder binder) {
-            mBinder = IVpnService.Stub.asInterface(binder);
-
-            try {
-                mRunning = mBinder.isRunning();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-
-            if (mRunning) {
-                updateState();
-            }
-        }
-
-        @Override
-        public void onServiceDisconnected(ComponentName p1) {
-            mBinder = null;
-        }
-    };
     // You can do the assignment inside onAttach or onCreate, i.e, before the activity is displayed
     ActivityResultLauncher<Intent> startVpnLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
@@ -66,38 +46,51 @@ public class ProfileFragment extends PreferenceFragmentCompat implements Prefere
                 @Override
                 public void onActivityResult(ActivityResult result) {
                     if (result.getResultCode() == Activity.RESULT_OK) {
-                        Utility.startVpn(getActivity(), mProfile, new StartVpnCallback(Looper.getMainLooper()));
-                        try {
-                            checkState();
-                        } catch (RemoteException e) {
-                            throw new RuntimeException(e);
-                        }
+                        Utility.startVpn(getActivity(), mProfile);
                     }
                 }
             });
+    private SwitchCompat mSwitch;
+    private IVpnService mBinder;
+    private final ServiceConnection mConnection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName p1, IBinder binder) {
+            mBinder = IVpnService.Stub.asInterface(binder);
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName p1) {
+            mBinder = null;
+        }
+    };
     private final BroadcastReceiver bReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             if (Objects.equals(intent.getAction(), Constants.INTENT_DISCONNECTED)) {
-                mSwitch.setOnCheckedChangeListener(null);
-                mRunning = false;
-                mStarting = false;
-                mStopping = false;
-                updateState();
+                if (DEBUG) {
+                    Log.d("yuhaiin", "onReceive: DISCONNECTED");
+                }
+
+                mSwitch.setChecked(false);
+                mSwitch.setEnabled(true);
             } else if (Objects.equals(intent.getAction(), INTENT_CONNECTED)) {
-                mSwitch.setOnCheckedChangeListener(null);
-                mRunning = true;
-                mStarting = false;
-                mStopping = false;
-                updateState();
+                if (DEBUG) {
+                    Log.d("yuhaiin", "onReceive: CONNECTED");
+                }
+                mSwitch.setChecked(true);
+                mSwitch.setEnabled(true);
+                requireActivity().bindService(new Intent(requireContext(), SocksVpnService.class), mConnection, 0);
+            } else if (Objects.equals(intent.getAction(), INTENT_CONNECTING)) {
+                if (DEBUG) {
+                    Log.d("yuhaiin", "onReceive: CONNECTING");
+                }
+                mSwitch.setEnabled(false);
+            } else if (Objects.equals(intent.getAction(), INTENT_DISCONNECTING)) {
+                if (DEBUG) {
+                    Log.d("yuhaiin", "onReceive: DISCONNECTING");
+                }
+                mSwitch.setEnabled(false);
             }
-        }
-    };
-    private final Runnable mStateRunnable = new Runnable() {
-        @Override
-        public void run() {
-            updateState();
-            mSwitch.postDelayed(this, 1000);
         }
     };
     private ListPreference mPrefProfile;
@@ -111,28 +104,25 @@ public class ProfileFragment extends PreferenceFragmentCompat implements Prefere
     private MultiSelectListPreference mPrefAppList;
     private SwitchPreference mPrefUserpw, mPrefPerApp, mPrefAppBypass, mPrefIPv6, mPrefAuto;
     private EditTextPreference mPrefYuhaiinHost;
-    private Context context;
+
+    ProfileFragment(Context context) {
+        Log.d("yuhaiin", "ProfileFragment: new profieFragment");
+        this.context = context;
+    }
+
 
     @Override
     public void onStart() {
         super.onStart();
-        if (mSwitch != null) {
-            try {
-                checkState();
-            } catch (RemoteException e) {
-                throw new RuntimeException(e);
-            }
+        if (mBinder == null) {
+            requireActivity().bindService(new Intent(getActivity(), SocksVpnService.class), mConnection, 0);
         }
-
         IntentFilter f = new IntentFilter();
         f.addAction(INTENT_DISCONNECTED);
         f.addAction(INTENT_CONNECTED);
-
+        f.addAction(INTENT_CONNECTING);
+        f.addAction(INTENT_DISCONNECTING);
         context.registerReceiver(bReceiver, f);
-    }
-
-    public void setContext(Context context) {
-        this.context = context;
     }
 
     @Override
@@ -162,19 +152,27 @@ public class ProfileFragment extends PreferenceFragmentCompat implements Prefere
     }
 
     @Override
+    public void onDestroy() {
+        super.onDestroy();
+        context.unregisterReceiver(bReceiver);
+    }
+
+    @Override
     public void onCreateOptionsMenu(@NotNull Menu menu, @NotNull MenuInflater inflater) {
         super.onCreateOptionsMenu(menu, inflater);
 
         inflater.inflate(R.menu.main, menu);
         MenuItem s = menu.findItem(R.id.switch_main);
         mSwitch = (SwitchCompat) s.getActionView();
-        mSwitch.setOnCheckedChangeListener(this);
-        mSwitch.postDelayed(mStateRunnable, 1000);
-        try {
-            checkState();
-        } catch (RemoteException e) {
-            throw new RuntimeException(e);
+
+        if (mBinder != null) {
+            try {
+                mSwitch.setChecked(mBinder.isRunning());
+            } catch (RemoteException e) {
+                throw new RuntimeException(e);
+            }
         }
+        mSwitch.setOnCheckedChangeListener(this);
     }
 
     @SuppressLint("NonConstantResourceId")
@@ -250,11 +248,9 @@ public class ProfileFragment extends PreferenceFragmentCompat implements Prefere
             mProfile.setIsBypassApp(Boolean.parseBoolean(newValue.toString()));
             return true;
         } else if (p == mPrefAppList) {
-            List<String> newValues = new ArrayList<>((HashSet<String>) newValue);
-            String appList = TextUtils.join("\n", newValues);
-            mProfile.setAppList(appList);
+            mProfile.setAppList((HashSet<String>) newValue);
             updateAppList();
-            Log.d("setAppList", "appList:\n" + mProfile.getAppList());
+            Log.d("yuhaiin", "appList:\n" + mProfile.getAppList().toString());
             return true;
         } else if (p == mPrefIPv6) {
             mProfile.setHasIPv6(Boolean.parseBoolean(newValue.toString()));
@@ -285,16 +281,23 @@ public class ProfileFragment extends PreferenceFragmentCompat implements Prefere
     }
 
     private void initPreferences() {
+
         mPrefProfile = findPreference(PREF_PROFILE);
         mPrefYuhaiinHost = findPreference(PREF_YUHAIIN_HOST);
         mPrefHttpServerPort = findPreference(PREF_HTTP_SERVER_PORT);
+        if (mPrefHttpServerPort != null)
+            mPrefHttpServerPort.setOnBindEditTextListener(editText -> editText.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL));
         mPrefSocks5ServerPort = findPreference(PREF_SOCKS5_SERVER_PORT);
+        if (mPrefSocks5ServerPort != null)
+            mPrefSocks5ServerPort.setOnBindEditTextListener(editText -> editText.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL));
         mPrefUserpw = findPreference(PREF_AUTH_USERPW);
         mPrefUsername = findPreference(PREF_AUTH_USERNAME);
         mPrefPassword = findPreference(PREF_AUTH_PASSWORD);
         mPrefRoutes = findPreference(PREF_ADV_ROUTE);
         mPrefFakeDnsCidr = findPreference(PREF_ADV_FAKE_DNS_CIDR);
         mPrefDnsPort = findPreference(PREF_ADV_DNS_PORT);
+        if (mPrefDnsPort != null)
+            mPrefDnsPort.setOnBindEditTextListener(editText -> editText.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL));
         mPrefPerApp = findPreference(PREF_ADV_PER_APP);
         mPrefAppBypass = findPreference(PREF_ADV_APP_BYPASS);
         mPrefAppList = findPreference(PREF_ADV_APP_LIST);
@@ -343,69 +346,49 @@ public class ProfileFragment extends PreferenceFragmentCompat implements Prefere
         mPrefDnsPort.setText(String.valueOf(mProfile.getDnsPort()));
         mPrefYuhaiinHost.setText(mProfile.getYuhaiinHost());
 
-        resetText(mPrefHttpServerPort, mPrefSocks5ServerPort, mPrefUsername, mPrefPassword, mPrefFakeDnsCidr, mPrefDnsPort, mPrefYuhaiinHost);//mPrefUDPGW
+        resetText(mPrefHttpServerPort, mPrefSocks5ServerPort, mPrefUsername, mPrefPassword, mPrefFakeDnsCidr, mPrefDnsPort, mPrefYuhaiinHost);
 
         updateAppList();
     }
 
     private void updateAppList() {
-        HashSet<String> selectedApps = new HashSet<>(Arrays.asList(mProfile.getAppList().split("\n")));
-        List<String> selectedAndExistsApps = new ArrayList<>();
+        Set<String> selectedApps = mProfile.getAppList();
+        Set<String> selectedAndExistsApps = new TreeSet<>();
 
         Map<String, String> packages = getPackages();
-        CharSequence[] titles = new CharSequence[packages.size()];
-        CharSequence[] packageNames = new CharSequence[packages.size()];
-
-        int i = 0;
+        List<CharSequence> titles = new ArrayList<>();
+        List<CharSequence> packageNames = new ArrayList<>();
 
         for (Map.Entry<String, String> entry : packages.entrySet()) {
             if (selectedApps.contains(entry.getValue())) {
+                titles.add(entry.getKey());
                 selectedAndExistsApps.add(entry.getValue());
-                packageNames[i] = entry.getValue();
-                titles[i] = entry.getKey();
-                i++;
+                packageNames.add(entry.getValue());
             }
         }
 
         for (Map.Entry<String, String> entry : packages.entrySet()) {
             if (!selectedApps.contains(entry.getValue())) {
-                packageNames[i] = entry.getValue();
-                titles[i] = entry.getKey();
-                i++;
+                titles.add(entry.getKey());
+                packageNames.add(entry.getValue());
             }
         }
 
-        mPrefAppList.setEntries(titles);
-        mPrefAppList.setEntryValues(packageNames);
-
-        // 更新存储的AppList（删掉了不存在的应用）
-        mProfile.setAppList(TextUtils.join("\n", selectedAndExistsApps));
+        mPrefAppList.setEntries(titles.toArray(new CharSequence[0]));
+        mPrefAppList.setEntryValues(packageNames.toArray(new CharSequence[0]));
+        mProfile.setAppList(selectedAndExistsApps);
     }
 
     private Map<String, String> getPackages() {
         Map<String, String> packages = new TreeMap<>();
         List<PackageInfo> packageInfos = context.getPackageManager().getInstalledPackages(0);
 
-        Map<String, Integer> nameCount = new HashMap<>();
-        for (PackageInfo info : packageInfos) {
-            String appName = info.applicationInfo.loadLabel(context.getPackageManager()).toString();
-            if (nameCount.containsKey(appName)) {
-                Object count = nameCount.get(appName);
-                if (count != null) nameCount.put(appName, (int) count + 1);
-            } else {
-                nameCount.put(appName, 1);
-            }
-        }
-
         for (PackageInfo info : packageInfos) {
             String appName = info.applicationInfo.loadLabel(context.getPackageManager()).toString();
             String packageName = info.packageName;
-            Object count = nameCount.get(appName);
-            if (count != null && (int) count > 1) {
-                appName = appName + " (" + packageName + ")";
-            }
-            packages.put(appName, packageName);
+            packages.put(appName + "\n" + packageName, packageName);
         }
+
         return packages;
     }
 
@@ -480,112 +463,23 @@ public class ProfileFragment extends PreferenceFragmentCompat implements Prefere
         }).create().show();
     }
 
-    private void checkState() throws RemoteException {
-        mRunning = false;
-        Log.d("m switch", "set dis enabled");
-        mSwitch.setEnabled(false);
-        mSwitch.setOnCheckedChangeListener(null);
-
-        if (mBinder == null) {
-            requireActivity().bindService(new Intent(getActivity(), SocksVpnService.class), mConnection, 0);
-        } else {
-            if (mBinder.isRunning()) updateState();
-        }
-    }
-
-    private void updateState() {
-        if (mBinder == null) {
-            mRunning = false;
-        } else {
-            try {
-                mRunning = mBinder.isRunning();
-            } catch (Exception e) {
-                mRunning = false;
-            }
-        }
-
-        mSwitch.setChecked(mRunning);
-
-        if ((!mStarting && !mStopping) || (mStarting && mRunning) || (mStopping && !mRunning)) {
-            mSwitch.setEnabled(true);
-        }
-
-        if (mStarting && mRunning) {
-            mStarting = false;
-        }
-
-        if (mStopping && !mRunning) {
-            mStopping = false;
-        }
-
-        mSwitch.setOnCheckedChangeListener(ProfileFragment.this);
-    }
 
     private void startVpn() {
-        mStarting = true;
-        Intent i = VpnService.prepare(getActivity());
+        Intent i = VpnService.prepare(requireContext());
 
         if (i != null) {
             startVpnLauncher.launch(i);
 //            startActivityForResult(i, 0);
         } else {
-            Utility.startVpn(getActivity(), mProfile, new StartVpnCallback(Looper.getMainLooper()));
-            try {
-                checkState();
-            } catch (RemoteException e) {
-                throw new RuntimeException(e);
-            }
+            Utility.startVpn(requireContext(), mProfile);
         }
     }
 
 
     private void stopVpn() throws RemoteException {
         if (mBinder == null) return;
-
-        mStopping = true;
-
-        try {
-            mBinder.stop();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        mBinder = null;
-
-        requireActivity().unbindService(mConnection);
-        checkState();
+        mBinder.stop();
     }
 
-    class StartVpnCallback extends Handler {
-        StartVpnCallback(Looper lp) {
-            super(lp);
-        }
 
-        @Override
-        public void handleMessage(Message msg) {
-            super.handleMessage(msg);
-            Bundle data = msg.getData();
-            if (data != null) {
-                boolean success = data.getBoolean("success");
-                if (success) {
-                    try {
-                        checkState();
-                    } catch (RemoteException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-
-                String toast = data.getString("toast");
-                if (toast != null) {
-                    Toast.makeText(requireActivity().getApplicationContext(), toast, Toast.LENGTH_SHORT).show();
-                }
-            }
-        }
-    }
-}
-
-class iiii extends Intent {
-    void ActivityResultContracts() {
-
-    }
 }

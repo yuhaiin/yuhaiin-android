@@ -1,8 +1,12 @@
 package net.typeblog.socks.util;
 
+import android.annotation.SuppressLint;
 import android.content.SharedPreferences;
 
-import static net.typeblog.socks.util.Constants.*;
+import java.util.HashSet;
+import java.util.Set;
+
+import static net.typeblog.socks.util.Constants.ROUTE_ALL;
 
 public class Profile {
     private final SharedPreferences mPref;
@@ -13,6 +17,10 @@ public class Profile {
         mPref = pref;
         mName = name;
         mPrefix = prefPrefix(name);
+    }
+
+    private static String prefPrefix(String name) {
+        return name.replace("_", "__").replace(" ", "_");
     }
 
     public String getName() {
@@ -99,12 +107,17 @@ public class Profile {
         mPref.edit().putBoolean(key("appbypass"), is).apply();
     }
 
-    public String getAppList() {
-        return mPref.getString(key("applist"), "");
+    public Set<String> getAppList() {
+        try {
+            return mPref.getStringSet(key("applist"), new HashSet<>());
+        } catch (Exception e) {
+            return new HashSet<>();
+        }
     }
 
-    public void setAppList(String list) {
-        mPref.edit().putString(key("applist"), list).apply();
+    @SuppressLint("CommitPrefEdits")
+    public void setAppList(Set<String> list) {
+        mPref.edit().putStringSet(key("applist"), list);
     }
 
     public boolean hasIPv6() {
@@ -115,14 +128,6 @@ public class Profile {
         mPref.edit().putBoolean(key("ipv6"), has).apply();
     }
 
-    public boolean hasUDP() {
-        return mPref.getBoolean(key("udp"), false);
-    }
-
-    public String getUDPGW() {
-        return mPref.getString(key("udpgw"), "127.0.0.1:7300");
-    }
-
     public boolean autoConnect() {
         return mPref.getBoolean(key("auto"), false);
     }
@@ -131,8 +136,14 @@ public class Profile {
         mPref.edit().putBoolean(key("auto"), auto).apply();
     }
 
-    public  void setYuhaiinHost(String host) {mPref.edit().putString(key("yuhaiin_host"),host).apply();}
-    public String getYuhaiinHost() {return  mPref.getString(key("yuhaiin_host"),"127.0.0.1:50051");}
+    public String getYuhaiinHost() {
+        return mPref.getString(key("yuhaiin_host"), "127.0.0.1:50051");
+    }
+
+    public void setYuhaiinHost(String host) {
+        mPref.edit().putString(key("yuhaiin_host"), host).apply();
+    }
+
     void delete() {
         mPref.edit()
                 .remove(key("server"))
@@ -155,9 +166,5 @@ public class Profile {
 
     private String key(String k) {
         return mPrefix + k;
-    }
-
-    private static String prefPrefix(String name) {
-        return name.replace("_", "__").replace(" ", "_");
     }
 }

@@ -1,5 +1,6 @@
 package net.typeblog.socks;
 
+import android.util.Log;
 import yuhaiin.Yuhaiin_;
 
 public class yuhaiin extends Thread {
@@ -13,7 +14,9 @@ public class yuhaiin extends Thread {
     private final boolean fakednse;
     private final Yuhaiin_ yuhaiin = new Yuhaiin_();
 
-    yuhaiin(String host, String path, String dnsServer, String socks5Server, String httpserver, String fakedns, boolean fakednse) {
+    private final callback callback;
+
+    yuhaiin(String host, String path, String dnsServer, String socks5Server, String httpserver, String fakedns, boolean fakednse, callback callbackstop) {
         this.host = host;
         this.path = path;
         this.dnsServer = dnsServer;
@@ -21,6 +24,7 @@ public class yuhaiin extends Thread {
         this.httpserver = httpserver;
         this.fakednse = fakednse;
         this.fakedns = fakedns;
+        this.callback = callbackstop;
     }
 
     @Override
@@ -28,13 +32,20 @@ public class yuhaiin extends Thread {
         try {
             yuhaiin.start(this.host, this.path, this.dnsServer, this.socks5Server, this.httpserver, this.fakednse, this.fakedns);
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            Log.d("yuhaiin", "run: " + e);
         }
+
+        this.callback.run();
     }
 
     @Override
     public void interrupt() {
         super.interrupt();
         yuhaiin.stop();
+    }
+
+    public static class callback {
+        public void run() {
+        }
     }
 }
