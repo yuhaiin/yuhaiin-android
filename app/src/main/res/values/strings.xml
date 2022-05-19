@@ -14,9 +14,13 @@
     <string name="http_server_port" translatable="false">HTTP Port</string>
     <string name="socks5_server_port" translatable="false">Socks5 Port</string>
     <string name="ipv6_proxy">IPv6</string>
-    <string name="ipv6_proxy_sum">Enable IPv6 forwarding. If the server supports IPv6, you can access IPv6 contents from IPv4 network with this enabled.</string>
+    <string name="ipv6_proxy_sum">Enable IPv6 forwarding. If the server supports IPv6, you can access IPv6 contents from
+        IPv4 network with this enabled.
+    </string>
     <string name="udp_proxy">UDP Forwarding</string>
-    <string name="udp_proxy_sum">Forward UDP packets to badvpn-udpgw. This needs badvpn-udpgw running on the remote server (normally listening on 127.0.0.1) to work.</string>
+    <string name="udp_proxy_sum">Forward UDP packets to badvpn-udpgw. This needs badvpn-udpgw running on the remote
+        server (normally listening on 127.0.0.1) to work.
+    </string>
     <string name="udp_gw">UDP Gateway (Remote)</string>
 
     <string name="authentication">Authentication</string>
@@ -45,7 +49,6 @@
 
     <string name="err_add_prof">Failed to add profile %s</string>
     <string name="err_del_prof">Error deleting profile %s</string>
-    <string name="notify_title">yuhaiin activated</string>
     <string name="notify_msg">Connected to %s</string>
     <string name="channel_name">Proxy active</string>
 

@@ -25,7 +25,7 @@ public class BootReceiver extends BroadcastReceiver {
                     Log.d(TAG, "starting VPN service on boot");
                 }
 
-                Utility.startVpn(context, p, null);
+                Utility.startVpn(context, p);
             }
         }
     }

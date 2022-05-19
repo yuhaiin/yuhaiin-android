@@ -1,10 +1,7 @@
 package net.typeblog.socks;
 
-import android.annotation.SuppressLint;
-import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
-import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.net.*;
@@ -15,6 +12,8 @@ import android.text.TextUtils;
 import android.util.Log;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
+import androidx.core.app.NotificationCompat;
 import net.typeblog.socks.util.Routes;
 import net.typeblog.socks.util.Utility;
 
@@ -63,19 +62,23 @@ public class SocksVpnService extends VpnService {
     private Thread yuhaiin;
     private Process tun2socks;
 
-    @SuppressLint("UnspecifiedImmutableFlag")
+
+    @RequiresApi(api = Build.VERSION_CODES.S)
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+        getApplicationContext().sendBroadcast(new Intent(INTENT_CONNECTING));
 
         if (DEBUG) {
             Log.d(TAG, "starting");
         }
 
         if (intent == null) {
+            getApplicationContext().sendBroadcast(new Intent(INTENT_DISCONNECTED));
             return START_STICKY;
         }
 
         if (mRunning) {
+            getApplicationContext().sendBroadcast(new Intent(INTENT_CONNECTED));
             return START_STICKY;
         }
 
@@ -91,38 +94,31 @@ public class SocksVpnService extends VpnService {
         final boolean appBypass = intent.getBooleanExtra(INTENT_APP_BYPASS, false);
         final String[] appList = intent.getStringArrayExtra(INTENT_APP_LIST);
         final boolean ipv6 = intent.getBooleanExtra(INTENT_IPV6_PROXY, false);
-        final String udpgw = intent.getStringExtra(INTENT_UDP_GW);
-
         final String yuhaiinHost = intent.getStringExtra(PREF_YUHAIIN_HOST);
 
         // Notifications on Oreo and above need a channel
-        Notification.Builder builder;
-        if (Build.VERSION.SDK_INT >= 26) {
-            String NOTIFICATION_CHANNEL_ID = "net.typeblog.socks";
-            NotificationChannel channel = new NotificationChannel(NOTIFICATION_CHANNEL_ID,
-                    getString(R.string.channel_name), NotificationManager.IMPORTANCE_NONE);
+        String NOTIFICATION_CHANNEL_ID = "io.github.asutorufa.yuhaiin";
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationManager notificationManager = getSystemService(NotificationManager.class);
+            NotificationChannel channel = new NotificationChannel(NOTIFICATION_CHANNEL_ID,
+                    getString(R.string.channel_name), NotificationManager.IMPORTANCE_MIN);
             Objects.requireNonNull(notificationManager).createNotificationChannel(channel);
-            builder = new Notification.Builder(this, NOTIFICATION_CHANNEL_ID);
-        } else {
-            builder = new Notification.Builder(this);
         }
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID);
 
         // Create the notification
         int NOTIFICATION_ID = 1;
-        int intentFlags = PendingIntent.FLAG_UPDATE_CURRENT;
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
-            intentFlags |= PendingIntent.FLAG_IMMUTABLE;
-        }
-        PendingIntent contentIntent;
-        contentIntent = PendingIntent.getActivity(this, 0,
-                new Intent(this, MainActivity.class), intentFlags);
+//        int intentFlags = PendingIntent.FLAG_UPDATE_CURRENT;
+//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+//            intentFlags |= PendingIntent.FLAG_MUTABLE;
+//        }
+//        PendingIntent contentIntent = PendingIntent.getActivity(this, 0,
+//                new Intent(this, MainActivity.class), intentFlags);
         startForeground(NOTIFICATION_ID, builder
-                .setContentTitle(getString(R.string.notify_title))
+                .setContentTitle("yuhaiin running")
                 .setContentText(String.format(getString(R.string.notify_msg), name))
-                .setPriority(Notification.PRIORITY_MIN)
                 .setSmallIcon(R.drawable.ic_vpn)
-                .setContentIntent(contentIntent)
+//                .setContentIntent(contentIntent)
                 .build());
 
         // Create an fd.
@@ -158,14 +154,19 @@ public class SocksVpnService extends VpnService {
     }
 
     private void stopMe() {
+        getApplicationContext().sendBroadcast(new Intent(INTENT_DISCONNECTING));
         stopForeground(true);
 //        if (yuhaiin != null) yuhaiin.destroy();
+
         if (yuhaiin != null) {
             yuhaiin.interrupt();
             yuhaiin = null;
         }
-        if (tun2socks != null) tun2socks.destroy();
 
+        if (tun2socks != null) {
+            tun2socks.destroy();
+            tun2socks = null;
+        }
 
         stopSelf();
         try {
@@ -173,14 +174,15 @@ public class SocksVpnService extends VpnService {
         } catch (Exception e) {
             e.printStackTrace();
         }
-    }
 
+        mRunning = false;
+        getApplicationContext().sendBroadcast(new Intent(INTENT_DISCONNECTED));
+    }
 
     private void configure(String name, String route, String fakedns, int httpserverport, boolean perApp, boolean bypass, String[] apps, boolean ipv6) {
         Builder b = new Builder();
-        b.setMtu(1500)
+        b.setMtu(VPN_MTU)
                 .setSession(name)
-                .setMtu(VPN_MTU)
                 .addAddress(PRIVATE_VLAN4_CLIENT, 24)
                 .addDnsServer(PRIVATE_VLAN4_ROUTER);
 
@@ -265,7 +267,14 @@ public class SocksVpnService extends VpnService {
                         "127.0.0.1:" + dnsPort,
                         "127.0.0.1:" + socks5port,
                         "127.0.0.1:" + httpport, fakeDnsCidr,
-                        !Objects.equals(fakeDnsCidr, ""));
+                        !Objects.equals(fakeDnsCidr, ""),
+                        new yuhaiin.callback() {
+                            @Override
+                            public void run() {
+                                stopMe();
+                            }
+                        });
+
                 yuhaiin.start();
 //                yuhaiin = Utility.startYuhaiin(this, host);
                 Toast.makeText(this, "start yuhaiin success, listen at: " + host + ".", Toast.LENGTH_LONG).show();
@@ -317,9 +326,9 @@ public class SocksVpnService extends VpnService {
         // Try to send the Fd through socket.
         try {
             Log.d(TAG, "send sock_path:" + new File(getApplicationInfo().dataDir + "/sock_path").getAbsolutePath());
-//            System.sendfd(mInterface.getFd(),new File(getApplicationInfo().dataDir + "/sock_path").getAbsolutePath());
             sendFd(new File(getApplicationInfo().dataDir + "/sock_path").getAbsolutePath());
             mRunning = true;
+            getApplicationContext().sendBroadcast(new Intent(INTENT_CONNECTED));
             return;
         } catch (Exception e) {
             e.printStackTrace();
@@ -328,14 +337,14 @@ public class SocksVpnService extends VpnService {
         // Should not get here. Must be a failure.
         stopMe();
     }
-    
+
     private void sendFd(String path) throws IOException, InterruptedException {
         int tries = 0;
         FileDescriptor fd = mInterface.getFileDescriptor();
         while (true) {
             try {
-                Thread.sleep(70L * tries);
                 Log.d(TAG, "sdFd tries: " + tries);
+                Thread.sleep(140L * tries);
                 try (LocalSocket localSocket = new LocalSocket()) {
                     localSocket.connect(new LocalSocketAddress(path, LocalSocketAddress.Namespace.FILESYSTEM));
                     localSocket.setFileDescriptorsForSend(new FileDescriptor[]{fd});
@@ -359,5 +368,6 @@ public class SocksVpnService extends VpnService {
         public void stop() {
             stopMe();
         }
+
     }
 }

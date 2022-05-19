@@ -12,15 +12,14 @@ public class MainActivity extends AppCompatActivity {
 
         setContentView(R.layout.main_activity);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            getWindow().setDecorFitsSystemWindows(true);
+            getWindow().setDecorFitsSystemWindows(false);
         }
 
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         toolbar.inflateMenu(R.menu.main);
 
-        ProfileFragment fragment = new ProfileFragment();
-        fragment.setContext(getApplicationContext());
+        ProfileFragment fragment = new ProfileFragment(getApplicationContext());
         this.getSupportFragmentManager().beginTransaction().replace(R.id.settings, fragment).commit();
     }
 
