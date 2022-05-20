@@ -1,7 +1,6 @@
 <menu
         xmlns:app="http://schemas.android.com/apk/res-auto"
-        xmlns:android="http://schemas.android.com/apk/res/android"
-        android:fitsSystemWindows="true">
+        xmlns:android="http://schemas.android.com/apk/res/android">
 
     <item
             android:id="@+id/prof_add"

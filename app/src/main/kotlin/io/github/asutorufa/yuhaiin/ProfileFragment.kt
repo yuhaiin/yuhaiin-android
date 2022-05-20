@@ -6,39 +6,31 @@ import android.content.*
 import android.net.VpnService
 import android.os.Bundle
 import android.os.IBinder
-import android.os.RemoteException
 import android.text.InputType
-import android.text.TextUtils
 import android.util.Log
 import android.view.*
 import android.widget.CompoundButton
 import android.widget.EditText
 import android.widget.Toast
-import androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.SwitchCompat
-import androidx.constraintlayout.solver.LinearSystem
 import androidx.preference.*
+import io.github.asutorufa.yuhaiin.BuildConfig.DEBUG
 import io.github.asutorufa.yuhaiin.util.Constants
 import io.github.asutorufa.yuhaiin.util.Profile
 import io.github.asutorufa.yuhaiin.util.ProfileManager
 import io.github.asutorufa.yuhaiin.util.Utility
 import java.util.*
 
-class ProfileFragment(context: Context) : PreferenceFragmentCompat(), Preference.OnPreferenceClickListener,
+class ProfileFragment() : PreferenceFragmentCompat(), Preference.OnPreferenceClickListener,
     Preference.OnPreferenceChangeListener, CompoundButton.OnCheckedChangeListener {
-    private val ctx: Context
+    private val ctx by lazy { requireActivity().applicationContext }
     private val mManager by lazy { ProfileManager(requireActivity().applicationContext) }
     private lateinit var mProfile: Profile
-
-    // You can do the assignment inside onAttach or onCreate, i.e, before the activity is displayed
-    private var startVpnLauncher = registerForActivityResult(StartActivityForResult()) { result ->
-        if (result.resultCode == Activity.RESULT_OK) {
-            activity?.let { Utility.startVpn(it) }
-        }
-    }
     private lateinit var mSwitch: SwitchCompat
     private var mBinder: IVpnService? = null
+
     private val mConnection: ServiceConnection = object : ServiceConnection {
         override fun onServiceConnected(p1: ComponentName, binder: IBinder) {
             mBinder = IVpnService.Stub.asInterface(binder)
@@ -48,20 +40,17 @@ class ProfileFragment(context: Context) : PreferenceFragmentCompat(), Preference
             mBinder = null
         }
     }
+
     private val bReceiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             when (intent.action) {
                 Constants.INTENT_DISCONNECTED -> {
-                    if (LinearSystem.DEBUG) {
-                        Log.d("yuhaiin", "onReceive: DISCONNECTED")
-                    }
+                    if (DEBUG) Log.d("yuhaiin", "onReceive: DISCONNECTED")
                     mSwitch.isChecked = false
                     mSwitch.isEnabled = true
                 }
                 Constants.INTENT_CONNECTED -> {
-                    if (LinearSystem.DEBUG) {
-                        Log.d("yuhaiin", "onReceive: CONNECTED")
-                    }
+                    if (DEBUG) Log.d("yuhaiin", "onReceive: CONNECTED")
                     mSwitch.isChecked = true
                     mSwitch.isEnabled = true
                     requireActivity().bindService(
@@ -71,15 +60,11 @@ class ProfileFragment(context: Context) : PreferenceFragmentCompat(), Preference
                     )
                 }
                 Constants.INTENT_CONNECTING -> {
-                    if (LinearSystem.DEBUG) {
-                        Log.d("yuhaiin", "onReceive: CONNECTING")
-                    }
+                    if (DEBUG) Log.d("yuhaiin", "onReceive: CONNECTING")
                     mSwitch.isEnabled = false
                 }
                 Constants.INTENT_DISCONNECTING -> {
-                    if (LinearSystem.DEBUG) {
-                        Log.d("yuhaiin", "onReceive: DISCONNECTING")
-                    }
+                    if (DEBUG) Log.d("yuhaiin", "onReceive: DISCONNECTING")
                     mSwitch.isEnabled = false
                 }
             }
@@ -101,16 +86,12 @@ class ProfileFragment(context: Context) : PreferenceFragmentCompat(), Preference
     private lateinit var mPrefAuto: SwitchPreference
     private lateinit var mPrefYuhaiinHost: EditTextPreference
 
-    init {
-        Log.d("yuhaiin", "ProfileFragment: new profieFragment")
-        this.ctx = context
-    }
 
     override fun onStart() {
         super.onStart()
-        if (mBinder == null) {
+        if (mBinder == null)
             requireActivity().bindService(Intent(activity, YuhaiinVpnService::class.java), mConnection, 0)
-        }
+
         val f = IntentFilter().apply {
             addAction(Constants.INTENT_DISCONNECTED)
             addAction(Constants.INTENT_CONNECTED)
@@ -138,7 +119,11 @@ class ProfileFragment(context: Context) : PreferenceFragmentCompat(), Preference
 
     override fun onDestroy() {
         super.onDestroy()
-        ctx.unregisterReceiver(bReceiver)
+        try {
+            ctx.unregisterReceiver(bReceiver)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
@@ -146,13 +131,7 @@ class ProfileFragment(context: Context) : PreferenceFragmentCompat(), Preference
         inflater.inflate(R.menu.main, menu)
         val s = menu.findItem(R.id.switch_main)
         mSwitch = s.actionView as SwitchCompat
-        if (mBinder != null) {
-            try {
-                mSwitch.isChecked = mBinder!!.isRunning
-            } catch (e: RemoteException) {
-                throw RuntimeException(e)
-            }
-        }
+        mSwitch.isChecked = mBinder?.isRunning ?: false
         mSwitch.setOnCheckedChangeListener(this)
     }
 
@@ -186,13 +165,13 @@ class ProfileFragment(context: Context) : PreferenceFragmentCompat(), Preference
                 true
             }
             mPrefHttpServerPort -> {
-                if (TextUtils.isEmpty(newValue.toString())) return false
+                if (newValue.toString().isEmpty()) return false
                 mProfile.httpServerPort = newValue.toString().toInt()
                 resetTextN(mPrefHttpServerPort, newValue)
                 true
             }
             mPrefSocks5ServerPort -> {
-                if (TextUtils.isEmpty(newValue.toString())) return false
+                if (newValue.toString().isEmpty()) return false
                 mProfile.socks5ServerPort = newValue.toString().toInt()
                 resetTextN(mPrefSocks5ServerPort, newValue)
                 true
@@ -223,7 +202,7 @@ class ProfileFragment(context: Context) : PreferenceFragmentCompat(), Preference
                 true
             }
             mPrefDnsPort -> {
-                if (TextUtils.isEmpty(newValue.toString())) return false
+                if (newValue.toString().isEmpty()) return false
                 mProfile.dnsPort = newValue.toString().toInt()
                 resetTextN(mPrefDnsPort, newValue)
                 true
@@ -240,9 +219,7 @@ class ProfileFragment(context: Context) : PreferenceFragmentCompat(), Preference
                 @Suppress("UNCHECKED_CAST")
                 mProfile.appList = newValue as HashSet<String>
                 updateAppList()
-                Log.d(
-                    "yuhaiin", "appList:\n${mProfile.appList}".trimIndent()
-                )
+                if (DEBUG) Log.d("yuhaiin", "appList:\n${mProfile.appList}".trimIndent())
                 true
             }
             mPrefIPv6 -> {
@@ -265,15 +242,7 @@ class ProfileFragment(context: Context) : PreferenceFragmentCompat(), Preference
     }
 
     override fun onCheckedChanged(p1: CompoundButton, checked: Boolean) {
-        if (checked) {
-            startVpn()
-        } else {
-            try {
-                stopVpn()
-            } catch (e: RemoteException) {
-                throw RuntimeException(e)
-            }
-        }
+        if (checked) startVpn() else stopVpn()
     }
 
     private fun initPreferences() {
@@ -354,24 +323,26 @@ class ProfileFragment(context: Context) : PreferenceFragmentCompat(), Preference
     }
 
     private fun updateAppList() {
-        val selectedApps = mProfile.appList
         val selectedAndExistsApps: MutableSet<String> = TreeSet()
-        val packages = packages
         val titles: MutableList<CharSequence> = ArrayList()
         val packageNames: MutableList<CharSequence> = ArrayList()
+
         for ((key, value) in packages) {
-            if (selectedApps.contains(value)) {
-                titles.add(key)
-                selectedAndExistsApps.add(value)
-                packageNames.add(value)
-            }
+            if (!mProfile.appList.contains(value)) continue
+
+            titles.add(key)
+            selectedAndExistsApps.add(value)
+            packageNames.add(value)
         }
+
         for ((key, value) in packages) {
-            if (!selectedApps.contains(value)) {
-                titles.add(key)
-                packageNames.add(value)
-            }
+            if (mProfile.appList.contains(value)) continue
+
+            titles.add(key)
+            packageNames.add(value)
+
         }
+
         mPrefAppList.entries = titles.toTypedArray()
         mPrefAppList.entryValues = packageNames.toTypedArray()
         mProfile.appList = selectedAndExistsApps
@@ -380,15 +351,15 @@ class ProfileFragment(context: Context) : PreferenceFragmentCompat(), Preference
     private val packages: Map<String, String>
         get() {
             val packages: MutableMap<String, String> = TreeMap()
-            val packageInfos = ctx.packageManager.getInstalledPackages(0)
-            for (info in packageInfos) {
-                val appName = info.applicationInfo.loadLabel(ctx.packageManager).toString()
-                val packageName = info.packageName
-                packages["""
-    $appName
-    $packageName
-    """.trimIndent()] = packageName
-            }
+            val packageinfos = ctx.packageManager.getInstalledPackages(0)
+
+            for (info in packageinfos)
+                info.applicationInfo.loadLabel(ctx.packageManager).toString().let { appName ->
+                    info.packageName.let { packageName ->
+                        packages["$appName\n$packageName"] = packageName
+                    }
+                }
+
             return packages
         }
 
@@ -417,27 +388,27 @@ class ProfileFragment(context: Context) : PreferenceFragmentCompat(), Preference
             pref.summary = newValue.toString()
         } else {
             val text = newValue.toString()
-            if (text.isNotEmpty()) pref.summary =
-                String.format(Locale.US, String.format(Locale.US, "%%0%dd", text.length), 0)
-                    .replace("0", "*") else pref.summary = ""
+            if (text.isNotEmpty())
+                pref.summary =
+                    String.format(Locale.US, String.format(Locale.US, "%%0%dd", text.length), 0).replace("0", "*")
+            else
+                pref.summary = ""
         }
     }
 
     private fun addProfile() {
-        val e = EditText(activity)
-        e.isSingleLine = true
+        val e = EditText(activity).apply { isSingleLine = true }
 
         AlertDialog.Builder(requireActivity()).setTitle(R.string.prof_add).setView(e)
             .setPositiveButton(android.R.string.ok) { _: DialogInterface?, _: Int ->
-                val name = e.text.toString().trim { it <= ' ' }
-                if (!TextUtils.isEmpty(name)) {
-                    val p = mManager.addProfile(name)
-                    if (p != null) {
-                        mProfile = p
+                val name = e.text.toString().trim()
+                if (name.isNotEmpty())
+                    mManager.addProfile(name)?.let {
+                        mProfile = it
                         reload()
                         return@setPositiveButton
                     }
-                }
+
                 Toast.makeText(activity, String.format(getString(R.string.err_add_prof), name), Toast.LENGTH_SHORT)
                     .show()
             }.setNegativeButton(
@@ -449,29 +420,24 @@ class ProfileFragment(context: Context) : PreferenceFragmentCompat(), Preference
         AlertDialog.Builder(requireActivity()).setTitle(R.string.prof_del)
             .setMessage(String.format(getString(R.string.prof_del_confirm), mProfile.name))
             .setPositiveButton(android.R.string.ok) { _: DialogInterface?, _: Int ->
-                if (!mManager.removeProfile(mProfile.name)) {
-                    Toast.makeText(activity, getString(R.string.err_del_prof, mProfile.name), Toast.LENGTH_SHORT)
-                        .show()
-                } else {
+                if (!mManager.removeProfile(mProfile.name))
+                    Toast.makeText(activity, getString(R.string.err_del_prof, mProfile.name), Toast.LENGTH_SHORT).show()
+                else {
                     mProfile = mManager.default
                     reload()
                 }
             }.setNegativeButton(android.R.string.cancel) { _: DialogInterface?, _: Int -> }.create().show()
     }
 
-    private fun startVpn() {
-        val i = VpnService.prepare(requireContext())
-        if (i != null) {
-            startVpnLauncher.launch(i)
-            // startActivityForResult(i, 0);
-        } else {
-            mProfile.let { Utility.startVpn(requireContext()) }
-        }
-    }
 
-    @Throws(RemoteException::class)
-    private fun stopVpn() {
-        if (mBinder == null) return
-        mBinder!!.stop()
-    }
+    // You can do the assignment inside onAttach or onCreate, i.e, before the activity is displayed
+    private var startVpnLauncher =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == Activity.RESULT_OK) Utility.startVpn(requireActivity())
+        }
+
+    private fun startVpn() =
+        VpnService.prepare(requireContext())?.also { startVpnLauncher.launch(it) } ?: Utility.startVpn(requireContext())
+
+    private fun stopVpn() = mBinder?.stop()
 }

@@ -21,8 +21,17 @@ android {
     splits {
         abi {
             enable true
+
+            // Resets the list of ABIs that Gradle should create APKs for to none.
+            reset()
+
+            include "x86_64", "arm64-v8a"
         }
     }
+//
+//    buildFeatures {
+//        compose true
+//    }
 
     sourceSets {
         main.java.srcDirs += 'src/main/kotlin'
