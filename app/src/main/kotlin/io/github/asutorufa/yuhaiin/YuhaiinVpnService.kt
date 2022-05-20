@@ -2,15 +2,16 @@ package io.github.asutorufa.yuhaiin
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Intent
 import android.net.*
 import android.net.ConnectivityManager.NetworkCallback
 import android.os.Build
 import android.os.IBinder
 import android.os.ParcelFileDescriptor
-import android.text.TextUtils
 import android.util.Log
 import android.widget.Toast
+import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import io.github.asutorufa.yuhaiin.BuildConfig.DEBUG
 import io.github.asutorufa.yuhaiin.util.Constants.INTENT_CONNECTED
@@ -22,7 +23,6 @@ import io.github.asutorufa.yuhaiin.util.ProfileManager
 import io.github.asutorufa.yuhaiin.util.Routes
 import io.github.asutorufa.yuhaiin.util.Utility
 import java.io.File
-import java.io.IOException
 import java.util.*
 
 
@@ -95,6 +95,7 @@ class YuhaiinVpnService : VpnService() {
         stopMe()
     }
 
+    @RequiresApi(Build.VERSION_CODES.M)
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         applicationContext.sendBroadcast(Intent(INTENT_CONNECTING))
 
@@ -115,18 +116,23 @@ class YuhaiinVpnService : VpnService() {
                 NOTIFICATION_CHANNEL_ID,
                 getString(R.string.channel_name), NotificationManager.IMPORTANCE_MIN
             )
-            Objects.requireNonNull(notificationManager).createNotificationChannel(channel)
+            notificationManager.createNotificationChannel(channel)
         }
         val builder = NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
 
         val NOTIFICATION_ID = 1
-
+        val contentIntent = PendingIntent.getActivity(
+            this,
+            0,
+            Intent(this, MainActivity::class.java),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
         startForeground(
             NOTIFICATION_ID, builder
                 .setContentTitle("yuhaiin running")
                 .setContentText(String.format(getString(R.string.notify_msg), profile.name))
                 .setSmallIcon(R.drawable.ic_vpn)
-//                .setContentIntent(contentIntent)
+                .setContentIntent(contentIntent)
                 .build()
         )
 
@@ -141,11 +147,10 @@ class YuhaiinVpnService : VpnService() {
             profile.hasIPv6()
         )
 
-        val fd = mInterface!!.fd
 
-        if (DEBUG) Log.d(TAG, "fd: $fd")
+        if (DEBUG) Log.d(TAG, "fd: ${mInterface?.fd}")
 
-        if (mInterface != null) {
+        try {
             start(
                 profile.yuhaiinHost,
                 profile.httpServerPort,
@@ -156,6 +161,9 @@ class YuhaiinVpnService : VpnService() {
                 profile.dnsPort,
                 profile.hasIPv6()
             )
+        } catch (e: Exception) {
+            e.printStackTrace()
+            stopMe()
         }
 
         return START_STICKY
@@ -177,18 +185,21 @@ class YuhaiinVpnService : VpnService() {
             .setSession(name)
             .addAddress(PRIVATE_VLAN4_CLIENT, 24)
             .addDnsServer(PRIVATE_VLAN4_ROUTER)
+
         if (ipv6) {
             // Route all IPv6 traffic
             b.addAddress(PRIVATE_VLAN6_CLIENT, 126)
                 .addRoute("::", 0)
         }
+
         Routes.addRoutes(this, b, route)
         Routes.addRoute(b, fakedns)
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             if (mg == null) mg = getSystemService(CONNECTIVITY_SERVICE) as ConnectivityManager
             val req = NetworkRequest.Builder().addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
                 .addCapability(NetworkCapabilities.NET_CAPABILITY_NOT_RESTRICTED).build()
-            mg!!.requestNetwork(req, defaultNetworkCallback)
+            mg?.requestNetwork(req, defaultNetworkCallback)
         }
         if (Build.VERSION.SDK_INT >= 29) b.setMetered(false)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && httpserverport != 0) {
@@ -200,43 +211,29 @@ class YuhaiinVpnService : VpnService() {
         // Actual DNS requests will be redirected through pdnsd.
 //        b.addRoute("223.5.5.5", 32);
 
-        // Do app routing
-        if (!perApp) {
-            // Just bypass myself
-            try {
-                b.addDisallowedApplication(applicationInfo.packageName)
-            } catch (e: Exception) {
-                e.printStackTrace()
+        when (perApp) {
+            true -> {
+                apps.remove("")
+                if (bypass) apps.add(BuildConfig.APPLICATION_ID) else apps.remove(BuildConfig.APPLICATION_ID)
+                fun process(app: String) =
+                    try {
+                        if (bypass) b.addDisallowedApplication(app.trim()) else b.addAllowedApplication(app.trim())
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                apps.map { process(it) }
             }
-        } else {
-            if (bypass) {
-                // First, bypass myself
+
+            false -> {
+                // Just bypass myself
                 try {
-                    b.addDisallowedApplication(applicationInfo.packageName)
+                    b.addDisallowedApplication(BuildConfig.APPLICATION_ID)
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
-                for (p in apps) {
-                    if (TextUtils.isEmpty(p)) continue
-                    try {
-                        b.addDisallowedApplication(p.trim { it <= ' ' })
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
-                }
-            } else {
-                for (p in apps) {
-                    if (TextUtils.isEmpty(p) || p.trim { it <= ' ' } == applicationInfo.packageName) {
-                        continue
-                    }
-                    try {
-                        b.addAllowedApplication(p.trim { it <= ' ' })
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
-                }
             }
         }
+
         mInterface = b.establish()
     }
 
@@ -251,32 +248,19 @@ class YuhaiinVpnService : VpnService() {
         ipv6: Boolean
     ) {
         if (host != "") {
-            try {
-                yuhaiin = yuhaiin(
-                    host,
-                    getExternalFilesDir("yuhaiin")!!.absolutePath,
-                    "127.0.0.1:$dnsPort",
-                    "127.0.0.1:$socks5port",
-                    "127.0.0.1:$httpport",
-                    fakeDnsCidr,
-                    fakeDnsCidr != "",
-                    object : yuhaiin.Callback() {
-                        override fun run() {
-                            stopMe()
-                        }
-                    }
-                )
-                (yuhaiin as yuhaiin).start()
-                // yuhaiin = Utility.startYuhaiin(this, host);
-                Toast.makeText(this, "start yuhaiin success, listen at: $host.", Toast.LENGTH_LONG).show()
-            } catch (e: Exception) {
-                e.printStackTrace()
-                Log.d(TAG, "failed to start yuhaiin")
-                Toast.makeText(this, "start yuhaiin failed.", Toast.LENGTH_LONG).show()
-                stopMe()
-                return
-            }
+            yuhaiin = Yuhaiin(
+                host,
+                getExternalFilesDir("yuhaiin")!!.absolutePath,
+                "127.0.0.1:$dnsPort",
+                "127.0.0.1:$socks5port",
+                "127.0.0.1:$httpport",
+                fakeDnsCidr,
+                fakeDnsCidr.isNotEmpty(),
+            ) { stopMe() }
+            yuhaiin!!.start()
+            Toast.makeText(this, "start yuhaiin success, listen at: $host.", Toast.LENGTH_LONG).show()
         }
+
         var command = java.lang.String.format(
             Locale.US,
             "%s/libtun2socks.so"
@@ -297,51 +281,36 @@ class YuhaiinVpnService : VpnService() {
             command += " --netif-ip6addr $PRIVATE_VLAN6_ROUTER"
         }
         command += " --dnsgw 127.0.0.1:$dnsPort --enable-udprelay"
+
         if (DEBUG) {
             Log.d(TAG, (command))
         }
-        try {
-            tun2socks = Utility.exec(command)
-            Toast.makeText(this, "start tun2socks success.", Toast.LENGTH_LONG).show()
-        } catch (e: Exception) {
-            e.printStackTrace()
-            stopMe()
-            return
-        }
+
+        tun2socks = Utility.exec(command) { stopMe() }
+        Toast.makeText(this, "start tun2socks success.", Toast.LENGTH_LONG).show()
 
         // Try to send the Fd through socket.
-        try {
-            Log.d(TAG, "send sock_path:" + File(applicationInfo.dataDir + "/sock_path").absolutePath)
-            sendFd(File(applicationInfo.dataDir + "/sock_path").absolutePath)
-            mRunning = true
-            applicationContext.sendBroadcast(Intent(INTENT_CONNECTED))
-            return
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-
-        // Should not get here. Must be a failure.
-        stopMe()
+        if (DEBUG) Log.d(TAG, "send sock_path:" + File(applicationInfo.dataDir + "/sock_path").absolutePath)
+        sendFd(File(applicationInfo.dataDir + "/sock_path").absolutePath)
+        mRunning = true
+        applicationContext.sendBroadcast(Intent(INTENT_CONNECTED))
     }
 
-    @Throws(IOException::class, InterruptedException::class)
     private fun sendFd(path: String) {
         var tries = 0
         val fd = mInterface!!.fileDescriptor
-        while (true) {
-            tries += try {
-                Log.d(TAG, "sdFd tries: $tries")
-                Thread.sleep(140L * tries)
-                LocalSocket().use { localSocket ->
-                    localSocket.connect(LocalSocketAddress(path, LocalSocketAddress.Namespace.FILESYSTEM))
-                    localSocket.setFileDescriptorsForSend(arrayOf(fd))
-                    localSocket.outputStream.write(42)
-                }
-                break
-            } catch (e: Exception) {
-                if (tries > 5) throw e
-                1
+        while (true) try {
+            Log.d(TAG, "sdFd tries: $tries")
+            Thread.sleep(140L * tries)
+            LocalSocket().use { localSocket ->
+                localSocket.connect(LocalSocketAddress(path, LocalSocketAddress.Namespace.FILESYSTEM))
+                localSocket.setFileDescriptorsForSend(arrayOf(fd))
+                localSocket.outputStream.write(42)
             }
+            break
+        } catch (e: Exception) {
+            if (tries > 5) throw e
+            tries += 1
         }
     }
 }

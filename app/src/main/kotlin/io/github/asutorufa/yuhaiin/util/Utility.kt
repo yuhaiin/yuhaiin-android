@@ -13,10 +13,9 @@ import java.io.InputStreamReader
 object Utility {
     private val TAG = Utility::class.java.simpleName
 
-    @JvmOverloads
-    @Throws(IOException::class, InterruptedException::class)
-    fun exec(cmd: String?, wait: Boolean = false): Process {
+    fun exec(cmd: String, callback: () -> Unit): Process {
         val p = Runtime.getRuntime().exec(cmd)
+
         if (DEBUG) {
             val th = Thread {
                 val input = BufferedReader(InputStreamReader(p.inputStream))
@@ -30,11 +29,12 @@ object Utility {
                     Log.d(TAG, "exec: $e")
                 }
             }
+
             th.start()
         }
-        if (wait) {
-            p.waitFor()
-        }
+
+        Thread { p.waitFor(); callback() }.start()
+
         return p
     }
 
@@ -53,7 +53,7 @@ object Utility {
                 " -path " + context.getExternalFilesDir("yuhaiin") +
                 " -host " + host
         Log.d(TAG, "startYuhaiin: $cmd")
-        return exec(cmd, false)
+        return exec(cmd) {}
     }
 
     fun startVpn(context: Context) {
