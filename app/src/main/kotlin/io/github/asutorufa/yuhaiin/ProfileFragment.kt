@@ -28,7 +28,7 @@ import io.github.asutorufa.yuhaiin.util.Utility
 import java.util.*
 import java.util.regex.Pattern
 
-class ProfileFragment() : PreferenceFragmentCompat(), Preference.OnPreferenceClickListener,
+class ProfileFragment : PreferenceFragmentCompat(), Preference.OnPreferenceClickListener,
     Preference.OnPreferenceChangeListener, CompoundButton.OnCheckedChangeListener {
     private val ctx by lazy { requireActivity().applicationContext }
     private val mManager by lazy { ProfileManager(requireActivity().applicationContext) }
@@ -183,7 +183,9 @@ class ProfileFragment() : PreferenceFragmentCompat(), Preference.OnPreferenceCli
             }
 
             mPrefUserpw -> {
-                mProfile.setIsUserpw(java.lang.Boolean.parseBoolean(newValue.toString()))
+                val value = newValue as Boolean
+                mProfile.setIsUserpw(value)
+                resetAuthVisible(value)
                 true
             }
             mPrefUsername -> {
@@ -213,25 +215,24 @@ class ProfileFragment() : PreferenceFragmentCompat(), Preference.OnPreferenceCli
                 true
             }
             mPrefPerApp -> {
-                mProfile.isPerApp = java.lang.Boolean.parseBoolean(newValue.toString())
+                mProfile.isPerApp = newValue as Boolean
                 true
             }
             mPrefAppBypass -> {
-                mProfile.isBypassApp = java.lang.Boolean.parseBoolean(newValue.toString())
+                mProfile.isBypassApp = newValue as Boolean
                 true
             }
             mPrefAppList -> {
                 @Suppress("UNCHECKED_CAST")
                 mProfile.appList = newValue as Set<String>
-                updateAppList()
                 true
             }
             mPrefIPv6 -> {
-                mProfile.setHasIPv6(java.lang.Boolean.parseBoolean(newValue.toString()))
+                mProfile.setHasIPv6(newValue as Boolean)
                 true
             }
             mPrefAuto -> {
-                mProfile.setAutoConnect(java.lang.Boolean.parseBoolean(newValue.toString()))
+                mProfile.setAutoConnect(newValue as Boolean)
                 true
             }
             mPrefYuhaiinHost -> {
@@ -263,10 +264,11 @@ class ProfileFragment() : PreferenceFragmentCompat(), Preference.OnPreferenceCli
         mPrefSocks5ServerPort.setOnBindEditTextListener { editText: EditText ->
             editText.inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
         }
-        mPrefUserpw = findPreferenceAndSetListener(Constants.PREF_AUTH_USERPW)!!
-        mPrefUsername = findPreferenceAndSetListener(Constants.PREF_AUTH_USERNAME)!!
 
+        mPrefUserpw = findPreferenceAndSetListener<SwitchPreference>(Constants.PREF_AUTH_USERPW)!!
+        mPrefUsername = findPreferenceAndSetListener(Constants.PREF_AUTH_USERNAME)!!
         mPrefPassword = findPreferenceAndSetListener(Constants.PREF_AUTH_PASSWORD)!!
+
         mPrefRoutes = findPreferenceAndSetListener(Constants.PREF_ADV_ROUTE)!!
         mPrefFakeDnsCidr = findPreferenceAndSetListener(Constants.PREF_ADV_FAKE_DNS_CIDR)!!
         mPrefDnsPort = findPreferenceAndSetListener(Constants.PREF_ADV_DNS_PORT)!!
@@ -276,6 +278,11 @@ class ProfileFragment() : PreferenceFragmentCompat(), Preference.OnPreferenceCli
         mPrefPerApp = findPreferenceAndSetListener(Constants.PREF_ADV_PER_APP)!!
         mPrefAppBypass = findPreferenceAndSetListener(Constants.PREF_ADV_APP_BYPASS)!!
         mPrefAppList = findPreferenceAndSetListener(Constants.PREF_ADV_APP_LIST)!!
+        mPrefAppList.setOnPreferenceClickListener {
+            updateAppList()
+            false
+        }
+
         mPrefIPv6 = findPreferenceAndSetListener(Constants.PREF_IPV6_PROXY)!!
         mPrefAuto = findPreferenceAndSetListener(Constants.PREF_ADV_AUTO_CONNECT)!!
 
@@ -306,18 +313,24 @@ class ProfileFragment() : PreferenceFragmentCompat(), Preference.OnPreferenceCli
         mPrefProfile.value = mProfile.name
         mPrefRoutes.value = mProfile.route
         resetList(mPrefProfile, mPrefRoutes)
+
         mPrefUserpw.isChecked = mProfile.isUserPw
-        mPrefPerApp.isChecked = mProfile.isPerApp
-        mPrefAppBypass.isChecked = mProfile.isBypassApp
-        mPrefIPv6.isChecked = mProfile.hasIPv6()
-        mPrefAuto.isChecked = mProfile.autoConnect()
-        mPrefHttpServerPort.text = mProfile.httpServerPort.toString()
-        mPrefSocks5ServerPort.text = mProfile.socks5ServerPort.toString()
+        resetAuthVisible(mProfile.isUserPw)
         mPrefUsername.text = mProfile.username
         mPrefPassword.text = mProfile.password
+
+        mPrefPerApp.isChecked = mProfile.isPerApp
+        mPrefAppBypass.isChecked = mProfile.isBypassApp
+
+        mPrefIPv6.isChecked = mProfile.hasIPv6()
+        mPrefAuto.isChecked = mProfile.autoConnect()
+
+        mPrefHttpServerPort.text = mProfile.httpServerPort.toString()
+        mPrefSocks5ServerPort.text = mProfile.socks5ServerPort.toString()
         mPrefFakeDnsCidr.text = mProfile.fakeDnsCidr
         mPrefDnsPort.text = mProfile.dnsPort.toString()
         mPrefYuhaiinHost.text = mProfile.yuhaiinHost
+
         resetText(
             mPrefHttpServerPort,
             mPrefSocks5ServerPort,
@@ -327,30 +340,37 @@ class ProfileFragment() : PreferenceFragmentCompat(), Preference.OnPreferenceCli
             mPrefDnsPort,
             mPrefYuhaiinHost
         )
-        updateAppList()
+    }
+
+
+    private fun resetAuthVisible(enabled: Boolean) {
+        if (enabled) {
+            mPrefUsername.isVisible = true
+            mPrefPassword.isVisible = true
+        } else {
+            mPrefUsername.isVisible = false
+            mPrefPassword.isVisible = false
+        }
     }
 
     private fun updateAppList() {
-        val selectedAndExistsApps: MutableSet<String> = TreeSet()
-        val selectedAndExistsAppNames: MutableSet<String> = TreeSet()
-
-        val titles: MutableList<CharSequence> = ArrayList()
-        val packageNames: MutableList<CharSequence> = ArrayList()
-
+        val titles = mutableListOf<String>()
+        val packageNames = mutableListOf<String>()
+        var index = 0
 
         for ((key, value) in packages.toList().sortedBy { it.second }.toMap()) {
             if (mProfile.appList.contains(key)) {
-                selectedAndExistsApps.add(key)
-                selectedAndExistsAppNames.add(value)
+                packageNames.add(index, key)
+                titles.add(index, value)
+                index++
             } else {
                 packageNames.add(key)
                 titles.add(value)
             }
         }
 
-        mPrefAppList.entries = (selectedAndExistsAppNames union titles).toTypedArray()
-        mPrefAppList.entryValues = (selectedAndExistsApps union packageNames).toTypedArray()
-        mProfile.appList = selectedAndExistsApps
+        mPrefAppList.entries = titles.toTypedArray()
+        mPrefAppList.entryValues = packageNames.toTypedArray()
     }
 
     private val PackageInfo.hasInternetPermission: Boolean

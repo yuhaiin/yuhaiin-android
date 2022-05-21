@@ -3,7 +3,6 @@ package io.github.asutorufa.yuhaiin.util
 
 import android.content.SharedPreferences
 import androidx.core.content.edit
-import java.util.*
 
 
 class Profile internal constructor(private val mPref: SharedPreferences, val name: String) {
@@ -66,7 +65,7 @@ class Profile internal constructor(private val mPref: SharedPreferences, val nam
         get() = mPref.getStringSet(key("applist"), emptySet()) ?: emptySet()
         set(list) {
             mPref.edit {
-                putStringSet(key("applist"), TreeSet(list))
+                putStringSet(key("applist"), list)
             }
         }
 

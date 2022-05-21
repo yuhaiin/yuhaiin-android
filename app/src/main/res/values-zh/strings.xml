@@ -9,9 +9,6 @@
     <string name="connection">连接</string>
     <string name="ipv6_proxy">IPv6</string>
     <string name="ipv6_proxy_sum">启用IPv6转发。如果服务器支持IPv6，启用该选项后你可以通过IPv4网络访问IPv6内容。</string>
-    <string name="udp_proxy">UDP转发</string>
-    <string name="udp_proxy_sum">通过CSNet将UDP数据包转发到badvpn-udpgw。该功能需要远程服务器运行badvpn-udpgw才能生效（监听在127.0.0.1即可）。</string>
-    <string name="udp_gw">远程UDP网关</string>
 
     <string name="authentication">认证方式</string>
     <string name="auth_userpw">用户名密码认证</string>
