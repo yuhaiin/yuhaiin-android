@@ -12,14 +12,13 @@ import android.os.IBinder
 import android.text.InputType
 import android.util.Log
 import android.view.*
-import android.widget.CompoundButton
 import android.widget.EditText
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.widget.SwitchCompat
 import androidx.preference.*
 import com.github.logviewer.LogcatActivity
+import com.google.android.material.floatingactionbutton.FloatingActionButton
 import io.github.asutorufa.yuhaiin.BuildConfig.DEBUG
 import io.github.asutorufa.yuhaiin.util.Constants
 import io.github.asutorufa.yuhaiin.util.Profile
@@ -28,17 +27,19 @@ import io.github.asutorufa.yuhaiin.util.Utility
 import java.util.*
 import java.util.regex.Pattern
 
-class ProfileFragment : PreferenceFragmentCompat(), Preference.OnPreferenceClickListener,
-    Preference.OnPreferenceChangeListener, CompoundButton.OnCheckedChangeListener {
+class ProfileFragment : PreferenceFragmentCompat(), Preference.OnPreferenceChangeListener {
     private val ctx by lazy { requireActivity().applicationContext }
     private val mManager by lazy { ProfileManager(ctx.applicationContext) }
     private lateinit var mProfile: Profile
-    private lateinit var mSwitch: SwitchCompat
+    private lateinit var mFab: FloatingActionButton
     private var mBinder: IVpnService? = null
 
     private val mConnection: ServiceConnection = object : ServiceConnection {
         override fun onServiceConnected(p1: ComponentName, binder: IBinder) {
-            mBinder = IVpnService.Stub.asInterface(binder)
+            mBinder = IVpnService.Stub.asInterface(binder).also {
+                if (it.isRunning) mFab.setImageResource(R.drawable.pause)
+                else mFab.setImageResource(R.drawable.play_arrow)
+            }
         }
 
         override fun onServiceDisconnected(p1: ComponentName) {
@@ -51,13 +52,16 @@ class ProfileFragment : PreferenceFragmentCompat(), Preference.OnPreferenceClick
             when (intent.action) {
                 Constants.INTENT_DISCONNECTED -> {
                     if (DEBUG) Log.d("yuhaiin", "onReceive: DISCONNECTED")
-                    mSwitch.isChecked = false
-                    mSwitch.isEnabled = true
+
+                    mFab.isEnabled = true
+                    mFab.setImageResource(R.drawable.play_arrow)
                 }
                 Constants.INTENT_CONNECTED -> {
                     if (DEBUG) Log.d("yuhaiin", "onReceive: CONNECTED")
-                    mSwitch.isChecked = true
-                    mSwitch.isEnabled = true
+
+                    mFab.isEnabled = true
+                    mFab.setImageResource(R.drawable.pause)
+
                     context.bindService(
                         Intent(context, YuhaiinVpnService::class.java),
                         mConnection,
@@ -66,11 +70,11 @@ class ProfileFragment : PreferenceFragmentCompat(), Preference.OnPreferenceClick
                 }
                 Constants.INTENT_CONNECTING -> {
                     if (DEBUG) Log.d("yuhaiin", "onReceive: CONNECTING")
-                    mSwitch.isEnabled = false
+                    mFab.isEnabled = false
                 }
                 Constants.INTENT_DISCONNECTING -> {
                     if (DEBUG) Log.d("yuhaiin", "onReceive: DISCONNECTING")
-                    mSwitch.isEnabled = false
+                    mFab.isEnabled = false
                 }
             }
         }
@@ -98,6 +102,7 @@ class ProfileFragment : PreferenceFragmentCompat(), Preference.OnPreferenceClick
         if (mBinder == null)
             context?.bindService(Intent(context, YuhaiinVpnService::class.java), mConnection, Context.BIND_AUTO_CREATE)
 
+
         val f = IntentFilter().apply {
             addAction(Constants.INTENT_DISCONNECTED)
             addAction(Constants.INTENT_CONNECTED)
@@ -115,11 +120,18 @@ class ProfileFragment : PreferenceFragmentCompat(), Preference.OnPreferenceClick
         reload()
     }
 
+
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {}
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        assert(container != null)
-        //        FloatingActionButton fab = container.findViewById(R.id.floatingActionButton);
-//        fab.setOnClickListener(v -> Log.d("yuhaiin", "onClick: float button"));
+        mFab = container?.findViewById<FloatingActionButton>(R.id.floatingActionButton)!!.also {
+            it.setOnClickListener {
+                mBinder?.also { it2 ->
+                    if (it2.isRunning) stopVpn()
+                    else startVpn()
+                } ?: startVpn()
+            }
+        }
         return super.onCreateView(inflater, container, savedInstanceState)
     }
 
@@ -135,10 +147,6 @@ class ProfileFragment : PreferenceFragmentCompat(), Preference.OnPreferenceClick
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
         super.onCreateOptionsMenu(menu, inflater)
         inflater.inflate(R.menu.main, menu)
-        val s = menu.findItem(R.id.switch_main)
-        mSwitch = s.actionView as SwitchCompat
-        mSwitch.isChecked = mBinder?.isRunning ?: false
-        mSwitch.setOnCheckedChangeListener(this)
     }
 
     @SuppressLint("NonConstantResourceId")
@@ -156,10 +164,6 @@ class ProfileFragment : PreferenceFragmentCompat(), Preference.OnPreferenceClick
         }
     }
 
-    override fun onPreferenceClick(p: Preference): Boolean {
-        // TODO: Implement this method
-        return false
-    }
 
     override fun onPreferenceChange(p: Preference, newValue: Any): Boolean {
         return when (p) {
@@ -249,10 +253,6 @@ class ProfileFragment : PreferenceFragmentCompat(), Preference.OnPreferenceClick
                 false
             }
         }
-    }
-
-    override fun onCheckedChanged(p1: CompoundButton, checked: Boolean) {
-        if (checked) startVpn() else stopVpn()
     }
 
     private fun initPreferences() {
