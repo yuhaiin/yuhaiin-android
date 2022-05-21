@@ -15,7 +15,7 @@
                 android:title="@string/yuhaiin_host"
                 android:summary="@string/yuhaiin_host_summary"
                 android:singleLine="true"/>
-        
+
         <EditTextPreference
                 android:key="http_server_port"
                 android:title="@string/http_server_port"
@@ -105,9 +105,16 @@
     <PreferenceCategory
             android:title="@string/debug">
 
+        <SwitchPreference
+                android:key="@string/save_logcat"
+                android:title="@string/save_logcat_name"
+                android:summary="@string/save_logcat_summary"/>
+
         <Preference
                 android:key="@string/logcat"
                 android:title="@string/logcat"
                 android:singleLine="true"/>
+
+
     </PreferenceCategory>
 </androidx.preference.PreferenceScreen>

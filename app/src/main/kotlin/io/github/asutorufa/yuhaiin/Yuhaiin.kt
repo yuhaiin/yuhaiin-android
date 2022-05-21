@@ -11,12 +11,14 @@ class Yuhaiin(
     private val httpserver: String,
     private val fakedns: String,
     private val fakednse: Boolean,
+    private val saveLogcat: Boolean,
     private val callback: () -> Unit
 ) : Thread() {
     private val yuhaiin = App()
     override fun run() {
         try {
-            yuhaiin.start(host, path, dnsServer, socks5Server, httpserver, fakednse, fakedns)
+            Log.d("yuhaiin", "save log $saveLogcat")
+            yuhaiin.start(host, path, dnsServer, socks5Server, httpserver, fakednse, fakedns, saveLogcat)
         } catch (e: Exception) {
             Log.d("yuhaiin", "run: $e")
         }
