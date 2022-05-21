@@ -98,10 +98,19 @@
                 android:dependency="adv_per_app"/>
 
         <MultiSelectListPreference
-                android:key="adv_app_list_msel"
+                android:key="adv_app_list"
                 android:title="@string/adv_app_list"
                 android:summary="@string/adv_app_list_sum"
                 android:dependency="adv_per_app"/>
 
+    </PreferenceCategory>
+
+    <PreferenceCategory
+            android:title="@string/debug">
+
+        <Preference
+                android:key="@string/logcat"
+                android:title="@string/logcat"
+                android:singleLine="true"/>
     </PreferenceCategory>
 </androidx.preference.PreferenceScreen>

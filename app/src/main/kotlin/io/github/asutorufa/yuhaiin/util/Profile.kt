@@ -1,7 +1,10 @@
 package io.github.asutorufa.yuhaiin.util
 
-import android.annotation.SuppressLint
+
 import android.content.SharedPreferences
+import androidx.core.content.edit
+import java.util.*
+
 
 class Profile internal constructor(private val mPref: SharedPreferences, val name: String) {
     private val mPrefix: String = prefPrefix(name)
@@ -60,14 +63,11 @@ class Profile internal constructor(private val mPref: SharedPreferences, val nam
         }
 
     var appList: Set<String>
-        get() = try {
-            mPref.getStringSet(key("applist"), HashSet()) ?: HashSet()
-        } catch (e: Exception) {
-            HashSet()
-        }
-        @SuppressLint("CommitPrefEdits")
+        get() = mPref.getStringSet(key("applist"), emptySet()) ?: emptySet()
         set(list) {
-            mPref.edit().putStringSet(key("applist"), list)
+            mPref.edit {
+                putStringSet(key("applist"), TreeSet(list))
+            }
         }
 
     fun hasIPv6(): Boolean {
@@ -94,21 +94,20 @@ class Profile internal constructor(private val mPref: SharedPreferences, val nam
 
     fun delete() {
         mPref.edit()
-            .remove(key("server"))
-            .remove(key("port"))
             .remove(key("userpw"))
             .remove(key("username"))
             .remove(key("password"))
             .remove(key("route"))
-            .remove(key("dns"))
             .remove(key("dns_port"))
             .remove(key("perapp"))
             .remove(key("appbypass"))
             .remove(key("applist"))
             .remove(key("ipv6"))
-            .remove(key("udp"))
-            .remove(key("udpgw"))
+            .remove(key("fake_dns_cidr"))
             .remove(key("auto"))
+            .remove(key("http_server_port"))
+            .remove(key("socks5_server_port"))
+            .remove(key("yuhaiin_host"))
             .apply()
     }
 

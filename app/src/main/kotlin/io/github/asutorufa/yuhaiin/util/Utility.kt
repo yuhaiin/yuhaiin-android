@@ -3,7 +3,6 @@ package io.github.asutorufa.yuhaiin.util
 import android.content.Context
 import android.content.Intent
 import android.util.Log
-import androidx.core.content.ContextCompat
 import io.github.asutorufa.yuhaiin.BuildConfig.DEBUG
 import io.github.asutorufa.yuhaiin.YuhaiinVpnService
 import java.io.BufferedReader
@@ -33,7 +32,7 @@ object Utility {
             th.start()
         }
 
-        Thread { p.waitFor(); callback() }.start()
+        Thread { p.waitFor(); callback();Log.d(TAG, "exec callback") }.start()
 
         return p
     }
@@ -56,8 +55,5 @@ object Utility {
         return exec(cmd) {}
     }
 
-    fun startVpn(context: Context) {
-        val i = Intent(context, YuhaiinVpnService::class.java)
-        ContextCompat.startForegroundService(context, i)
-    }
+    fun startVpn(context: Context) = context.startService(Intent(context, YuhaiinVpnService::class.java))
 }

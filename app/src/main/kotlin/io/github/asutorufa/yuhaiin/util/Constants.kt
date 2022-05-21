@@ -4,7 +4,7 @@ object Constants {
     const val ROUTE_ALL = "ALL"
     const val ROUTE_NO_LOCAL = "Non-Local IPs"
     const val ROUTE_CHN = "Non-Chinese IPs"
-    
+
     const val PREF = "profile"
     const val PREF_PROFILE = "profile"
     const val PREF_LAST_PROFILE = "last_profile"
@@ -19,7 +19,7 @@ object Constants {
     const val PREF_ADV_DNS_PORT = "adv_dns_port"
     const val PREF_ADV_PER_APP = "adv_per_app"
     const val PREF_ADV_APP_BYPASS = "adv_app_bypass"
-    const val PREF_ADV_APP_LIST = "adv_app_list_msel"
+    const val PREF_ADV_APP_LIST = "adv_app_list"
     const val PREF_ADV_AUTO_CONNECT = "adv_auto_connect"
     const val PREF_YUHAIIN_HOST = "yuhaiin_host"
 

@@ -1,14 +1,55 @@
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
+def getVersionCode = { ->
+    try {
+        def stdout = new ByteArrayOutputStream()
+        exec {
+            commandLine 'git', 'rev-list', '--first-parent', '--count', 'master'
+            standardOutput = stdout
+        }
+        return Integer.parseInt(stdout.toString().trim())
+    }
+    catch (ignored) {
+        return 5
+    }
+}
+
+def getVersionName = { ->
+    try {
+        def stdout = new ByteArrayOutputStream()
+        exec {
+            commandLine 'git', 'describe', '--tags', '--dirty'
+            standardOutput = stdout
+        }
+        return stdout.toString().trim()
+    }
+    catch (ignored) {
+        return "NotReleased"
+    }
+}
+
+def getCommit = { ->
+    try {
+        def stdout = new ByteArrayOutputStream()
+        exec {
+            commandLine 'git', 'rev-parse', '--short', 'HEAD'
+            standardOutput = stdout
+        }
+        return "-" + stdout.toString().trim()
+    }
+    catch (ignored) {
+        return null
+    }
+}
 android {
     compileSdkVersion 31
     defaultConfig {
         applicationId "io.github.asutorufa.yuhaiin"
         minSdkVersion 21
         targetSdkVersion 31
-        versionCode 5
-        versionName "0.6.1"
+        versionCode getVersionCode()
+        versionName getVersionName() + getCommit()
         multiDexEnabled true
     }
     buildTypes {
@@ -55,4 +96,5 @@ dependencies {
 
 
     implementation project(":yuhaiin")
+    implementation project(":logcatviewer")
 }

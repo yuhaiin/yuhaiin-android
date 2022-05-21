@@ -11,7 +11,7 @@
         <item name="toolbarStyle">@style/Widget.Material3.Toolbar</item>
         <item name="switchStyle">@style/Widget.Material3.CompoundButton.Switch</item>
     </style>
-    
+
 
     <style name="Transparent" parent="@style/AppTheme">
         <item name="android:windowBackground">@android:color/transparent</item>
