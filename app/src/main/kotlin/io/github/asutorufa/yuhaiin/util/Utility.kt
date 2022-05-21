@@ -3,11 +3,13 @@ package io.github.asutorufa.yuhaiin.util
 import android.content.Context
 import android.content.Intent
 import android.util.Log
+import androidx.core.content.ContextCompat
 import io.github.asutorufa.yuhaiin.BuildConfig.DEBUG
 import io.github.asutorufa.yuhaiin.YuhaiinVpnService
 import java.io.BufferedReader
 import java.io.IOException
 import java.io.InputStreamReader
+
 
 object Utility {
     private val TAG = Utility::class.java.simpleName
@@ -55,5 +57,30 @@ object Utility {
         return exec(cmd) {}
     }
 
-    fun startVpn(context: Context) = context.startService(Intent(context, YuhaiinVpnService::class.java))
+    private fun saveToIntent(mPref: Intent, profile: Profile) {
+        mPref.apply {
+            putExtra(Constants.PREF_HTTP_SERVER_PORT, profile.httpServerPort)
+            putExtra(Constants.PREF_SOCKS5_SERVER_PORT, profile.socks5ServerPort)
+            putExtra(Constants.PREF_AUTH_USERPW, profile.isUserPw)
+            putExtra(Constants.PREF_AUTH_USERNAME, profile.username)
+            putExtra(Constants.PREF_AUTH_PASSWORD, profile.password)
+            putExtra(Constants.PREF_ADV_ROUTE, profile.route)
+            putExtra(Constants.PREF_ADV_FAKE_DNS_CIDR, profile.fakeDnsCidr)
+            putExtra(Constants.PREF_ADV_DNS_PORT, profile.dnsPort)
+            putExtra(Constants.PREF_ADV_PER_APP, profile.isPerApp)
+            putExtra(Constants.PREF_ADV_APP_BYPASS, profile.isBypassApp)
+            putExtra(Constants.PREF_ADV_APP_LIST, profile.appList.toTypedArray())
+            putExtra(Constants.PREF_IPV6_PROXY, profile.hasIPv6)
+            putExtra(Constants.PREF_ADV_AUTO_CONNECT, profile.autoConnect)
+            putExtra(Constants.PREF_YUHAIIN_HOST, profile.yuhaiinHost)
+            putExtra(Constants.PREF_SAVE_LOGCAT, profile.saveLogcat)
+            putExtra(Constants.PREF_PROFILE, profile.name)
+        }
+    }
+
+    fun startVpn(context: Context, profile: Profile) {
+        val intent = Intent(context, YuhaiinVpnService::class.java).also { saveToIntent(it, profile) }
+        ContextCompat.startForegroundService(context, intent)
+    }
+
 }

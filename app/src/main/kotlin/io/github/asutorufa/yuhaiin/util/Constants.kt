@@ -22,6 +22,7 @@ object Constants {
     const val PREF_ADV_APP_LIST = "adv_app_list"
     const val PREF_ADV_AUTO_CONNECT = "adv_auto_connect"
     const val PREF_YUHAIIN_HOST = "yuhaiin_host"
+    const val PREF_SAVE_LOGCAT = "save_logcat"
 
     private const val INTENT_PREFIX = "SOCKS"
     const val INTENT_DISCONNECTED = INTENT_PREFIX + "DISCONNECTED"

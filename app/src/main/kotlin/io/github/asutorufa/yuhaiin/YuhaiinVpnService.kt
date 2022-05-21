@@ -14,16 +14,28 @@ import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import io.github.asutorufa.yuhaiin.BuildConfig.DEBUG
+import io.github.asutorufa.yuhaiin.util.Constants
 import io.github.asutorufa.yuhaiin.util.Constants.INTENT_CONNECTED
 import io.github.asutorufa.yuhaiin.util.Constants.INTENT_CONNECTING
 import io.github.asutorufa.yuhaiin.util.Constants.INTENT_DISCONNECTED
 import io.github.asutorufa.yuhaiin.util.Constants.INTENT_DISCONNECTING
-import io.github.asutorufa.yuhaiin.util.Profile
-import io.github.asutorufa.yuhaiin.util.ProfileManager
+import io.github.asutorufa.yuhaiin.util.Constants.PREF_ADV_APP_BYPASS
+import io.github.asutorufa.yuhaiin.util.Constants.PREF_ADV_APP_LIST
+import io.github.asutorufa.yuhaiin.util.Constants.PREF_ADV_DNS_PORT
+import io.github.asutorufa.yuhaiin.util.Constants.PREF_ADV_FAKE_DNS_CIDR
+import io.github.asutorufa.yuhaiin.util.Constants.PREF_ADV_PER_APP
+import io.github.asutorufa.yuhaiin.util.Constants.PREF_ADV_ROUTE
+import io.github.asutorufa.yuhaiin.util.Constants.PREF_AUTH_PASSWORD
+import io.github.asutorufa.yuhaiin.util.Constants.PREF_AUTH_USERNAME
+import io.github.asutorufa.yuhaiin.util.Constants.PREF_HTTP_SERVER_PORT
+import io.github.asutorufa.yuhaiin.util.Constants.PREF_IPV6_PROXY
+import io.github.asutorufa.yuhaiin.util.Constants.PREF_SAVE_LOGCAT
+import io.github.asutorufa.yuhaiin.util.Constants.PREF_SOCKS5_SERVER_PORT
+import io.github.asutorufa.yuhaiin.util.Constants.PREF_YUHAIIN_HOST
+import io.github.asutorufa.yuhaiin.util.Constants.ROUTE_ALL
 import io.github.asutorufa.yuhaiin.util.Routes
 import io.github.asutorufa.yuhaiin.util.Utility
 import java.io.File
-import java.util.*
 
 
 class YuhaiinVpnService : VpnService() {
@@ -31,15 +43,17 @@ class YuhaiinVpnService : VpnService() {
     private val PRIVATE_VLAN4_ROUTER = "172.19.0.2"
     private val PRIVATE_VLAN6_ROUTER = "fdfe:dcba:9876::2"
     private val TAG = this.javaClass.simpleName
-    private val VPN_MTU = 1500;
-    private val PRIVATE_VLAN6_CLIENT = "fdfe:dcba:9876::1";
+    private val VPN_MTU = 1500
+    private val PRIVATE_VLAN6_CLIENT = "fdfe:dcba:9876::1"
+
     private var mRunning = false
     private var mStopping = false
-    var mg: ConnectivityManager? = null
+
+    private var mg: ConnectivityManager? = null
     private var mInterface: ParcelFileDescriptor? = null
     private var yuhaiin: Thread? = null
     private var tun2socks: Process? = null
-    private lateinit var profile: Profile
+
     private val mBinder: IBinder = object : IVpnService.Stub() {
         override fun isRunning() = this@YuhaiinVpnService.mRunning
         override fun stop() = stopMe()
@@ -81,6 +95,7 @@ class YuhaiinVpnService : VpnService() {
 
     fun stopMe() {
         if (mStopping) return
+
         mStopping = true
         applicationContext.sendBroadcast(Intent(INTENT_DISCONNECTING))
         stopForeground(true)
@@ -134,12 +149,16 @@ class YuhaiinVpnService : VpnService() {
 
         if (DEBUG) Log.d(TAG, "starting")
 
+        if (intent == null) {
+            applicationContext.sendBroadcast(Intent(INTENT_DISCONNECTED))
+            return START_STICKY
+        }
+
         if (mRunning) {
             applicationContext.sendBroadcast(Intent(INTENT_CONNECTED))
             return START_STICKY
         }
 
-        profile = ProfileManager(applicationContext).default
 
         // Notifications on Oreo and above need a channel
         val NOTIFICATION_CHANNEL_ID = "io.github.asutorufa.yuhaiin"
@@ -163,36 +182,43 @@ class YuhaiinVpnService : VpnService() {
         startForeground(
             NOTIFICATION_ID, builder
                 .setContentTitle("yuhaiin running")
-                .setContentText(String.format(getString(R.string.notify_msg), profile.name))
+                .setContentText(
+                    String.format(
+                        getString(R.string.notify_msg),
+                        intent.getStringExtra(Constants.PREF_PROFILE) ?: "default"
+                    )
+                )
                 .setSmallIcon(R.drawable.ic_vpn)
                 .setContentIntent(contentIntent)
                 .build()
         )
 
-        configure(
-            profile.name,
-            profile.route,
-            profile.fakeDnsCidr,
-            profile.httpServerPort,
-            profile.isPerApp,
-            profile.isBypassApp,
-            profile.appList as MutableSet<String>,
-            profile.hasIPv6()
-        )
-
-
-        if (DEBUG) Log.d(TAG, "fd: ${mInterface?.fd}")
-
         try {
+
+            configure(
+                intent.getStringExtra(Constants.PREF_PROFILE) ?: "default",
+                intent.getStringExtra(PREF_ADV_ROUTE) ?: ROUTE_ALL,
+                intent.getStringExtra(PREF_ADV_FAKE_DNS_CIDR) ?: "10.0.2.1/24",
+                intent.getIntExtra(PREF_HTTP_SERVER_PORT, 8188),
+                intent.getBooleanExtra(PREF_ADV_PER_APP, false),
+                intent.getBooleanExtra(PREF_ADV_APP_BYPASS, false),
+                intent.getStringArrayExtra(PREF_ADV_APP_LIST) ?: Array(0) { "" },
+                intent.getBooleanExtra(PREF_IPV6_PROXY, false)
+            )
+
+
+            if (DEBUG) Log.d(TAG, "fd: ${mInterface?.fd}")
+
             start(
-                profile.yuhaiinHost,
-                profile.httpServerPort,
-                profile.socks5ServerPort,
-                profile.username,
-                profile.password,
-                profile.fakeDnsCidr,
-                profile.dnsPort,
-                profile.hasIPv6()
+                intent.getStringExtra(PREF_YUHAIIN_HOST) ?: "127.0.0.1:50051s",
+                intent.getIntExtra(PREF_HTTP_SERVER_PORT, 8188),
+                intent.getIntExtra(PREF_SOCKS5_SERVER_PORT, 1080),
+                intent.getStringExtra(PREF_AUTH_USERNAME) ?: "",
+                intent.getStringExtra(PREF_AUTH_PASSWORD) ?: "",
+                intent.getStringExtra(PREF_ADV_FAKE_DNS_CIDR)!!,
+                intent.getIntExtra(PREF_ADV_DNS_PORT, 5353),
+                intent.getBooleanExtra(PREF_IPV6_PROXY, false),
+                intent.getBooleanExtra(PREF_SAVE_LOGCAT, false)
             )
         } catch (e: Exception) {
             e.printStackTrace()
@@ -209,7 +235,7 @@ class YuhaiinVpnService : VpnService() {
         httpserverport: Int,
         perApp: Boolean,
         bypass: Boolean,
-        apps: MutableSet<String>,
+        apps: Array<String>,
         ipv6: Boolean
     ) {
         val b = Builder()
@@ -243,18 +269,22 @@ class YuhaiinVpnService : VpnService() {
         // Actual DNS requests will be redirected through pdnsd.
 //        b.addRoute("223.5.5.5", 32);
 
-        if (DEBUG) Log.d(TAG, "configure: $apps")
+        if (DEBUG) Log.d(TAG, "configure: ${apps.toList()}")
         when (perApp) {
             true -> {
-                apps.remove("")
-                if (bypass) apps.add(BuildConfig.APPLICATION_ID) else apps.remove(BuildConfig.APPLICATION_ID)
                 fun process(app: String) =
                     try {
                         if (bypass) b.addDisallowedApplication(app.trim()) else b.addAllowedApplication(app.trim())
                     } catch (e: Exception) {
                         e.printStackTrace()
                     }
-                apps.map { process(it) }
+
+
+                if (bypass) b.addDisallowedApplication(BuildConfig.APPLICATION_ID)
+                apps.map {
+                    if ((!bypass && it == BuildConfig.APPLICATION_ID) || it.isEmpty()) return
+                    process(it)
+                }
             }
 
             false -> {
@@ -278,43 +308,48 @@ class YuhaiinVpnService : VpnService() {
         passwd: String,
         fakeDnsCidr: String,
         dnsPort: Int,
-        ipv6: Boolean
+        ipv6: Boolean,
+        savelog: Boolean
     ) {
-        if (host != "") {
+        Log.d(
+            TAG,
+            "start, host: $host, http: $httpport, socks5: $socks5port, fakednsCidr: $fakeDnsCidr, dnsPort: $dnsPort, saveLog: $savelog"
+        )
+        if (host.isNotEmpty()) {
             yuhaiin = Yuhaiin(
                 host,
                 getExternalFilesDir("yuhaiin")!!.absolutePath,
-                "127.0.0.1:$dnsPort",
-                "127.0.0.1:$socks5port",
-                "127.0.0.1:$httpport",
+                "127.0.0.1:${dnsPort}",
+                "127.0.0.1:${socks5port}",
+                "127.0.0.1:${httpport}",
                 fakeDnsCidr,
                 fakeDnsCidr.isNotEmpty(),
+                savelog
             ) { stopMe() }
             yuhaiin!!.start()
             Toast.makeText(this, "start yuhaiin success, listen at: $host.", Toast.LENGTH_LONG).show()
         }
 
-        var command = java.lang.String.format(
-            Locale.US,
-            "%s/libtun2socks.so"
-                    + " --netif-ipaddr " + PRIVATE_VLAN4_ROUTER
-                    // + " --netif-netmask 255.255.255.252"
-                    + " --socks-server-addr 127.0.0.1:%d"
-                    // + " --tunfd %d"
-                    + " --tunmtu 1500"
-                    + " --loglevel warning"
-                    // + " --pid %s/tun2socks.pid"
-                    + " --sock-path %s/sock_path", applicationInfo.nativeLibraryDir, socks5port, applicationInfo.dataDir
-        )
-        if (user != "" && passwd != "") {
-            command += " --username $user"
-            command += " --password $passwd"
-        }
-        if (ipv6) {
-            command += " --netif-ip6addr $PRIVATE_VLAN6_ROUTER"
-        }
-        command += " --dnsgw 127.0.0.1:$dnsPort --enable-udprelay"
+        val command = buildString {
+            append("${applicationInfo.nativeLibraryDir}/libtun2socks.so")
+            append(" --netif-ipaddr $PRIVATE_VLAN4_ROUTER")
+            // + " --netif-netmask 255.255.255.252"
+            append(" --socks-server-addr 127.0.0.1:$socks5port")
+            // + " --tunfd %d"
+            append(" --tunmtu 1500")
+            append(" --loglevel warning")
+            // + " --pid %s/tun2socks.pid"
+            append(" --sock-path ${applicationInfo.dataDir}/sock_path")
 
+            if (user.isNotEmpty() && passwd.isNotEmpty()) {
+                append(" --username $user")
+                append(" --password $passwd")
+            }
+            if (ipv6) {
+                append(" --netif-ip6addr $PRIVATE_VLAN6_ROUTER")
+            }
+            append(" --dnsgw 127.0.0.1:$dnsPort --enable-udprelay")
+        }
         if (DEBUG) {
             Log.d(TAG, (command))
         }

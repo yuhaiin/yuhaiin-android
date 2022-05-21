@@ -31,7 +31,7 @@ import java.util.regex.Pattern
 class ProfileFragment : PreferenceFragmentCompat(), Preference.OnPreferenceClickListener,
     Preference.OnPreferenceChangeListener, CompoundButton.OnCheckedChangeListener {
     private val ctx by lazy { requireActivity().applicationContext }
-    private val mManager by lazy { ProfileManager(requireActivity().applicationContext) }
+    private val mManager by lazy { ProfileManager(ctx.applicationContext) }
     private lateinit var mProfile: Profile
     private lateinit var mSwitch: SwitchCompat
     private var mBinder: IVpnService? = null
@@ -90,6 +90,7 @@ class ProfileFragment : PreferenceFragmentCompat(), Preference.OnPreferenceClick
     private lateinit var mPrefIPv6: SwitchPreference
     private lateinit var mPrefAuto: SwitchPreference
     private lateinit var mPrefYuhaiinHost: EditTextPreference
+    private lateinit var mPrefSaveLogcat: SwitchPreference
 
 
     override fun onStart() {
@@ -184,7 +185,7 @@ class ProfileFragment : PreferenceFragmentCompat(), Preference.OnPreferenceClick
 
             mPrefUserpw -> {
                 val value = newValue as Boolean
-                mProfile.setIsUserpw(value)
+                mProfile.isUserPw = value
                 resetAuthVisible(value)
                 true
             }
@@ -228,16 +229,20 @@ class ProfileFragment : PreferenceFragmentCompat(), Preference.OnPreferenceClick
                 true
             }
             mPrefIPv6 -> {
-                mProfile.setHasIPv6(newValue as Boolean)
+                mProfile.hasIPv6 = newValue as Boolean
                 true
             }
             mPrefAuto -> {
-                mProfile.setAutoConnect(newValue as Boolean)
+                mProfile.autoConnect = newValue as Boolean
                 true
             }
             mPrefYuhaiinHost -> {
                 mProfile.yuhaiinHost = newValue.toString()
                 resetTextN(mPrefYuhaiinHost, newValue)
+                true
+            }
+            mPrefSaveLogcat -> {
+                mProfile.saveLogcat = newValue as Boolean
                 true
             }
             else -> {
@@ -286,6 +291,8 @@ class ProfileFragment : PreferenceFragmentCompat(), Preference.OnPreferenceClick
         mPrefIPv6 = findPreferenceAndSetListener(Constants.PREF_IPV6_PROXY)!!
         mPrefAuto = findPreferenceAndSetListener(Constants.PREF_ADV_AUTO_CONNECT)!!
 
+        mPrefSaveLogcat = findPreferenceAndSetListener(Constants.PREF_SAVE_LOGCAT)!!
+
         findPreference<Preference>(resources.getString(R.string.logcat))?.apply {
             setOnPreferenceClickListener {
                 val logcatExcludeRules = listOf(
@@ -322,14 +329,16 @@ class ProfileFragment : PreferenceFragmentCompat(), Preference.OnPreferenceClick
         mPrefPerApp.isChecked = mProfile.isPerApp
         mPrefAppBypass.isChecked = mProfile.isBypassApp
 
-        mPrefIPv6.isChecked = mProfile.hasIPv6()
-        mPrefAuto.isChecked = mProfile.autoConnect()
+        mPrefIPv6.isChecked = mProfile.hasIPv6
+        mPrefAuto.isChecked = mProfile.autoConnect
 
         mPrefHttpServerPort.text = mProfile.httpServerPort.toString()
         mPrefSocks5ServerPort.text = mProfile.socks5ServerPort.toString()
         mPrefFakeDnsCidr.text = mProfile.fakeDnsCidr
         mPrefDnsPort.text = mProfile.dnsPort.toString()
         mPrefYuhaiinHost.text = mProfile.yuhaiinHost
+
+        mPrefSaveLogcat.isChecked = mProfile.saveLogcat
 
         resetText(
             mPrefHttpServerPort,
@@ -471,11 +480,14 @@ class ProfileFragment : PreferenceFragmentCompat(), Preference.OnPreferenceClick
     // You can do the assignment inside onAttach or onCreate, i.e, before the activity is displayed
     private var startVpnLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-            if (result.resultCode == Activity.RESULT_OK) Utility.startVpn(requireActivity())
+            if (result.resultCode == Activity.RESULT_OK) Utility.startVpn(requireActivity(), mProfile)
         }
 
     private fun startVpn() =
-        VpnService.prepare(requireContext())?.also { startVpnLauncher.launch(it) } ?: Utility.startVpn(requireContext())
+        VpnService.prepare(activity)?.also { startVpnLauncher.launch(it) } ?: Utility.startVpn(
+            requireActivity(),
+            mProfile
+        )
 
     private fun stopVpn() = mBinder?.stop()
 }

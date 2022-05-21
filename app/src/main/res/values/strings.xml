@@ -50,5 +50,10 @@
 
     <string name="debug" translatable="false">Debug</string>
     <string name="logcat" translatable="false">Logcat</string>
+    <string name="save_logcat" translatable="false">save_logcat</string>
+    <string name="save_logcat_name" translatable="false">Save Logcat</string>
+    <string name="save_logcat_summary" translatable="false">Save logcat to
+        Android/data/io.github.asutorufa.yuhaiin/files/yuhaiin/log.
+    </string>
 
 </resources>

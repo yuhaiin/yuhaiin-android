@@ -6,7 +6,9 @@ import android.text.TextUtils
 import io.github.asutorufa.yuhaiin.R
 
 class ProfileManager(private val mContext: Context) {
-    private val mPref: SharedPreferences = mContext.getSharedPreferences(Constants.PREF, Context.MODE_PRIVATE)
+
+    private val mPref: SharedPreferences
+        get() = mContext.getSharedPreferences(Constants.PREF, Context.MODE_PRIVATE)
 
     private val profileList: MutableList<String>
         get() {
@@ -64,4 +66,6 @@ class ProfileManager(private val mContext: Context) {
             .remove(Constants.PREF_LAST_PROFILE).apply()
         return true
     }
+
+
 }
