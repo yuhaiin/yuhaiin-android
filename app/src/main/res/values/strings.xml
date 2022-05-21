@@ -52,6 +52,8 @@
     <string name="notify_msg">Connected to %s</string>
     <string name="channel_name">Proxy active</string>
 
-    <string name="cannot_resolve_host">Cannot resolve server host: %s</string>
+
+    <string name="debug" translatable="false">Debug</string>
+    <string name="logcat" translatable="false">Logcat</string>
 
 </resources>

@@ -33,7 +33,8 @@ class YuhaiinVpnService : VpnService() {
     private val TAG = this.javaClass.simpleName
     private val VPN_MTU = 1500;
     private val PRIVATE_VLAN6_CLIENT = "fdfe:dcba:9876::1";
-    private var mRunning = false;
+    private var mRunning = false
+    private var mStopping = false
     var mg: ConnectivityManager? = null
     private var mInterface: ParcelFileDescriptor? = null
     private var yuhaiin: Thread? = null
@@ -41,9 +42,22 @@ class YuhaiinVpnService : VpnService() {
     private lateinit var profile: Profile
     private val mBinder: IBinder = object : IVpnService.Stub() {
         override fun isRunning() = this@YuhaiinVpnService.mRunning
-
         override fun stop() = stopMe()
     }
+
+    @Volatile
+    var underlyingNetwork: Network? = null
+        set(value) {
+            field = value
+            if (this.mRunning && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1) {
+                setUnderlyingNetworks(underlyingNetworks)
+            }
+        }
+    private val underlyingNetworks
+        get() = // clearing underlyingNetworks makes Android 9 consider the network to be metered
+            if (Build.VERSION.SDK_INT == 28) null else underlyingNetwork?.let {
+                arrayOf(it)
+            }
 
     private val defaultNetworkCallback: NetworkCallback = object : NetworkCallback() {
         override fun onAvailable(network: Network) {
@@ -66,6 +80,8 @@ class YuhaiinVpnService : VpnService() {
     }
 
     fun stopMe() {
+        if (mStopping) return
+        mStopping = true
         applicationContext.sendBroadcast(Intent(INTENT_DISCONNECTING))
         stopForeground(true)
 
@@ -77,22 +93,39 @@ class YuhaiinVpnService : VpnService() {
         mInterface?.close()
 
         mRunning = false
+        mStopping = false
 
         applicationContext.sendBroadcast(Intent(INTENT_DISCONNECTED))
     }
 
-    override fun onBind(intent: Intent?): IBinder {
-        return mBinder
-    }
+    override fun onBind(intent: Intent?) = if (intent?.action == SERVICE_INTERFACE) super.onBind(intent) else mBinder
 
     override fun onRevoke() {
-        super.onRevoke()
+        Log.d(TAG, "onRevoke")
         stopMe()
+        super.onRevoke()
     }
 
     override fun onDestroy() {
-        super.onDestroy()
+        Log.d(TAG, "onDestroy")
         stopMe()
+        super.onDestroy()
+    }
+
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        super.onTaskRemoved(rootIntent)
+    }
+
+    override fun onLowMemory() {
+        Log.d(TAG, "onLowMemory")
+        stopMe()
+        super.onLowMemory()
+    }
+
+    override fun stopService(name: Intent?): Boolean {
+        Log.d(TAG, "stopService")
+        stopMe()
+        return super.stopService(name)
     }
 
     @RequiresApi(Build.VERSION_CODES.M)
@@ -169,7 +202,6 @@ class YuhaiinVpnService : VpnService() {
         return START_STICKY
     }
 
-
     private fun configure(
         name: String,
         route: String,
@@ -211,6 +243,7 @@ class YuhaiinVpnService : VpnService() {
         // Actual DNS requests will be redirected through pdnsd.
 //        b.addRoute("223.5.5.5", 32);
 
+        if (DEBUG) Log.d(TAG, "configure: $apps")
         when (perApp) {
             true -> {
                 apps.remove("")
@@ -269,7 +302,7 @@ class YuhaiinVpnService : VpnService() {
                     + " --socks-server-addr 127.0.0.1:%d"
                     // + " --tunfd %d"
                     + " --tunmtu 1500"
-                    + " --loglevel debug"
+                    + " --loglevel warning"
                     // + " --pid %s/tun2socks.pid"
                     + " --sock-path %s/sock_path", applicationInfo.nativeLibraryDir, socks5port, applicationInfo.dataDir
         )

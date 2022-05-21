@@ -1,0 +1,42 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+
+    <queries>
+        <intent>
+            <action android:name="android.settings.action.MANAGE_OVERLAY_PERMISSION" />
+        </intent>
+    </queries>
+
+    <application>
+        <activity
+            android:name="com.github.logviewer.LogcatActivity"
+            android:theme="@style/Theme.MaterialComponents.DayNight.NoActionBar"
+            android:label=""
+            />
+
+        <activity
+            android:name="com.github.logviewer.LogcatDetailActivity"
+            android:label="Log detail"
+            android:theme="@style/Theme.MaterialComponents.DayNight"
+            >
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="com.github.logviewer.LogcatActivity"/>
+        </activity>
+
+        <service android:name="com.github.logviewer.FloatingLogcatService"/>
+
+        <provider
+            android:name="com.github.logviewer.LogcatFileProvider"
+            android:authorities="${applicationId}.logcat_fileprovider"
+            android:grantUriPermissions="true"
+            android:exported="false">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/logcat_filepaths" />
+        </provider>
+
+    </application>
+
+</manifest>

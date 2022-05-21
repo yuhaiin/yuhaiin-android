@@ -1,8 +1,11 @@
 package io.github.asutorufa.yuhaiin
 
+import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.*
+import android.content.pm.PackageInfo
+import android.content.pm.PackageManager
 import android.net.VpnService
 import android.os.Bundle
 import android.os.IBinder
@@ -16,12 +19,14 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.SwitchCompat
 import androidx.preference.*
+import com.github.logviewer.LogcatActivity
 import io.github.asutorufa.yuhaiin.BuildConfig.DEBUG
 import io.github.asutorufa.yuhaiin.util.Constants
 import io.github.asutorufa.yuhaiin.util.Profile
 import io.github.asutorufa.yuhaiin.util.ProfileManager
 import io.github.asutorufa.yuhaiin.util.Utility
 import java.util.*
+import java.util.regex.Pattern
 
 class ProfileFragment() : PreferenceFragmentCompat(), Preference.OnPreferenceClickListener,
     Preference.OnPreferenceChangeListener, CompoundButton.OnCheckedChangeListener {
@@ -53,10 +58,10 @@ class ProfileFragment() : PreferenceFragmentCompat(), Preference.OnPreferenceCli
                     if (DEBUG) Log.d("yuhaiin", "onReceive: CONNECTED")
                     mSwitch.isChecked = true
                     mSwitch.isEnabled = true
-                    requireActivity().bindService(
-                        Intent(requireContext(), YuhaiinVpnService::class.java),
+                    context.bindService(
+                        Intent(context, YuhaiinVpnService::class.java),
                         mConnection,
-                        0
+                        Context.BIND_AUTO_CREATE
                     )
                 }
                 Constants.INTENT_CONNECTING -> {
@@ -90,7 +95,7 @@ class ProfileFragment() : PreferenceFragmentCompat(), Preference.OnPreferenceCli
     override fun onStart() {
         super.onStart()
         if (mBinder == null)
-            requireActivity().bindService(Intent(activity, YuhaiinVpnService::class.java), mConnection, 0)
+            context?.bindService(Intent(context, YuhaiinVpnService::class.java), mConnection, Context.BIND_AUTO_CREATE)
 
         val f = IntentFilter().apply {
             addAction(Constants.INTENT_DISCONNECTED)
@@ -217,9 +222,8 @@ class ProfileFragment() : PreferenceFragmentCompat(), Preference.OnPreferenceCli
             }
             mPrefAppList -> {
                 @Suppress("UNCHECKED_CAST")
-                mProfile.appList = newValue as HashSet<String>
+                mProfile.appList = newValue as Set<String>
                 updateAppList()
-                if (DEBUG) Log.d("yuhaiin", "appList:\n${mProfile.appList}".trimIndent())
                 true
             }
             mPrefIPv6 -> {
@@ -246,48 +250,52 @@ class ProfileFragment() : PreferenceFragmentCompat(), Preference.OnPreferenceCli
     }
 
     private fun initPreferences() {
-        mPrefProfile = findPreference(Constants.PREF_PROFILE)!!
-        mPrefYuhaiinHost = findPreference(Constants.PREF_YUHAIIN_HOST)!!
+        mPrefProfile = findPreferenceAndSetListener(Constants.PREF_PROFILE)!!
+        mPrefYuhaiinHost = findPreferenceAndSetListener(Constants.PREF_YUHAIIN_HOST)!!
         mPrefYuhaiinHost.setOnBindEditTextListener { editText: EditText ->
             editText.inputType = InputType.TYPE_TEXT_VARIATION_URI
         }
-        mPrefHttpServerPort = findPreference(Constants.PREF_HTTP_SERVER_PORT)!!
+        mPrefHttpServerPort = findPreferenceAndSetListener(Constants.PREF_HTTP_SERVER_PORT)!!
         mPrefHttpServerPort.setOnBindEditTextListener { editText: EditText ->
             editText.inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
         }
-        mPrefSocks5ServerPort = findPreference(Constants.PREF_SOCKS5_SERVER_PORT)!!
+        mPrefSocks5ServerPort = findPreferenceAndSetListener(Constants.PREF_SOCKS5_SERVER_PORT)!!
         mPrefSocks5ServerPort.setOnBindEditTextListener { editText: EditText ->
             editText.inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
         }
-        mPrefUserpw = findPreference(Constants.PREF_AUTH_USERPW)!!
-        mPrefUsername = findPreference(Constants.PREF_AUTH_USERNAME)!!
-        mPrefPassword = findPreference(Constants.PREF_AUTH_PASSWORD)!!
-        mPrefRoutes = findPreference(Constants.PREF_ADV_ROUTE)!!
-        mPrefFakeDnsCidr = findPreference(Constants.PREF_ADV_FAKE_DNS_CIDR)!!
-        mPrefDnsPort = findPreference(Constants.PREF_ADV_DNS_PORT)!!
+        mPrefUserpw = findPreferenceAndSetListener(Constants.PREF_AUTH_USERPW)!!
+        mPrefUsername = findPreferenceAndSetListener(Constants.PREF_AUTH_USERNAME)!!
+
+        mPrefPassword = findPreferenceAndSetListener(Constants.PREF_AUTH_PASSWORD)!!
+        mPrefRoutes = findPreferenceAndSetListener(Constants.PREF_ADV_ROUTE)!!
+        mPrefFakeDnsCidr = findPreferenceAndSetListener(Constants.PREF_ADV_FAKE_DNS_CIDR)!!
+        mPrefDnsPort = findPreferenceAndSetListener(Constants.PREF_ADV_DNS_PORT)!!
         mPrefDnsPort.setOnBindEditTextListener { editText: EditText ->
             editText.inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
         }
-        mPrefPerApp = findPreference(Constants.PREF_ADV_PER_APP)!!
-        mPrefAppBypass = findPreference(Constants.PREF_ADV_APP_BYPASS)!!
-        mPrefAppList = findPreference(Constants.PREF_ADV_APP_LIST)!!
-        mPrefIPv6 = findPreference(Constants.PREF_IPV6_PROXY)!!
-        mPrefAuto = findPreference(Constants.PREF_ADV_AUTO_CONNECT)!!
-        mPrefProfile.onPreferenceChangeListener = this
-        mPrefYuhaiinHost.onPreferenceChangeListener = this
-        mPrefHttpServerPort.onPreferenceChangeListener = this
-        mPrefSocks5ServerPort.onPreferenceChangeListener = this
-        mPrefUserpw.onPreferenceChangeListener = this
-        mPrefUsername.onPreferenceChangeListener = this
-        mPrefPassword.onPreferenceChangeListener = this
-        mPrefRoutes.onPreferenceChangeListener = this
-        mPrefFakeDnsCidr.onPreferenceChangeListener = this
-        mPrefDnsPort.onPreferenceChangeListener = this
-        mPrefPerApp.onPreferenceChangeListener = this
-        mPrefAppBypass.onPreferenceChangeListener = this
-        mPrefAppList.onPreferenceChangeListener = this
-        mPrefIPv6.onPreferenceChangeListener = this
-        mPrefAuto.onPreferenceChangeListener = this
+        mPrefPerApp = findPreferenceAndSetListener(Constants.PREF_ADV_PER_APP)!!
+        mPrefAppBypass = findPreferenceAndSetListener(Constants.PREF_ADV_APP_BYPASS)!!
+        mPrefAppList = findPreferenceAndSetListener(Constants.PREF_ADV_APP_LIST)!!
+        mPrefIPv6 = findPreferenceAndSetListener(Constants.PREF_IPV6_PROXY)!!
+        mPrefAuto = findPreferenceAndSetListener(Constants.PREF_ADV_AUTO_CONNECT)!!
+
+        findPreference<Preference>(resources.getString(R.string.logcat))?.apply {
+            setOnPreferenceClickListener {
+                val logcatExcludeRules = listOf(
+                    Pattern.compile(".*]: processMotionEvent MotionEvent \\{ action=ACTION_.*"),
+                    Pattern.compile(".*]: dispatchPointerEvent handled=true, event=MotionEvent \\{ action=ACTION_.*"),
+                    Pattern.compile(".*Davey! duration=.*")
+                )
+                LogcatActivity.start(context, logcatExcludeRules)
+                true
+            }
+        }
+    }
+
+    private fun <T : Preference?> findPreferenceAndSetListener(key: CharSequence): T? {
+        return findPreference<T>(key)?.apply {
+            onPreferenceChangeListener = this@ProfileFragment
+        }
     }
 
     private fun reload() {
@@ -324,43 +332,53 @@ class ProfileFragment() : PreferenceFragmentCompat(), Preference.OnPreferenceCli
 
     private fun updateAppList() {
         val selectedAndExistsApps: MutableSet<String> = TreeSet()
+        val selectedAndExistsAppNames: MutableSet<String> = TreeSet()
+
         val titles: MutableList<CharSequence> = ArrayList()
         val packageNames: MutableList<CharSequence> = ArrayList()
 
-        for ((key, value) in packages) {
-            if (!mProfile.appList.contains(value)) continue
 
-            titles.add(key)
-            selectedAndExistsApps.add(value)
-            packageNames.add(value)
+        for ((key, value) in packages.toList().sortedBy { it.second }.toMap()) {
+            if (mProfile.appList.contains(key)) {
+                selectedAndExistsApps.add(key)
+                selectedAndExistsAppNames.add(value)
+            } else {
+                packageNames.add(key)
+                titles.add(value)
+            }
         }
 
-        for ((key, value) in packages) {
-            if (mProfile.appList.contains(value)) continue
-
-            titles.add(key)
-            packageNames.add(value)
-
-        }
-
-        mPrefAppList.entries = titles.toTypedArray()
-        mPrefAppList.entryValues = packageNames.toTypedArray()
+        mPrefAppList.entries = (selectedAndExistsAppNames union titles).toTypedArray()
+        mPrefAppList.entryValues = (selectedAndExistsApps union packageNames).toTypedArray()
         mProfile.appList = selectedAndExistsApps
     }
 
+    private val PackageInfo.hasInternetPermission: Boolean
+        get() {
+            val permissions = requestedPermissions
+            return permissions?.any { it == Manifest.permission.INTERNET } ?: false
+        }
+
     private val packages: Map<String, String>
         get() {
-            val packages: MutableMap<String, String> = TreeMap()
-            val packageinfos = ctx.packageManager.getInstalledPackages(0)
+            val packageManager = ctx.packageManager
+            val packages = packageManager.getInstalledPackages(PackageManager.GET_PERMISSIONS)
+            val apps = TreeMap<String, String>()
 
-            for (info in packageinfos)
-                info.applicationInfo.loadLabel(ctx.packageManager).toString().let { appName ->
-                    info.packageName.let { packageName ->
-                        packages["$appName\n$packageName"] = packageName
-                    }
-                }
+            for (pkg in packages) {
+                if (!pkg.hasInternetPermission && pkg.packageName != "android") continue
 
-            return packages
+                val applicationInfo = pkg.applicationInfo
+
+                val appName = applicationInfo.loadLabel(packageManager).toString()
+                // val appIcon = applicationInfo.loadIcon(packageManager)
+                // val isSystemApp = (applicationInfo.flags and ApplicationInfo.FLAG_SYSTEM) > 0
+
+                apps[pkg.packageName] = "$appName\n${pkg.packageName}"
+            }
+
+
+            return apps
         }
 
     private fun resetList(vararg pref: ListPreference) {

@@ -39,6 +39,5 @@
     <string name="err_del_prof">删除配置失败：%s</string>
     <string name="notify_msg">已连接到%s</string>
     <string name="channel_name">代理启用通知</string>
-    <string name="cannot_resolve_host">解析服务器域名失败: %s</string>
 
 </resources>

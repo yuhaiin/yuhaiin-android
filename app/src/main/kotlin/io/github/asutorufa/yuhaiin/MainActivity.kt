@@ -14,8 +14,6 @@ class MainActivity : AppCompatActivity() {
 
         setContentView(R.layout.main_activity)
 
-        // window.decorView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
-
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             window.setDecorFitsSystemWindows(true)
@@ -23,7 +21,6 @@ class MainActivity : AppCompatActivity() {
 
         val toolbar = findViewById<Toolbar>(R.id.toolbar)
         setSupportActionBar(toolbar)
-        toolbar.inflateMenu(R.menu.main)
 
         ProfileFragment().let {
             supportFragmentManager.beginTransaction().replace(R.id.settings, it)
