@@ -16,6 +16,7 @@ import android.widget.EditText
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.view.menu.MenuBuilder
 import androidx.preference.*
 import com.github.logviewer.LogcatActivity
 import com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -37,7 +38,7 @@ class ProfileFragment : PreferenceFragmentCompat(), Preference.OnPreferenceChang
     private val mConnection: ServiceConnection = object : ServiceConnection {
         override fun onServiceConnected(p1: ComponentName, binder: IBinder) {
             mBinder = IVpnService.Stub.asInterface(binder).also {
-                if (it.isRunning) mFab.setImageResource(R.drawable.pause)
+                if (it.isRunning) mFab.setImageResource(R.drawable.stop)
                 else mFab.setImageResource(R.drawable.play_arrow)
             }
         }
@@ -60,7 +61,7 @@ class ProfileFragment : PreferenceFragmentCompat(), Preference.OnPreferenceChang
                     if (DEBUG) Log.d("yuhaiin", "onReceive: CONNECTED")
 
                     mFab.isEnabled = true
-                    mFab.setImageResource(R.drawable.pause)
+                    mFab.setImageResource(R.drawable.stop)
 
                     context.bindService(
                         Intent(context, YuhaiinVpnService::class.java),
@@ -92,6 +93,7 @@ class ProfileFragment : PreferenceFragmentCompat(), Preference.OnPreferenceChang
     private lateinit var mPrefPerApp: SwitchPreference
     private lateinit var mPrefAppBypass: SwitchPreference
     private lateinit var mPrefIPv6: SwitchPreference
+    private lateinit var mPrefAllowLan: SwitchPreference
     private lateinit var mPrefAuto: SwitchPreference
     private lateinit var mPrefYuhaiinHost: EditTextPreference
     private lateinit var mPrefSaveLogcat: SwitchPreference
@@ -144,8 +146,10 @@ class ProfileFragment : PreferenceFragmentCompat(), Preference.OnPreferenceChang
         }
     }
 
+    @SuppressLint("RestrictedApi")
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
         super.onCreateOptionsMenu(menu, inflater)
+        if (menu is MenuBuilder) menu.setOptionalIconsVisible(true)
         inflater.inflate(R.menu.main, menu)
     }
 
@@ -241,12 +245,16 @@ class ProfileFragment : PreferenceFragmentCompat(), Preference.OnPreferenceChang
                 true
             }
             mPrefYuhaiinHost -> {
-                mProfile.yuhaiinHost = newValue.toString()
+                mProfile.yuhaiinPort = newValue.toString().toInt()
                 resetTextN(mPrefYuhaiinHost, newValue)
                 true
             }
             mPrefSaveLogcat -> {
                 mProfile.saveLogcat = newValue as Boolean
+                true
+            }
+            mPrefAllowLan -> {
+                mProfile.allowLan = newValue as Boolean
                 true
             }
             else -> {
@@ -257,13 +265,15 @@ class ProfileFragment : PreferenceFragmentCompat(), Preference.OnPreferenceChang
 
     private fun initPreferences() {
         mPrefProfile = findPreferenceAndSetListener(Constants.PREF_PROFILE)!!
-        mPrefYuhaiinHost = findPreferenceAndSetListener(Constants.PREF_YUHAIIN_HOST)!!
-        mPrefYuhaiinHost.setOnBindEditTextListener { editText: EditText ->
-            editText.inputType = InputType.TYPE_TEXT_VARIATION_URI
+        mPrefYuhaiinHost = findPreferenceAndSetListener<EditTextPreference>(Constants.PREF_YUHAIIN_PORT)!!.also {
+            it.setOnBindEditTextListener { editText: EditText ->
+                editText.inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
+            }
         }
-        mPrefHttpServerPort = findPreferenceAndSetListener(Constants.PREF_HTTP_SERVER_PORT)!!
-        mPrefHttpServerPort.setOnBindEditTextListener { editText: EditText ->
-            editText.inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
+        mPrefHttpServerPort = findPreferenceAndSetListener<EditTextPreference>(Constants.PREF_HTTP_SERVER_PORT)!!.also {
+            it.setOnBindEditTextListener { editText: EditText ->
+                editText.inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
+            }
         }
         mPrefSocks5ServerPort = findPreferenceAndSetListener(Constants.PREF_SOCKS5_SERVER_PORT)!!
         mPrefSocks5ServerPort.setOnBindEditTextListener { editText: EditText ->
@@ -290,6 +300,7 @@ class ProfileFragment : PreferenceFragmentCompat(), Preference.OnPreferenceChang
 
         mPrefIPv6 = findPreferenceAndSetListener(Constants.PREF_IPV6_PROXY)!!
         mPrefAuto = findPreferenceAndSetListener(Constants.PREF_ADV_AUTO_CONNECT)!!
+        mPrefAllowLan = findPreferenceAndSetListener(Constants.PREF_ALLOW_LAN)!!
 
         mPrefSaveLogcat = findPreferenceAndSetListener(Constants.PREF_SAVE_LOGCAT)!!
 
@@ -336,7 +347,7 @@ class ProfileFragment : PreferenceFragmentCompat(), Preference.OnPreferenceChang
         mPrefSocks5ServerPort.text = mProfile.socks5ServerPort.toString()
         mPrefFakeDnsCidr.text = mProfile.fakeDnsCidr
         mPrefDnsPort.text = mProfile.dnsPort.toString()
-        mPrefYuhaiinHost.text = mProfile.yuhaiinHost
+        mPrefYuhaiinHost.text = mProfile.yuhaiinPort.toString()
 
         mPrefSaveLogcat.isChecked = mProfile.saveLogcat
 

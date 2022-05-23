@@ -25,13 +25,14 @@ import io.github.asutorufa.yuhaiin.util.Constants.PREF_ADV_DNS_PORT
 import io.github.asutorufa.yuhaiin.util.Constants.PREF_ADV_FAKE_DNS_CIDR
 import io.github.asutorufa.yuhaiin.util.Constants.PREF_ADV_PER_APP
 import io.github.asutorufa.yuhaiin.util.Constants.PREF_ADV_ROUTE
+import io.github.asutorufa.yuhaiin.util.Constants.PREF_ALLOW_LAN
 import io.github.asutorufa.yuhaiin.util.Constants.PREF_AUTH_PASSWORD
 import io.github.asutorufa.yuhaiin.util.Constants.PREF_AUTH_USERNAME
 import io.github.asutorufa.yuhaiin.util.Constants.PREF_HTTP_SERVER_PORT
 import io.github.asutorufa.yuhaiin.util.Constants.PREF_IPV6_PROXY
 import io.github.asutorufa.yuhaiin.util.Constants.PREF_SAVE_LOGCAT
 import io.github.asutorufa.yuhaiin.util.Constants.PREF_SOCKS5_SERVER_PORT
-import io.github.asutorufa.yuhaiin.util.Constants.PREF_YUHAIIN_HOST
+import io.github.asutorufa.yuhaiin.util.Constants.PREF_YUHAIIN_PORT
 import io.github.asutorufa.yuhaiin.util.Constants.ROUTE_ALL
 import io.github.asutorufa.yuhaiin.util.Routes
 import io.github.asutorufa.yuhaiin.util.Utility
@@ -210,7 +211,7 @@ class YuhaiinVpnService : VpnService() {
             if (DEBUG) Log.d(TAG, "fd: ${mInterface?.fd}")
 
             start(
-                intent.getStringExtra(PREF_YUHAIIN_HOST) ?: "127.0.0.1:50051s",
+                intent.getIntExtra(PREF_YUHAIIN_PORT, 50051),
                 intent.getIntExtra(PREF_HTTP_SERVER_PORT, 8188),
                 intent.getIntExtra(PREF_SOCKS5_SERVER_PORT, 1080),
                 intent.getStringExtra(PREF_AUTH_USERNAME) ?: "",
@@ -218,7 +219,8 @@ class YuhaiinVpnService : VpnService() {
                 intent.getStringExtra(PREF_ADV_FAKE_DNS_CIDR)!!,
                 intent.getIntExtra(PREF_ADV_DNS_PORT, 5353),
                 intent.getBooleanExtra(PREF_IPV6_PROXY, false),
-                intent.getBooleanExtra(PREF_SAVE_LOGCAT, false)
+                intent.getBooleanExtra(PREF_SAVE_LOGCAT, false),
+                intent.getBooleanExtra(PREF_ALLOW_LAN, false)
             )
         } catch (e: Exception) {
             e.printStackTrace()
@@ -301,7 +303,7 @@ class YuhaiinVpnService : VpnService() {
     }
 
     private fun start(
-        host: String,
+        yuhaiinPort: Int,
         httpport: Int,
         socks5port: Int,
         user: String,
@@ -309,25 +311,29 @@ class YuhaiinVpnService : VpnService() {
         fakeDnsCidr: String,
         dnsPort: Int,
         ipv6: Boolean,
-        savelog: Boolean
+        savelog: Boolean,
+        allowLan: Boolean
     ) {
+        var address = "127.0.0.1"
+        if (allowLan) address = "0.0.0.0"
         Log.d(
             TAG,
-            "start, host: $host, http: $httpport, socks5: $socks5port, fakednsCidr: $fakeDnsCidr, dnsPort: $dnsPort, saveLog: $savelog"
+            "start, yuhaiin: $yuhaiinPort, http: $httpport, socks5: $socks5port," +
+                    " fakednsCidr: $fakeDnsCidr, dnsPort: $dnsPort, saveLog: $savelog, allowLan: $allowLan"
         )
-        if (host.isNotEmpty()) {
+        if (yuhaiinPort > 0) {
             yuhaiin = Yuhaiin(
-                host,
+                "${address}:${yuhaiinPort}",
                 getExternalFilesDir("yuhaiin")!!.absolutePath,
-                "127.0.0.1:${dnsPort}",
-                "127.0.0.1:${socks5port}",
-                "127.0.0.1:${httpport}",
+                "${address}:${dnsPort}",
+                "${address}:${socks5port}",
+                "${address}:${httpport}",
                 fakeDnsCidr,
                 fakeDnsCidr.isNotEmpty(),
                 savelog
             ) { stopMe() }
             yuhaiin!!.start()
-            Toast.makeText(this, "start yuhaiin success, listen at: $host.", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "start yuhaiin success, listen at: $yuhaiinPort.", Toast.LENGTH_LONG).show()
         }
 
         val command = buildString {
