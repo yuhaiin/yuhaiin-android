@@ -7,8 +7,8 @@
     <string name="prof_default">Default</string>
 
     <string name="yuhaiin" translatable="false">Yuhaiin</string>
-    <string name="yuhaiin_host" translatable="false">Yuhaiin Host</string>
-    <string name="yuhaiin_host_summary" translatable="false">gRPC and HTTP listen host</string>
+    <string name="yuhaiin_port" translatable="false">Yuhaiin Port</string>
+    <string name="yuhaiin_host_summary" translatable="false">gRPC and HTTP listen port</string>
 
     <string name="connection">Connection</string>
     <string name="http_server_port" translatable="false">HTTP Port</string>
@@ -17,6 +17,7 @@
     <string name="ipv6_proxy_sum">Enable IPv6 forwarding. If the server supports IPv6, you can access IPv6 contents from
         IPv4 network with this enabled.
     </string>
+    <string name="allow_lan" translatable="false">Allow Lan Connect</string>
 
     <string name="authentication">Authentication</string>
     <string name="auth_userpw">Username &amp; Password Authentication</string>

@@ -10,6 +10,7 @@ import io.github.asutorufa.yuhaiin.util.Constants.PREF_ADV_DNS_PORT
 import io.github.asutorufa.yuhaiin.util.Constants.PREF_ADV_FAKE_DNS_CIDR
 import io.github.asutorufa.yuhaiin.util.Constants.PREF_ADV_PER_APP
 import io.github.asutorufa.yuhaiin.util.Constants.PREF_ADV_ROUTE
+import io.github.asutorufa.yuhaiin.util.Constants.PREF_ALLOW_LAN
 import io.github.asutorufa.yuhaiin.util.Constants.PREF_AUTH_PASSWORD
 import io.github.asutorufa.yuhaiin.util.Constants.PREF_AUTH_USERNAME
 import io.github.asutorufa.yuhaiin.util.Constants.PREF_AUTH_USERPW
@@ -17,7 +18,7 @@ import io.github.asutorufa.yuhaiin.util.Constants.PREF_HTTP_SERVER_PORT
 import io.github.asutorufa.yuhaiin.util.Constants.PREF_IPV6_PROXY
 import io.github.asutorufa.yuhaiin.util.Constants.PREF_SAVE_LOGCAT
 import io.github.asutorufa.yuhaiin.util.Constants.PREF_SOCKS5_SERVER_PORT
-import io.github.asutorufa.yuhaiin.util.Constants.PREF_YUHAIIN_HOST
+import io.github.asutorufa.yuhaiin.util.Constants.PREF_YUHAIIN_PORT
 
 
 class Profile internal constructor(private val mPref: SharedPreferences, val name: String) {
@@ -96,16 +97,23 @@ class Profile internal constructor(private val mPref: SharedPreferences, val nam
             mPref.edit().putBoolean(key(PREF_ADV_AUTO_CONNECT), auto).apply()
         }
 
-    var yuhaiinHost: String
-        get() = mPref.getString(key(PREF_YUHAIIN_HOST), "127.0.0.1:50051") ?: "127.0.0.1:50051"
+    var yuhaiinPort: Int
+        get() = mPref.getInt(key(PREF_YUHAIIN_PORT), 50051)
         set(host) {
-            mPref.edit().putString(key(PREF_YUHAIIN_HOST), host).apply()
+            mPref.edit().putInt(key(PREF_YUHAIIN_PORT), host).apply()
         }
 
     var saveLogcat: Boolean
         get() = mPref.getBoolean(key(PREF_SAVE_LOGCAT), false)
         set(isSave) {
             mPref.edit().putBoolean(key(PREF_SAVE_LOGCAT), isSave).apply()
+        }
+
+
+    var allowLan: Boolean
+        get() = mPref.getBoolean(key(PREF_ALLOW_LAN), false)
+        set(allow) {
+            mPref.edit().putBoolean(key(PREF_ALLOW_LAN), allow).apply()
         }
 
     fun delete() {
@@ -123,8 +131,9 @@ class Profile internal constructor(private val mPref: SharedPreferences, val nam
             .remove(key(PREF_ADV_AUTO_CONNECT))
             .remove(key(PREF_HTTP_SERVER_PORT))
             .remove(key(PREF_SOCKS5_SERVER_PORT))
-            .remove(key(PREF_YUHAIIN_HOST))
+            .remove(key(PREF_YUHAIIN_PORT))
             .remove(key(PREF_SAVE_LOGCAT))
+            .remove(key(PREF_ALLOW_LAN))
             .apply()
     }
 

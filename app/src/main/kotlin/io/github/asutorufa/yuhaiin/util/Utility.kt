@@ -72,9 +72,10 @@ object Utility {
             putExtra(Constants.PREF_ADV_APP_LIST, profile.appList.toTypedArray())
             putExtra(Constants.PREF_IPV6_PROXY, profile.hasIPv6)
             putExtra(Constants.PREF_ADV_AUTO_CONNECT, profile.autoConnect)
-            putExtra(Constants.PREF_YUHAIIN_HOST, profile.yuhaiinHost)
+            putExtra(Constants.PREF_YUHAIIN_PORT, profile.yuhaiinPort)
             putExtra(Constants.PREF_SAVE_LOGCAT, profile.saveLogcat)
             putExtra(Constants.PREF_PROFILE, profile.name)
+            putExtra(Constants.PREF_ALLOW_LAN, profile.allowLan)
         }
     }
 

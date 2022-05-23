@@ -5,10 +5,12 @@
     <item
             android:id="@+id/prof_add"
             android:title="@string/prof_add"
+            android:icon="@drawable/add"
             app:actionViewClass="androidx.appcompat.view.menu.ActionMenuItemView"/>
 
     <item
             android:id="@+id/prof_del"
+            android:icon="@drawable/delete"
             android:title="@string/prof_del"
             app:actionViewClass="androidx.appcompat.view.menu.ActionMenuItemView"/>
 </menu>
