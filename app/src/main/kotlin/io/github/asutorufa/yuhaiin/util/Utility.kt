@@ -7,7 +7,6 @@ import androidx.core.content.ContextCompat
 import io.github.asutorufa.yuhaiin.BuildConfig.DEBUG
 import io.github.asutorufa.yuhaiin.YuhaiinVpnService
 import java.io.BufferedReader
-import java.io.IOException
 import java.io.InputStreamReader
 
 
@@ -48,15 +47,6 @@ object Utility {
         return ret.substring(0, ret.length - separator.length)
     }
 
-    @Throws(IOException::class, InterruptedException::class)
-    fun startYuhaiin(context: Context, host: String): Process {
-        val cmd = context.applicationInfo.nativeLibraryDir + "/libyuhaiin.so" +
-                " -path " + context.getExternalFilesDir("yuhaiin") +
-                " -host " + host
-        Log.d(TAG, "startYuhaiin: $cmd")
-        return exec(cmd) {}
-    }
-
     private fun saveToIntent(mPref: Intent, profile: Profile) {
         mPref.apply {
             putExtra(Constants.PREF_HTTP_SERVER_PORT, profile.httpServerPort)
@@ -76,6 +66,9 @@ object Utility {
             putExtra(Constants.PREF_SAVE_LOGCAT, profile.saveLogcat)
             putExtra(Constants.PREF_PROFILE, profile.name)
             putExtra(Constants.PREF_ALLOW_LAN, profile.allowLan)
+            putExtra(Constants.PREF_RULE_BLOCK, profile.ruleBlock)
+            putExtra(Constants.PREF_RULE_PROXY, profile.ruleProxy)
+            putExtra(Constants.PREF_RULE_DIRECT, profile.ruleDirect)
         }
     }
 

@@ -9,6 +9,7 @@
     <string name="yuhaiin" translatable="false">Yuhaiin</string>
     <string name="yuhaiin_port" translatable="false">Yuhaiin Port</string>
     <string name="yuhaiin_host_summary" translatable="false">gRPC and HTTP listen port</string>
+    <string name="open_yuhaiin_page" translatable="false">open_yuhaiin_page</string>
 
     <string name="connection">Connection</string>
     <string name="http_server_port" translatable="false">HTTP Port</string>
@@ -48,6 +49,11 @@
     <string name="notify_msg">Connected to %s</string>
     <string name="channel_name">Proxy active</string>
 
+
+    <string name="rule" translatable="false">Rule</string>
+    <string name="rule_block" translatable="false">Block</string>
+    <string name="rule_proxy" translatable="false">Proxy</string>
+    <string name="rule_direct" translatable="false">Direct</string>
 
     <string name="debug" translatable="false">Debug</string>
     <string name="logcat" translatable="false">Logcat</string>
