@@ -309,6 +309,7 @@ class ProfileFragment : PreferenceFragmentCompat(), Preference.OnPreferenceChang
 
     private fun initPreferences() {
         mPrefProfile = findPreferenceAndSetListener(Constants.PREF_PROFILE)!!
+
         mPrefYuhaiinPort =
             findPreferenceAndSetListener<EditTextPreference>(Constants.PREF_YUHAIIN_PORT)!!.also {
                 it.setOnBindEditTextListener { editText: EditText ->

@@ -56,7 +56,7 @@ class YuhaiinVpnService : VpnService() {
 
     private var mg: ConnectivityManager? = null
     private var mInterface: ParcelFileDescriptor? = null
-    private var yuhaiin: App? = null
+    private var yuhaiin: App = App()
     private var tun2socks: Process? = null
 
     private val mBinder: IBinder = object : IVpnService.Stub() {
@@ -99,16 +99,13 @@ class YuhaiinVpnService : VpnService() {
     }
 
     fun stopMe() {
-        if (mStopping) return
+        if (mStopping || !mRunning) return
 
         mStopping = true
         applicationContext.sendBroadcast(Intent(INTENT_DISCONNECTING))
         stopForeground(true)
 
-        yuhaiin?.let {
-            it.stop()
-            yuhaiin = null
-        }
+        yuhaiin.stop()
 
         tun2socks?.let {
             it.destroy()
@@ -345,9 +342,8 @@ class YuhaiinVpnService : VpnService() {
                     " fakednsCidr: $fakeDnsCidr, dnsPort: $dnsPort, saveLog: $savelog, allowLan: $allowLan"
         )
         if (yuhaiinPort > 0) {
-            yuhaiin = App()
             try {
-                yuhaiin!!.start(
+                yuhaiin.start(
                     "${address}:${yuhaiinPort}",
                     getExternalFilesDir("yuhaiin")!!.absolutePath,
                     "${address}:${dnsPort}",
