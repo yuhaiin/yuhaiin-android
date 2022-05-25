@@ -16,6 +16,9 @@ import io.github.asutorufa.yuhaiin.util.Constants.PREF_AUTH_USERNAME
 import io.github.asutorufa.yuhaiin.util.Constants.PREF_AUTH_USERPW
 import io.github.asutorufa.yuhaiin.util.Constants.PREF_HTTP_SERVER_PORT
 import io.github.asutorufa.yuhaiin.util.Constants.PREF_IPV6_PROXY
+import io.github.asutorufa.yuhaiin.util.Constants.PREF_RULE_BLOCK
+import io.github.asutorufa.yuhaiin.util.Constants.PREF_RULE_DIRECT
+import io.github.asutorufa.yuhaiin.util.Constants.PREF_RULE_PROXY
 import io.github.asutorufa.yuhaiin.util.Constants.PREF_SAVE_LOGCAT
 import io.github.asutorufa.yuhaiin.util.Constants.PREF_SOCKS5_SERVER_PORT
 import io.github.asutorufa.yuhaiin.util.Constants.PREF_YUHAIIN_PORT
@@ -116,6 +119,26 @@ class Profile internal constructor(private val mPref: SharedPreferences, val nam
             mPref.edit().putBoolean(key(PREF_ALLOW_LAN), allow).apply()
         }
 
+    var ruleBlock: String
+        get() = mPref.getString(key(PREF_RULE_BLOCK), "") ?: ""
+        set(rule) {
+            mPref.edit().putString(key(PREF_RULE_BLOCK), rule).apply()
+        }
+
+    var ruleProxy: String
+        get() = mPref.getString(key(PREF_RULE_PROXY), "*.google.com\nwww.twitter.com\n")
+            ?: "*.google.com\nwww.twitter.com\n"
+        set(rule) {
+            mPref.edit().putString(key(PREF_RULE_PROXY), rule).apply()
+        }
+
+    var ruleDirect: String
+        get() = mPref.getString(key(PREF_RULE_DIRECT), "*.baidu.com\n192.168.1.1/32\n")
+            ?: "*.baidu.com\n192.168.1.1/32\n"
+        set(rule) {
+            mPref.edit().putString(key(PREF_RULE_DIRECT), rule).apply()
+        }
+
     fun delete() {
         mPref.edit()
             .remove(key(PREF_AUTH_USERPW))
@@ -134,6 +157,9 @@ class Profile internal constructor(private val mPref: SharedPreferences, val nam
             .remove(key(PREF_YUHAIIN_PORT))
             .remove(key(PREF_SAVE_LOGCAT))
             .remove(key(PREF_ALLOW_LAN))
+            .remove(key(PREF_RULE_BLOCK))
+            .remove(key(PREF_RULE_PROXY))
+            .remove(key(PREF_RULE_DIRECT))
             .apply()
     }
 

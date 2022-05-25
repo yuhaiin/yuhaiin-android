@@ -19,6 +19,13 @@
                 android:summary="@string/yuhaiin_host_summary"
                 android:singleLine="true"/>
 
+        <Preference
+            android:title="Open Yuhaiin Page"
+            android:key="@string/open_yuhaiin_page"
+            android:singleLine="true"
+            android:icon="@drawable/open_in_browser"
+            />
+
         <EditTextPreference
                 android:icon="@drawable/http"
                 android:key="http_server_port"
@@ -116,29 +123,46 @@
                 android:dependency="adv_per_app"/>
 
         <MultiSelectListPreference
-                android:key="adv_app_list"
-                android:icon="@drawable/apps"
-                android:title="@string/adv_app_list"
-                android:summary="@string/adv_app_list_sum"
-                android:dependency="adv_per_app"/>
+            android:key="adv_app_list"
+            android:icon="@drawable/apps"
+            android:title="@string/adv_app_list"
+            android:summary="@string/adv_app_list_sum"
+            android:dependency="adv_per_app" />
 
     </PreferenceCategory>
 
-    <PreferenceCategory
-            android:title="@string/debug">
+    <PreferenceCategory android:title="Rule">
+        <EditTextPreference
+            android:key="@string/rule_direct"
+            android:title="@string/rule_direct"
+            android:icon="@drawable/unblock_flipped"
+            android:singleLine="false" />
+        <EditTextPreference
+            android:key="@string/rule_proxy"
+            android:title="@string/rule_proxy"
+            android:icon="@drawable/vpn_key"
+            android:singleLine="false" />
+        <EditTextPreference
+            android:key="@string/rule_block"
+            android:title="@string/rule_block"
+            android:icon="@drawable/block"
+            android:singleLine="false" />
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="@string/debug">
 
         <SwitchPreference
-                android:icon="@drawable/save"
-                android:key="@string/save_logcat"
-                android:title="@string/save_logcat_name"
-                android:summary="@string/save_logcat_summary"/>
+            android:icon="@drawable/save"
+            android:key="@string/save_logcat"
+            android:title="@string/save_logcat_name"
+            android:summary="@string/save_logcat_summary" />
 
         <Preference
-                android:icon="@drawable/adb"
-                android:key="@string/logcat"
-                android:title="@string/logcat"
-                android:singleLine="true"/>
-
+            android:icon="@drawable/adb"
+            android:key="@string/logcat"
+            android:title="@string/logcat"
+            android:singleLine="true" />
 
     </PreferenceCategory>
+
 </androidx.preference.PreferenceScreen>

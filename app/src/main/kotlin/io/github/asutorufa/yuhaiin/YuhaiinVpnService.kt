@@ -10,7 +10,6 @@ import android.os.Build
 import android.os.IBinder
 import android.os.ParcelFileDescriptor
 import android.util.Log
-import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import io.github.asutorufa.yuhaiin.BuildConfig.DEBUG
@@ -19,6 +18,7 @@ import io.github.asutorufa.yuhaiin.util.Constants.INTENT_CONNECTED
 import io.github.asutorufa.yuhaiin.util.Constants.INTENT_CONNECTING
 import io.github.asutorufa.yuhaiin.util.Constants.INTENT_DISCONNECTED
 import io.github.asutorufa.yuhaiin.util.Constants.INTENT_DISCONNECTING
+import io.github.asutorufa.yuhaiin.util.Constants.INTENT_ERROR
 import io.github.asutorufa.yuhaiin.util.Constants.PREF_ADV_APP_BYPASS
 import io.github.asutorufa.yuhaiin.util.Constants.PREF_ADV_APP_LIST
 import io.github.asutorufa.yuhaiin.util.Constants.PREF_ADV_DNS_PORT
@@ -30,12 +30,16 @@ import io.github.asutorufa.yuhaiin.util.Constants.PREF_AUTH_PASSWORD
 import io.github.asutorufa.yuhaiin.util.Constants.PREF_AUTH_USERNAME
 import io.github.asutorufa.yuhaiin.util.Constants.PREF_HTTP_SERVER_PORT
 import io.github.asutorufa.yuhaiin.util.Constants.PREF_IPV6_PROXY
+import io.github.asutorufa.yuhaiin.util.Constants.PREF_RULE_BLOCK
+import io.github.asutorufa.yuhaiin.util.Constants.PREF_RULE_DIRECT
+import io.github.asutorufa.yuhaiin.util.Constants.PREF_RULE_PROXY
 import io.github.asutorufa.yuhaiin.util.Constants.PREF_SAVE_LOGCAT
 import io.github.asutorufa.yuhaiin.util.Constants.PREF_SOCKS5_SERVER_PORT
 import io.github.asutorufa.yuhaiin.util.Constants.PREF_YUHAIIN_PORT
 import io.github.asutorufa.yuhaiin.util.Constants.ROUTE_ALL
 import io.github.asutorufa.yuhaiin.util.Routes
 import io.github.asutorufa.yuhaiin.util.Utility
+import yuhaiin.App
 import java.io.File
 
 
@@ -52,7 +56,7 @@ class YuhaiinVpnService : VpnService() {
 
     private var mg: ConnectivityManager? = null
     private var mInterface: ParcelFileDescriptor? = null
-    private var yuhaiin: Thread? = null
+    private var yuhaiin: App? = null
     private var tun2socks: Process? = null
 
     private val mBinder: IBinder = object : IVpnService.Stub() {
@@ -101,8 +105,15 @@ class YuhaiinVpnService : VpnService() {
         applicationContext.sendBroadcast(Intent(INTENT_DISCONNECTING))
         stopForeground(true)
 
-        yuhaiin?.interrupt()
-        tun2socks?.destroy()
+        yuhaiin?.let {
+            it.stop()
+            yuhaiin = null
+        }
+
+        tun2socks?.let {
+            it.destroy()
+            tun2socks = null
+        }
 
         stopSelf()
 
@@ -220,10 +231,18 @@ class YuhaiinVpnService : VpnService() {
                 intent.getIntExtra(PREF_ADV_DNS_PORT, 5353),
                 intent.getBooleanExtra(PREF_IPV6_PROXY, false),
                 intent.getBooleanExtra(PREF_SAVE_LOGCAT, false),
-                intent.getBooleanExtra(PREF_ALLOW_LAN, false)
+                intent.getBooleanExtra(PREF_ALLOW_LAN, false),
+
+                intent.getStringExtra(PREF_RULE_BLOCK) ?: "",
+                intent.getStringExtra(PREF_RULE_PROXY) ?: "",
+                intent.getStringExtra(PREF_RULE_DIRECT) ?: "",
             )
         } catch (e: Exception) {
             e.printStackTrace()
+            applicationContext.sendBroadcast(
+                Intent(INTENT_ERROR).also {
+                    it.putExtra("message", e.toString())
+                })
             stopMe()
         }
 
@@ -312,7 +331,11 @@ class YuhaiinVpnService : VpnService() {
         dnsPort: Int,
         ipv6: Boolean,
         savelog: Boolean,
-        allowLan: Boolean
+        allowLan: Boolean,
+
+        block: String,
+        proxy: String,
+        direct: String
     ) {
         var address = "127.0.0.1"
         if (allowLan) address = "0.0.0.0"
@@ -322,18 +345,24 @@ class YuhaiinVpnService : VpnService() {
                     " fakednsCidr: $fakeDnsCidr, dnsPort: $dnsPort, saveLog: $savelog, allowLan: $allowLan"
         )
         if (yuhaiinPort > 0) {
-            yuhaiin = Yuhaiin(
-                "${address}:${yuhaiinPort}",
-                getExternalFilesDir("yuhaiin")!!.absolutePath,
-                "${address}:${dnsPort}",
-                "${address}:${socks5port}",
-                "${address}:${httpport}",
-                fakeDnsCidr,
-                fakeDnsCidr.isNotEmpty(),
-                savelog
-            ) { stopMe() }
-            yuhaiin!!.start()
-            Toast.makeText(this, "start yuhaiin success, listen at: $yuhaiinPort.", Toast.LENGTH_LONG).show()
+            yuhaiin = App()
+            try {
+                yuhaiin!!.start(
+                    "${address}:${yuhaiinPort}",
+                    getExternalFilesDir("yuhaiin")!!.absolutePath,
+                    "${address}:${dnsPort}",
+                    "${address}:${socks5port}",
+                    "${address}:${httpport}",
+                    fakeDnsCidr.isNotEmpty(),
+                    fakeDnsCidr,
+                    savelog,
+                    block,
+                    proxy,
+                    direct
+                )
+            } catch (e: Exception) {
+                throw e
+            }
         }
 
         val command = buildString {
@@ -359,9 +388,7 @@ class YuhaiinVpnService : VpnService() {
         if (DEBUG) {
             Log.d(TAG, (command))
         }
-
         tun2socks = Utility.exec(command) { stopMe() }
-        Toast.makeText(this, "start tun2socks success.", Toast.LENGTH_LONG).show()
 
         // Try to send the Fd through socket.
         if (DEBUG) Log.d(TAG, "send sock_path:" + File(applicationInfo.dataDir + "/sock_path").absolutePath)

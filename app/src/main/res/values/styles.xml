@@ -13,5 +13,6 @@
         <item name="android:statusBarColor">?attr/colorSurfaceVariant</item>
         <item name="toolbarStyle">@style/Widget.Material3.Toolbar</item>
         <item name="switchStyle">@style/Widget.Material3.CompoundButton.Switch</item>
+        <item name="editTextStyle">@style/Widget.Material3.TextInputEditText.OutlinedBox.Dense</item>
     </style>
 </resources>

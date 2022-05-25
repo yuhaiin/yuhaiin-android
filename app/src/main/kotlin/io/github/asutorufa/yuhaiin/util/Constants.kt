@@ -24,10 +24,14 @@ object Constants {
     const val PREF_YUHAIIN_PORT = "yuhaiin_port"
     const val PREF_ALLOW_LAN = "allow_lan"
     const val PREF_SAVE_LOGCAT = "save_logcat"
+    const val PREF_RULE_BLOCK = "rule_block"
+    const val PREF_RULE_PROXY = "rule_proxy"
+    const val PREF_RULE_DIRECT = "rule_direct"
 
     private const val INTENT_PREFIX = "SOCKS"
     const val INTENT_DISCONNECTED = INTENT_PREFIX + "DISCONNECTED"
     const val INTENT_CONNECTED = INTENT_PREFIX + "CONNECTED"
     const val INTENT_CONNECTING = INTENT_PREFIX + "CONNECTING"
     const val INTENT_DISCONNECTING = INTENT_PREFIX + "DISCONNECTING"
+    const val INTENT_ERROR = INTENT_PREFIX + "ERROR"
 }

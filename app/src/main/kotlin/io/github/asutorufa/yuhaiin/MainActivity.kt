@@ -17,7 +17,6 @@ class MainActivity : AppCompatActivity() {
 
         setContentView(R.layout.main_activity)
 
-
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             window.setDecorFitsSystemWindows(true)
         }
@@ -40,9 +39,12 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        val toolbar = findViewById<Toolbar>(R.id.toolbar)
-        setSupportActionBar(toolbar)
-        toolbar.overflowIcon = ContextCompat.getDrawable(this, R.drawable.sort)
+
+        findViewById<Toolbar>(R.id.toolbar).also {
+            setSupportActionBar(it)
+        }.apply {
+            overflowIcon = ContextCompat.getDrawable(this@MainActivity, R.drawable.sort)
+        }
 
         ProfileFragment().let {
             supportFragmentManager.beginTransaction().replace(R.id.settings, it)

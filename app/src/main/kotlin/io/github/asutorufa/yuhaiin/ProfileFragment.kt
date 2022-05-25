@@ -6,6 +6,7 @@ import android.app.Activity
 import android.content.*
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.net.VpnService
 import android.os.Bundle
 import android.os.IBinder
@@ -20,6 +21,7 @@ import androidx.appcompat.view.menu.MenuBuilder
 import androidx.preference.*
 import com.github.logviewer.LogcatActivity
 import com.google.android.material.floatingactionbutton.FloatingActionButton
+import com.google.android.material.snackbar.Snackbar
 import io.github.asutorufa.yuhaiin.BuildConfig.DEBUG
 import io.github.asutorufa.yuhaiin.util.Constants
 import io.github.asutorufa.yuhaiin.util.Profile
@@ -56,6 +58,11 @@ class ProfileFragment : PreferenceFragmentCompat(), Preference.OnPreferenceChang
 
                     mFab.isEnabled = true
                     mFab.setImageResource(R.drawable.play_arrow)
+                    Snackbar.make(
+                        requireView(),
+                        "yuhaiin disconnected",
+                        Snackbar.LENGTH_SHORT
+                    ).setAnchorView(mFab).show()
                 }
                 Constants.INTENT_CONNECTED -> {
                     if (DEBUG) Log.d("yuhaiin", "onReceive: CONNECTED")
@@ -63,6 +70,11 @@ class ProfileFragment : PreferenceFragmentCompat(), Preference.OnPreferenceChang
                     mFab.isEnabled = true
                     mFab.setImageResource(R.drawable.stop)
 
+                    Snackbar.make(
+                        requireView(),
+                        "yuhaiin connected, listen at: ${mProfile.yuhaiinPort}",
+                        Snackbar.LENGTH_SHORT
+                    ).setAnchorView(mFab).show()
                     context.bindService(
                         Intent(context, YuhaiinVpnService::class.java),
                         mConnection,
@@ -76,6 +88,17 @@ class ProfileFragment : PreferenceFragmentCompat(), Preference.OnPreferenceChang
                 Constants.INTENT_DISCONNECTING -> {
                     if (DEBUG) Log.d("yuhaiin", "onReceive: DISCONNECTING")
                     mFab.isEnabled = false
+                }
+
+                Constants.INTENT_ERROR -> {
+                    if (DEBUG) Log.d("yuhaiin", "onReceive: ERROR")
+                    intent.getStringExtra("message")?.let {
+                        Snackbar.make(
+                            requireView(),
+                            it,
+                            Snackbar.LENGTH_SHORT
+                        ).show()
+                    }
                 }
             }
         }
@@ -95,14 +118,21 @@ class ProfileFragment : PreferenceFragmentCompat(), Preference.OnPreferenceChang
     private lateinit var mPrefIPv6: SwitchPreference
     private lateinit var mPrefAllowLan: SwitchPreference
     private lateinit var mPrefAuto: SwitchPreference
-    private lateinit var mPrefYuhaiinHost: EditTextPreference
+    private lateinit var mPrefYuhaiinPort: EditTextPreference
     private lateinit var mPrefSaveLogcat: SwitchPreference
+    private lateinit var mPrefRuleProxy: EditTextPreference
+    private lateinit var mPrefRuleDirect: EditTextPreference
+    private lateinit var mPrefRuleBlock: EditTextPreference
 
 
     override fun onStart() {
         super.onStart()
         if (mBinder == null)
-            context?.bindService(Intent(context, YuhaiinVpnService::class.java), mConnection, Context.BIND_AUTO_CREATE)
+            context?.bindService(
+                Intent(context, YuhaiinVpnService::class.java),
+                mConnection,
+                Context.BIND_AUTO_CREATE
+            )
 
 
         val f = IntentFilter().apply {
@@ -209,7 +239,6 @@ class ProfileFragment : PreferenceFragmentCompat(), Preference.OnPreferenceChang
             }
             mPrefRoutes -> {
                 mProfile.route = newValue.toString()
-                resetListN(mPrefRoutes, newValue)
                 true
             }
             mPrefFakeDnsCidr -> {
@@ -244,9 +273,9 @@ class ProfileFragment : PreferenceFragmentCompat(), Preference.OnPreferenceChang
                 mProfile.autoConnect = newValue as Boolean
                 true
             }
-            mPrefYuhaiinHost -> {
+            mPrefYuhaiinPort -> {
                 mProfile.yuhaiinPort = newValue.toString().toInt()
-                resetTextN(mPrefYuhaiinHost, newValue)
+                resetTextN(mPrefYuhaiinPort, newValue)
                 true
             }
             mPrefSaveLogcat -> {
@@ -257,6 +286,21 @@ class ProfileFragment : PreferenceFragmentCompat(), Preference.OnPreferenceChang
                 mProfile.allowLan = newValue as Boolean
                 true
             }
+            mPrefRuleProxy -> {
+                mProfile.ruleProxy = newValue.toString().trim()
+                mPrefRuleProxy.text = newValue.toString().trim()
+                true
+            }
+            mPrefRuleDirect -> {
+                mProfile.ruleDirect = newValue.toString().trim()
+                mPrefRuleDirect.text = newValue.toString().trim()
+                true
+            }
+            mPrefRuleBlock -> {
+                mProfile.ruleBlock = newValue.toString().trim()
+                mPrefRuleBlock.text = newValue.toString().trim()
+                true
+            }
             else -> {
                 false
             }
@@ -265,16 +309,20 @@ class ProfileFragment : PreferenceFragmentCompat(), Preference.OnPreferenceChang
 
     private fun initPreferences() {
         mPrefProfile = findPreferenceAndSetListener(Constants.PREF_PROFILE)!!
-        mPrefYuhaiinHost = findPreferenceAndSetListener<EditTextPreference>(Constants.PREF_YUHAIIN_PORT)!!.also {
-            it.setOnBindEditTextListener { editText: EditText ->
-                editText.inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
+        mPrefYuhaiinPort =
+            findPreferenceAndSetListener<EditTextPreference>(Constants.PREF_YUHAIIN_PORT)!!.also {
+                it.setOnBindEditTextListener { editText: EditText ->
+                    editText.inputType =
+                        InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
+                }
             }
-        }
-        mPrefHttpServerPort = findPreferenceAndSetListener<EditTextPreference>(Constants.PREF_HTTP_SERVER_PORT)!!.also {
-            it.setOnBindEditTextListener { editText: EditText ->
-                editText.inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
+        mPrefHttpServerPort =
+            findPreferenceAndSetListener<EditTextPreference>(Constants.PREF_HTTP_SERVER_PORT)!!.also {
+                it.setOnBindEditTextListener { editText: EditText ->
+                    editText.inputType =
+                        InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
+                }
             }
-        }
         mPrefSocks5ServerPort = findPreferenceAndSetListener(Constants.PREF_SOCKS5_SERVER_PORT)!!
         mPrefSocks5ServerPort.setOnBindEditTextListener { editText: EditText ->
             editText.inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
@@ -302,6 +350,13 @@ class ProfileFragment : PreferenceFragmentCompat(), Preference.OnPreferenceChang
         mPrefAuto = findPreferenceAndSetListener(Constants.PREF_ADV_AUTO_CONNECT)!!
         mPrefAllowLan = findPreferenceAndSetListener(Constants.PREF_ALLOW_LAN)!!
 
+        mPrefRuleProxy =
+            findPreferenceAndSetListener<EditTextPreference>(ctx.resources.getString(R.string.rule_proxy))!!
+        mPrefRuleDirect =
+            findPreferenceAndSetListener(ctx.resources.getString(R.string.rule_direct))!!
+        mPrefRuleBlock =
+            findPreferenceAndSetListener(ctx.resources.getString(R.string.rule_block))!!
+
         mPrefSaveLogcat = findPreferenceAndSetListener(Constants.PREF_SAVE_LOGCAT)!!
 
         findPreference<Preference>(resources.getString(R.string.logcat))?.apply {
@@ -312,6 +367,24 @@ class ProfileFragment : PreferenceFragmentCompat(), Preference.OnPreferenceChang
                     Pattern.compile(".*Davey! duration=.*")
                 )
                 LogcatActivity.start(context, logcatExcludeRules)
+                true
+            }
+        }
+
+        findPreference<Preference>(resources.getString(R.string.open_yuhaiin_page))?.apply {
+            setOnPreferenceClickListener {
+                if (mBinder == null || mBinder?.isRunning == false) {
+                    Snackbar.make(
+                        requireView(),
+                        "yuhaiin is not running",
+                        Snackbar.LENGTH_SHORT
+                    ).setAnchorView(mFab).show()
+                    return@setOnPreferenceClickListener true
+                }
+
+                val intent =
+                    Intent(Intent.ACTION_VIEW).setData(Uri.parse("http://127.0.0.1:${mProfile.yuhaiinPort}"))
+                startActivity(intent)
                 true
             }
         }
@@ -347,9 +420,13 @@ class ProfileFragment : PreferenceFragmentCompat(), Preference.OnPreferenceChang
         mPrefSocks5ServerPort.text = mProfile.socks5ServerPort.toString()
         mPrefFakeDnsCidr.text = mProfile.fakeDnsCidr
         mPrefDnsPort.text = mProfile.dnsPort.toString()
-        mPrefYuhaiinHost.text = mProfile.yuhaiinPort.toString()
+        mPrefYuhaiinPort.text = mProfile.yuhaiinPort.toString()
 
         mPrefSaveLogcat.isChecked = mProfile.saveLogcat
+
+        mPrefRuleBlock.text = mProfile.ruleBlock
+        mPrefRuleDirect.text = mProfile.ruleDirect
+        mPrefRuleProxy.text = mProfile.ruleProxy
 
         resetText(
             mPrefHttpServerPort,
@@ -358,7 +435,7 @@ class ProfileFragment : PreferenceFragmentCompat(), Preference.OnPreferenceChang
             mPrefPassword,
             mPrefFakeDnsCidr,
             mPrefDnsPort,
-            mPrefYuhaiinHost
+            mPrefYuhaiinPort
         )
     }
 
@@ -423,10 +500,6 @@ class ProfileFragment : PreferenceFragmentCompat(), Preference.OnPreferenceChang
 
     private fun resetList(vararg pref: ListPreference) {
         for (p in pref) p.summary = p.entry
-    }
-
-    private fun resetListN(pref: ListPreference, newValue: Any) {
-        pref.summary = newValue.toString()
     }
 
     private fun resetText(vararg pref: EditTextPreference) {
