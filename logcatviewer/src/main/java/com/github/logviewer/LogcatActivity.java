@@ -95,12 +95,7 @@ public class LogcatActivity extends AppCompatActivity {
         mBinding.list.setTranscriptMode(ListView.TRANSCRIPT_MODE_NORMAL);
         mBinding.list.setStackFromBottom(true);
         mBinding.list.setAdapter(mAdapter);
-        mBinding.list.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                LogcatDetailActivity.launch(LogcatActivity.this, mAdapter.getItem(position));
-            }
-        });
+        mBinding.list.setOnItemClickListener((parent, view, position, id) -> LogcatDetailActivity.launch(LogcatActivity.this, mAdapter.getItem(position)));
     }
 
     @Override
