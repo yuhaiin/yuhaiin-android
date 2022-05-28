@@ -18,6 +18,7 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.view.menu.MenuBuilder
+import androidx.browser.customtabs.CustomTabsIntent
 import androidx.preference.*
 import com.github.logviewer.LogcatActivity
 import com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -31,8 +32,7 @@ import java.util.*
 import java.util.regex.Pattern
 
 class ProfileFragment : PreferenceFragmentCompat(), Preference.OnPreferenceChangeListener {
-    private val ctx by lazy { requireActivity().applicationContext }
-    private val mManager by lazy { ProfileManager(ctx.applicationContext) }
+    private val mManager by lazy { ProfileManager(requireActivity().applicationContext) }
     private lateinit var mProfile: Profile
     private lateinit var mFab: FloatingActionButton
     private var mBinder: IVpnService? = null
@@ -141,7 +141,7 @@ class ProfileFragment : PreferenceFragmentCompat(), Preference.OnPreferenceChang
             addAction(Constants.INTENT_CONNECTING)
             addAction(Constants.INTENT_DISCONNECTING)
         }
-        ctx.registerReceiver(bReceiver, f)
+        requireContext().registerReceiver(bReceiver, f)
     }
 
     override fun onCreate(saveInstanceState: Bundle?) {
@@ -170,7 +170,7 @@ class ProfileFragment : PreferenceFragmentCompat(), Preference.OnPreferenceChang
     override fun onDestroy() {
         super.onDestroy()
         try {
-            ctx.unregisterReceiver(bReceiver)
+            requireContext().unregisterReceiver(bReceiver)
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -352,11 +352,11 @@ class ProfileFragment : PreferenceFragmentCompat(), Preference.OnPreferenceChang
         mPrefAllowLan = findPreferenceAndSetListener(Constants.PREF_ALLOW_LAN)!!
 
         mPrefRuleProxy =
-            findPreferenceAndSetListener<EditTextPreference>(ctx.resources.getString(R.string.rule_proxy))!!
+            findPreferenceAndSetListener<EditTextPreference>(requireContext().resources.getString(R.string.rule_proxy))!!
         mPrefRuleDirect =
-            findPreferenceAndSetListener(ctx.resources.getString(R.string.rule_direct))!!
+            findPreferenceAndSetListener(requireContext().resources.getString(R.string.rule_direct))!!
         mPrefRuleBlock =
-            findPreferenceAndSetListener(ctx.resources.getString(R.string.rule_block))!!
+            findPreferenceAndSetListener(requireContext().resources.getString(R.string.rule_block))!!
 
         mPrefSaveLogcat = findPreferenceAndSetListener(Constants.PREF_SAVE_LOGCAT)!!
 
@@ -383,13 +383,15 @@ class ProfileFragment : PreferenceFragmentCompat(), Preference.OnPreferenceChang
                     return@setOnPreferenceClickListener true
                 }
 
-                val intent =
-                    Intent(Intent.ACTION_VIEW).setData(Uri.parse("http://127.0.0.1:${mProfile.yuhaiinPort}"))
-                startActivity(intent)
+                CustomTabsIntent.Builder().build().launchUrl(
+                    requireContext(),
+                    Uri.parse("http://127.0.0.1:${mProfile.yuhaiinPort}")
+                )
                 true
             }
         }
     }
+
 
     private fun <T : Preference?> findPreferenceAndSetListener(key: CharSequence): T? {
         return findPreference<T>(key)?.apply {
@@ -479,7 +481,7 @@ class ProfileFragment : PreferenceFragmentCompat(), Preference.OnPreferenceChang
 
     private val packages: Map<String, String>
         get() {
-            val packageManager = ctx.packageManager
+            val packageManager = requireContext().packageManager
             val packages = packageManager.getInstalledPackages(PackageManager.GET_PERMISSIONS)
             val apps = TreeMap<String, String>()
 

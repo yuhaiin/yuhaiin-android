@@ -16,7 +16,7 @@ public class ExportLogFileTask extends AsyncTask<LogItem, Integer, File> {
 
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat(
             "yyyy-MM-dd HH:mm:ss.SSS", Locale.getDefault());
-    private File mCacheDir;
+    private final File mCacheDir;
 
     ExportLogFileTask(File cacheDir) {
         mCacheDir = cacheDir;
