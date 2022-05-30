@@ -383,7 +383,19 @@ class ProfileFragment : PreferenceFragmentCompat(), Preference.OnPreferenceChang
                     return@setOnPreferenceClickListener true
                 }
 
-                CustomTabsIntent.Builder().build().launchUrl(
+                CustomTabsIntent.Builder().apply {
+                    setColorScheme(CustomTabsIntent.COLOR_SCHEME_SYSTEM)
+                    setStartAnimations(
+                        requireContext(),
+                        R.anim.slide_in_right,
+                        R.anim.slide_out_left
+                    )
+                    setExitAnimations(
+                        requireContext(),
+                        android.R.anim.slide_in_left,
+                        android.R.anim.slide_out_right
+                    )
+                }.build().launchUrl(
                     requireContext(),
                     Uri.parse("http://127.0.0.1:${mProfile.yuhaiinPort}")
                 )
