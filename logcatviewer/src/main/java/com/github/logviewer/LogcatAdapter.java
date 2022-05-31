@@ -31,7 +31,7 @@ public class LogcatAdapter extends BaseAdapter implements Filterable {
         synchronized (LogcatAdapter.class) {
             mData.add(item);
             if (mFilter != null && mFilteredData != null) {
-                if (!item.isFiltered(mFilter)) {
+                if (item.isFiltered(mFilter)) {
                     mFilteredData.add(item);
                 }
             }
@@ -102,7 +102,7 @@ public class LogcatAdapter extends BaseAdapter implements Filterable {
 
                     ArrayList<LogItem> filtered = new ArrayList<>();
                     for (LogItem item : mData) {
-                        if (!item.isFiltered(mFilter)) {
+                        if (item.isFiltered(mFilter)) {
                             filtered.add(item);
                         }
                     }

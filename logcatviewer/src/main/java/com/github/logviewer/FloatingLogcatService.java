@@ -60,9 +60,7 @@ public class FloatingLogcatService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
-        mThemedContext = new ContextThemeWrapper(
-                this, com.google.android.material.R.style.Theme_MaterialComponents_DayNight
-        );
+        mThemedContext = new ContextThemeWrapper(this, R.style.AppTheme);
     }
 
     @Override
@@ -259,6 +257,7 @@ public class FloatingLogcatService extends Service {
                     e.printStackTrace();
                     stopReadLogcat();
                 }
+
                 if (reader != null) {
                     try {
                         reader.close();

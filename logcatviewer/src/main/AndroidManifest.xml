@@ -11,12 +11,12 @@
     <application>
         <activity
             android:name="com.github.logviewer.LogcatActivity"
-            android:theme="@style/Theme.MaterialComponents.DayNight.NoActionBar" />
+            android:theme="@style/AppTheme" />
 
         <activity
             android:name="com.github.logviewer.LogcatDetailActivity"
             android:label="Log detail"
-            android:theme="@style/Theme.MaterialComponents.DayNight"
+            android:theme="@style/AppTheme"
             >
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"

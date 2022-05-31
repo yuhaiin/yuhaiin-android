@@ -71,8 +71,11 @@ public class LogItem implements Parcelable {
         String prefixText = matcher.group(5);
         String contentText = matcher.group(6);
 
+        assert timeText != null;
         time = new SimpleDateFormat("MM-dd hh:mm:ss.SSS", Locale.getDefault()).parse(timeText);
+        assert pidText != null;
         processId = Integer.parseInt(pidText);
+        assert tidText != null;
         threadId = Integer.parseInt(tidText);
         priority = tagText;
         tag = prefixText;
@@ -81,12 +84,12 @@ public class LogItem implements Parcelable {
     }
 
     @ColorRes
-    int getColorRes() {
+    Integer getColorRes() {
         return LOGCAT_COLORS.get(priority);
     }
 
     boolean isFiltered(String filter) {
-        return SUPPORTED_FILTERS.indexOf(priority) < SUPPORTED_FILTERS.indexOf(filter);
+        return SUPPORTED_FILTERS.indexOf(priority) >= SUPPORTED_FILTERS.indexOf(filter);
     }
 
     @Override

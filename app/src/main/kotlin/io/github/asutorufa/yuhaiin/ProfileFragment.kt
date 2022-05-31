@@ -112,14 +112,14 @@ class ProfileFragment : PreferenceFragmentCompat(), Preference.OnPreferenceChang
     private lateinit var mPrefFakeDnsCidr: EditTextPreference
     private lateinit var mPrefDnsPort: EditTextPreference
     private lateinit var mPrefAppList: MultiSelectListPreference
-    private lateinit var mPrefUserpw: SwitchPreference
-    private lateinit var mPrefPerApp: SwitchPreference
-    private lateinit var mPrefAppBypass: SwitchPreference
-    private lateinit var mPrefIPv6: SwitchPreference
-    private lateinit var mPrefAllowLan: SwitchPreference
-    private lateinit var mPrefAuto: SwitchPreference
+    private lateinit var mPrefUserpw: SwitchPreferenceCompat
+    private lateinit var mPrefPerApp: SwitchPreferenceCompat
+    private lateinit var mPrefAppBypass: SwitchPreferenceCompat
+    private lateinit var mPrefIPv6: SwitchPreferenceCompat
+    private lateinit var mPrefAllowLan: SwitchPreferenceCompat
+    private lateinit var mPrefAuto: SwitchPreferenceCompat
     private lateinit var mPrefYuhaiinPort: EditTextPreference
-    private lateinit var mPrefSaveLogcat: SwitchPreference
+    private lateinit var mPrefSaveLogcat: SwitchPreferenceCompat
     private lateinit var mPrefRuleProxy: EditTextPreference
     private lateinit var mPrefRuleDirect: EditTextPreference
     private lateinit var mPrefRuleBlock: EditTextPreference
@@ -329,7 +329,8 @@ class ProfileFragment : PreferenceFragmentCompat(), Preference.OnPreferenceChang
             editText.inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
         }
 
-        mPrefUserpw = findPreferenceAndSetListener<SwitchPreference>(Constants.PREF_AUTH_USERPW)!!
+        mPrefUserpw =
+            findPreferenceAndSetListener<SwitchPreferenceCompat>(Constants.PREF_AUTH_USERPW)!!
         mPrefUsername = findPreferenceAndSetListener(Constants.PREF_AUTH_USERNAME)!!
         mPrefPassword = findPreferenceAndSetListener(Constants.PREF_AUTH_PASSWORD)!!
 
