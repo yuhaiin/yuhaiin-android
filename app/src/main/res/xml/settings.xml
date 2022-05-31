@@ -41,13 +41,13 @@
                 android:digits="0123456789"
                 android:singleLine="true"/>
 
-        <SwitchPreference
+        <SwitchPreferenceCompat
                 android:icon="@drawable/lan"
                 android:key="allow_lan"
                 android:title="@string/allow_lan"
                 android:layout_height="match_parent"/>
 
-        <SwitchPreference
+        <SwitchPreferenceCompat
                 android:icon="@drawable/hub"
                 android:key="ipv6_proxy"
                 android:title="@string/ipv6_proxy"
@@ -59,7 +59,7 @@
     <PreferenceCategory
             android:title="@string/authentication">
 
-        <SwitchPreference
+        <SwitchPreferenceCompat
                 android:icon="@drawable/authenticator"
                 android:key="auth_userpw"
                 android:title="@string/auth_userpw"
@@ -105,17 +105,17 @@
                 android:inputType="number"
                 android:singleLine="true"/>
 
-        <SwitchPreference
+        <SwitchPreferenceCompat
                 android:icon="@drawable/auto_mode"
                 android:key="adv_auto_connect"
                 android:title="@string/adv_auto_connect"/>
 
-        <SwitchPreference
+        <SwitchPreferenceCompat
                 android:key="adv_per_app"
                 android:icon="@drawable/settop_component"
                 android:title="@string/adv_per_app"/>
 
-        <SwitchPreference
+        <SwitchPreferenceCompat
                 android:key="adv_app_bypass"
                 android:icon="@drawable/alt_route"
                 android:title="@string/adv_app_bypass"
@@ -151,7 +151,7 @@
 
     <PreferenceCategory android:title="@string/debug">
 
-        <SwitchPreference
+        <SwitchPreferenceCompat
             android:icon="@drawable/save"
             android:key="@string/save_logcat"
             android:title="@string/save_logcat_name"

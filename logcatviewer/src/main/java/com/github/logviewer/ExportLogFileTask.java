@@ -1,7 +1,11 @@
 package com.github.logviewer;
 
 
-import android.os.AsyncTask;
+import android.content.Context;
+import android.content.Intent;
+
+import com.github.logviewer.databinding.LogcatViewerActivityLogcatBinding;
+import com.google.android.material.snackbar.Snackbar;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -12,32 +16,32 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
-public class ExportLogFileTask extends AsyncTask<LogItem, Integer, File> {
+public class ExportLogFileTask implements Runnable {
+    private final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.getDefault());
 
-    private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat(
-            "yyyy-MM-dd HH:mm:ss.SSS", Locale.getDefault());
-    private final File mCacheDir;
+    private final LogItem[] mLogs;
+    private final LogcatViewerActivityLogcatBinding mBinding;
+    private final Context mContext;
 
-    ExportLogFileTask(File cacheDir) {
-        mCacheDir = cacheDir;
+    ExportLogFileTask(LogItem[] logs, LogcatViewerActivityLogcatBinding binding, Context context) {
+        mLogs = logs;
+        mBinding = binding;
+        mContext = context;
     }
 
-    @Override
-    protected File doInBackground(LogItem[] logs) {
-        if (mCacheDir == null || mCacheDir.isFile() || logs == null || logs.length == 0) {
+    protected File doInBackground() {
+        if (mContext == null || mContext.getExternalCacheDir().isFile() || mLogs == null || mLogs.length == 0) {
             return null;
         }
 
-        File logFile = new File(mCacheDir, DATE_FORMAT.format(new Date()) + ".log");
-        if (logFile.exists()) {
-            if (!logFile.delete()) {
-                return null;
-            }
+        File logFile = new File(mContext.getExternalCacheDir(), DATE_FORMAT.format(new Date()) + ".log");
+        if (logFile.exists() && !logFile.delete()) {
+            return null;
         }
+
         try {
-            BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(
-                    new FileOutputStream(logFile)));
-            for (LogItem log : logs) {
+            BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(logFile)));
+            for (LogItem log : mLogs) {
                 writer.write(log.origin + "\n");
             }
             writer.close();
@@ -46,5 +50,29 @@ public class ExportLogFileTask extends AsyncTask<LogItem, Integer, File> {
             e.printStackTrace();
             return null;
         }
+    }
+
+    void onPostExecute(File file) {
+        if (file == null) {
+            Snackbar.make(mBinding.root, R.string.logcat_viewer_create_log_file_failed, Snackbar.LENGTH_SHORT).show();
+            return;
+        }
+
+        Intent shareIntent = new Intent(Intent.ACTION_SEND)
+                .setType("text/plain")
+                .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                .putExtra(Intent.EXTRA_STREAM, LogcatFileProvider.getUriForFile(mContext, mContext.getPackageName() + ".logcat_fileprovider", file));
+
+        if (mContext.getPackageManager().queryIntentActivities(shareIntent, 0).isEmpty()) {
+            Snackbar.make(mBinding.root, R.string.logcat_viewer_not_support_on_this_device, Snackbar.LENGTH_SHORT).show();
+            return;
+        }
+
+        mContext.startActivity(shareIntent);
+    }
+
+    @Override
+    public void run() {
+        onPostExecute(doInBackground());
     }
 }
