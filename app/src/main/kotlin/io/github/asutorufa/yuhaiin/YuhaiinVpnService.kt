@@ -19,24 +19,6 @@ import io.github.asutorufa.yuhaiin.util.Constants.INTENT_CONNECTING
 import io.github.asutorufa.yuhaiin.util.Constants.INTENT_DISCONNECTED
 import io.github.asutorufa.yuhaiin.util.Constants.INTENT_DISCONNECTING
 import io.github.asutorufa.yuhaiin.util.Constants.INTENT_ERROR
-import io.github.asutorufa.yuhaiin.util.Constants.PREF_ADV_APP_BYPASS
-import io.github.asutorufa.yuhaiin.util.Constants.PREF_ADV_APP_LIST
-import io.github.asutorufa.yuhaiin.util.Constants.PREF_ADV_DNS_PORT
-import io.github.asutorufa.yuhaiin.util.Constants.PREF_ADV_FAKE_DNS_CIDR
-import io.github.asutorufa.yuhaiin.util.Constants.PREF_ADV_PER_APP
-import io.github.asutorufa.yuhaiin.util.Constants.PREF_ADV_ROUTE
-import io.github.asutorufa.yuhaiin.util.Constants.PREF_ALLOW_LAN
-import io.github.asutorufa.yuhaiin.util.Constants.PREF_AUTH_PASSWORD
-import io.github.asutorufa.yuhaiin.util.Constants.PREF_AUTH_USERNAME
-import io.github.asutorufa.yuhaiin.util.Constants.PREF_HTTP_SERVER_PORT
-import io.github.asutorufa.yuhaiin.util.Constants.PREF_IPV6_PROXY
-import io.github.asutorufa.yuhaiin.util.Constants.PREF_RULE_BLOCK
-import io.github.asutorufa.yuhaiin.util.Constants.PREF_RULE_DIRECT
-import io.github.asutorufa.yuhaiin.util.Constants.PREF_RULE_PROXY
-import io.github.asutorufa.yuhaiin.util.Constants.PREF_SAVE_LOGCAT
-import io.github.asutorufa.yuhaiin.util.Constants.PREF_SOCKS5_SERVER_PORT
-import io.github.asutorufa.yuhaiin.util.Constants.PREF_YUHAIIN_PORT
-import io.github.asutorufa.yuhaiin.util.Constants.ROUTE_ALL
 import io.github.asutorufa.yuhaiin.util.Routes
 import io.github.asutorufa.yuhaiin.util.Utility
 import yuhaiin.App
@@ -202,37 +184,42 @@ class YuhaiinVpnService : VpnService() {
                 .build()
         )
 
+
+
+
         try {
+            val db = MainApplication.db.ProfileDao()
+            val mPref = db.getProfileByName(db.getLastProfile() ?: "Default")!!
 
             configure(
-                intent.getStringExtra(Constants.PREF_PROFILE) ?: "default",
-                intent.getStringExtra(PREF_ADV_ROUTE) ?: ROUTE_ALL,
-                intent.getStringExtra(PREF_ADV_FAKE_DNS_CIDR) ?: "10.0.2.1/24",
-                intent.getIntExtra(PREF_HTTP_SERVER_PORT, 8188),
-                intent.getBooleanExtra(PREF_ADV_PER_APP, false),
-                intent.getBooleanExtra(PREF_ADV_APP_BYPASS, false),
-                intent.getStringArrayExtra(PREF_ADV_APP_LIST) ?: Array(0) { "" },
-                intent.getBooleanExtra(PREF_IPV6_PROXY, false)
+                mPref.name,
+                mPref.route,
+                mPref.fakeDnsCidr,
+                mPref.httpServerPort,
+                mPref.isPerApp,
+                mPref.isBypassApp,
+                mPref.appList,
+                mPref.hasIPv6
             )
 
 
             if (DEBUG) Log.d(TAG, "fd: ${mInterface?.fd}")
 
             start(
-                intent.getIntExtra(PREF_YUHAIIN_PORT, 50051),
-                intent.getIntExtra(PREF_HTTP_SERVER_PORT, 8188),
-                intent.getIntExtra(PREF_SOCKS5_SERVER_PORT, 1080),
-                intent.getStringExtra(PREF_AUTH_USERNAME) ?: "",
-                intent.getStringExtra(PREF_AUTH_PASSWORD) ?: "",
-                intent.getStringExtra(PREF_ADV_FAKE_DNS_CIDR)!!,
-                intent.getIntExtra(PREF_ADV_DNS_PORT, 5353),
-                intent.getBooleanExtra(PREF_IPV6_PROXY, false),
-                intent.getBooleanExtra(PREF_SAVE_LOGCAT, false),
-                intent.getBooleanExtra(PREF_ALLOW_LAN, false),
+                mPref.yuhaiinPort,
+                mPref.httpServerPort,
+                mPref.socks5ServerPort,
+                mPref.username,
+                mPref.password,
+                mPref.fakeDnsCidr,
+                mPref.dnsPort,
+                mPref.hasIPv6,
+                mPref.saveLogcat,
+                mPref.allowLan,
 
-                intent.getStringExtra(PREF_RULE_BLOCK) ?: "",
-                intent.getStringExtra(PREF_RULE_PROXY) ?: "",
-                intent.getStringExtra(PREF_RULE_DIRECT) ?: "",
+                mPref.ruleBlock,
+                mPref.ruleProxy,
+                mPref.ruleDirect,
             )
         } catch (e: Exception) {
             e.printStackTrace()
@@ -253,7 +240,7 @@ class YuhaiinVpnService : VpnService() {
         httpserverport: Int,
         perApp: Boolean,
         bypass: Boolean,
-        apps: Array<String>,
+        apps: Set<String>,
         ipv6: Boolean
     ) {
         val b = Builder()
