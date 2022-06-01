@@ -18,21 +18,22 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.view.menu.MenuBuilder
+import androidx.appcompat.widget.AppCompatEditText
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.preference.*
 import com.github.logviewer.LogcatActivity
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.snackbar.Snackbar
 import io.github.asutorufa.yuhaiin.BuildConfig.DEBUG
+import io.github.asutorufa.yuhaiin.database.Profile
+import io.github.asutorufa.yuhaiin.database.lastProfile
 import io.github.asutorufa.yuhaiin.util.Constants
-import io.github.asutorufa.yuhaiin.util.Profile
-import io.github.asutorufa.yuhaiin.util.ProfileManager
 import io.github.asutorufa.yuhaiin.util.Utility
 import java.util.*
 import java.util.regex.Pattern
 
 class ProfileFragment : PreferenceFragmentCompat(), Preference.OnPreferenceChangeListener {
-    private val mManager by lazy { ProfileManager(requireActivity().applicationContext) }
+    private val db = MainApplication.db.ProfileDao()
     private lateinit var mProfile: Profile
     private lateinit var mFab: FloatingActionButton
     private var mBinder: IVpnService? = null
@@ -112,7 +113,7 @@ class ProfileFragment : PreferenceFragmentCompat(), Preference.OnPreferenceChang
     private lateinit var mPrefFakeDnsCidr: EditTextPreference
     private lateinit var mPrefDnsPort: EditTextPreference
     private lateinit var mPrefAppList: MultiSelectListPreference
-    private lateinit var mPrefUserpw: SwitchPreferenceCompat
+    private lateinit var mPrefUserPw: SwitchPreferenceCompat
     private lateinit var mPrefPerApp: SwitchPreferenceCompat
     private lateinit var mPrefAppBypass: SwitchPreferenceCompat
     private lateinit var mPrefIPv6: SwitchPreferenceCompat
@@ -149,6 +150,8 @@ class ProfileFragment : PreferenceFragmentCompat(), Preference.OnPreferenceChang
         addPreferencesFromResource(R.xml.settings)
         setHasOptionsMenu(true)
         initPreferences()
+        mProfile =
+            db.getProfileByName(db.getLastProfile() ?: "Default") ?: Profile(name = "Default")
         reload()
     }
 
@@ -183,15 +186,51 @@ class ProfileFragment : PreferenceFragmentCompat(), Preference.OnPreferenceChang
         inflater.inflate(R.menu.main, menu)
     }
 
-    @SuppressLint("NonConstantResourceId")
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
             R.id.prof_add -> {
-                addProfile()
+                val e = AppCompatEditText(requireContext()).apply { isSingleLine = true }
+
+                AlertDialog.Builder(requireActivity())
+                    .setTitle(R.string.prof_add)
+                    .setView(e)
+                    .setPositiveButton(android.R.string.ok) { _: DialogInterface?, _: Int ->
+                        val name = e.text.toString().trim()
+                        if (name.isEmpty()) {
+                            return@setPositiveButton
+                        }
+
+                        if (db.isProfileExists(name)) {
+                            Toast.makeText(
+                                requireContext(),
+                                getString(R.string.err_add_prof),
+                                Toast.LENGTH_SHORT
+                            ).show()
+                            return@setPositiveButton
+                        }
+
+                        mProfile = Profile(name = name)
+                        db.addProfile(mProfile)
+                        db.setLastProfile(lastProfile(name = name))
+                        reload()
+                    }
+                    .setNegativeButton(android.R.string.cancel) { _: DialogInterface?, _: Int -> }
+                    .create()
+                    .show()
                 true
             }
             R.id.prof_del -> {
-                removeProfile()
+                AlertDialog.Builder(requireActivity())
+                    .setTitle(R.string.prof_del)
+                    .setMessage(String.format(getString(R.string.prof_del_confirm), mProfile.name))
+                    .setPositiveButton(android.R.string.ok) { _: DialogInterface?, _: Int ->
+                        db.deleteProfile(mProfile)
+                        mProfile = db.getProfileByName("Default") ?: Profile(name = "Default")
+                        reload()
+                    }
+                    .setNegativeButton(android.R.string.cancel) { _: DialogInterface?, _: Int -> }
+                    .create()
+                    .show()
                 true
             }
             else -> super.onOptionsItemSelected(item)
@@ -200,111 +239,95 @@ class ProfileFragment : PreferenceFragmentCompat(), Preference.OnPreferenceChang
 
 
     override fun onPreferenceChange(p: Preference, newValue: Any): Boolean {
-        return when (p) {
+        when (p) {
             mPrefProfile -> {
                 val name = newValue.toString()
-                mProfile = mManager.getProfile(name) ?: mManager.default
-                mManager.switchDefault(name)
+                mProfile = db.getProfileByName(name) ?: Profile(name = name)
+                db.setLastProfile(lastProfile(name = name))
                 reload()
-                true
             }
             mPrefHttpServerPort -> {
                 if (newValue.toString().isEmpty()) return false
                 mProfile.httpServerPort = newValue.toString().toInt()
                 resetTextN(mPrefHttpServerPort, newValue)
-                true
             }
             mPrefSocks5ServerPort -> {
                 if (newValue.toString().isEmpty()) return false
                 mProfile.socks5ServerPort = newValue.toString().toInt()
                 resetTextN(mPrefSocks5ServerPort, newValue)
-                true
             }
 
-            mPrefUserpw -> {
+            mPrefUserPw -> {
                 val value = newValue as Boolean
                 mProfile.isUserPw = value
                 resetAuthVisible(value)
-                true
             }
             mPrefUsername -> {
                 mProfile.username = newValue.toString()
                 resetTextN(mPrefUsername, newValue)
-                true
             }
             mPrefPassword -> {
                 mProfile.password = newValue.toString()
                 resetTextN(mPrefPassword, newValue)
-                true
             }
             mPrefRoutes -> {
                 mProfile.route = newValue.toString()
-                true
+                mPrefRoutes.summary = newValue.toString()
             }
             mPrefFakeDnsCidr -> {
                 mProfile.fakeDnsCidr = newValue.toString()
                 resetTextN(mPrefFakeDnsCidr, newValue)
-                true
             }
             mPrefDnsPort -> {
                 if (newValue.toString().isEmpty()) return false
                 mProfile.dnsPort = newValue.toString().toInt()
                 resetTextN(mPrefDnsPort, newValue)
-                true
             }
             mPrefPerApp -> {
                 mProfile.isPerApp = newValue as Boolean
-                true
             }
             mPrefAppBypass -> {
                 mProfile.isBypassApp = newValue as Boolean
-                true
             }
             mPrefAppList -> {
                 @Suppress("UNCHECKED_CAST")
                 mProfile.appList = newValue as Set<String>
-                true
             }
             mPrefIPv6 -> {
                 mProfile.hasIPv6 = newValue as Boolean
-                true
             }
             mPrefAuto -> {
                 mProfile.autoConnect = newValue as Boolean
-                true
             }
             mPrefYuhaiinPort -> {
                 mProfile.yuhaiinPort = newValue.toString().toInt()
                 resetTextN(mPrefYuhaiinPort, newValue)
-                true
             }
             mPrefSaveLogcat -> {
                 mProfile.saveLogcat = newValue as Boolean
-                true
             }
             mPrefAllowLan -> {
                 mProfile.allowLan = newValue as Boolean
-                true
             }
             mPrefRuleProxy -> {
                 mProfile.ruleProxy = newValue.toString().trim()
                 mPrefRuleProxy.text = newValue.toString().trim()
-                true
             }
             mPrefRuleDirect -> {
                 mProfile.ruleDirect = newValue.toString().trim()
                 mPrefRuleDirect.text = newValue.toString().trim()
-                true
             }
             mPrefRuleBlock -> {
                 mProfile.ruleBlock = newValue.toString().trim()
                 mPrefRuleBlock.text = newValue.toString().trim()
-                true
             }
             else -> {
-                false
+                return false
             }
         }
+
+        db.updateProfile(profile = mProfile)
+        return true
     }
 
     private fun initPreferences() {
@@ -329,7 +352,7 @@ class ProfileFragment : PreferenceFragmentCompat(), Preference.OnPreferenceChang
             editText.inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
         }
 
-        mPrefUserpw =
+        mPrefUserPw =
             findPreferenceAndSetListener<SwitchPreferenceCompat>(Constants.PREF_AUTH_USERPW)!!
         mPrefUsername = findPreferenceAndSetListener(Constants.PREF_AUTH_USERNAME)!!
         mPrefPassword = findPreferenceAndSetListener(Constants.PREF_AUTH_PASSWORD)!!
@@ -413,15 +436,14 @@ class ProfileFragment : PreferenceFragmentCompat(), Preference.OnPreferenceChang
     }
 
     private fun reload() {
-        mProfile = mManager.default
-
-        mPrefProfile.entries = mManager.profiles
-        mPrefProfile.entryValues = mManager.profiles
+        val profiles = db.getProfileNames()
+        mPrefProfile.entries = profiles.toTypedArray()
+        mPrefProfile.entryValues = profiles.toTypedArray()
         mPrefProfile.value = mProfile.name
         mPrefRoutes.value = mProfile.route
         resetList(mPrefProfile, mPrefRoutes)
 
-        mPrefUserpw.isChecked = mProfile.isUserPw
+        mPrefUserPw.isChecked = mProfile.isUserPw
         resetAuthVisible(mProfile.isUserPw)
         mPrefUsername.text = mProfile.username
         mPrefPassword.text = mProfile.password
@@ -482,6 +504,7 @@ class ProfileFragment : PreferenceFragmentCompat(), Preference.OnPreferenceChang
             }
         }
 
+        mPrefAppList.values = mProfile.appList
         mPrefAppList.entries = titles.toTypedArray()
         mPrefAppList.entryValues = packageNames.toTypedArray()
     }
@@ -543,50 +566,17 @@ class ProfileFragment : PreferenceFragmentCompat(), Preference.OnPreferenceChang
         }
     }
 
-    private fun addProfile() {
-        val e = EditText(activity).apply { isSingleLine = true }
-
-        AlertDialog.Builder(requireActivity()).setTitle(R.string.prof_add).setView(e)
-            .setPositiveButton(android.R.string.ok) { _: DialogInterface?, _: Int ->
-                val name = e.text.toString().trim()
-                if (name.isNotEmpty())
-                    mManager.addProfile(name)?.let {
-                        mProfile = it
-                        reload()
-                        return@setPositiveButton
-                    }
-
-                Toast.makeText(activity, String.format(getString(R.string.err_add_prof), name), Toast.LENGTH_SHORT)
-                    .show()
-            }.setNegativeButton(
-                android.R.string.cancel
-            ) { _: DialogInterface?, _: Int -> }.create().show()
-    }
-
-    private fun removeProfile() {
-        AlertDialog.Builder(requireActivity()).setTitle(R.string.prof_del)
-            .setMessage(String.format(getString(R.string.prof_del_confirm), mProfile.name))
-            .setPositiveButton(android.R.string.ok) { _: DialogInterface?, _: Int ->
-                if (!mManager.removeProfile(mProfile.name))
-                    Toast.makeText(activity, getString(R.string.err_del_prof, mProfile.name), Toast.LENGTH_SHORT).show()
-                else {
-                    mProfile = mManager.default
-                    reload()
-                }
-            }.setNegativeButton(android.R.string.cancel) { _: DialogInterface?, _: Int -> }.create().show()
-    }
 
 
     // You can do the assignment inside onAttach or onCreate, i.e, before the activity is displayed
     private var startVpnLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-            if (result.resultCode == Activity.RESULT_OK) Utility.startVpn(requireActivity(), mProfile)
+            if (result.resultCode == Activity.RESULT_OK) Utility.startVpn(requireActivity())
         }
 
     private fun startVpn() =
         VpnService.prepare(activity)?.also { startVpnLauncher.launch(it) } ?: Utility.startVpn(
             requireActivity(),
-            mProfile
         )
 
     private fun stopVpn() = mBinder?.stop()

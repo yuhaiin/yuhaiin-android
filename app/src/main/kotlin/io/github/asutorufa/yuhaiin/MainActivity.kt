@@ -42,13 +42,8 @@ class MainActivity : AppCompatActivity() {
 
         findViewById<Toolbar>(R.id.toolbar).also {
             setSupportActionBar(it)
-        }.apply {
-            overflowIcon = ContextCompat.getDrawable(this@MainActivity, R.drawable.sort)
+            it.overflowIcon = ContextCompat.getDrawable(this@MainActivity, R.drawable.sort)
         }
-
-        ProfileFragment().let {
-            supportFragmentManager.beginTransaction().replace(R.id.settings, it)
-                .commit()
-        }
+        supportFragmentManager.beginTransaction().replace(R.id.settings, ProfileFragment()).commit()
     }
 }
