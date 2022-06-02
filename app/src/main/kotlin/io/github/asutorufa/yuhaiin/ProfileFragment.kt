@@ -20,23 +20,24 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.view.menu.MenuBuilder
 import androidx.appcompat.widget.AppCompatEditText
 import androidx.browser.customtabs.CustomTabsIntent
+import androidx.core.content.ContextCompat
 import androidx.preference.*
 import com.github.logviewer.LogcatActivity
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.snackbar.Snackbar
-import io.github.asutorufa.yuhaiin.BuildConfig.DEBUG
+import io.github.asutorufa.yuhaiin.database.LastProfile
 import io.github.asutorufa.yuhaiin.database.Profile
-import io.github.asutorufa.yuhaiin.database.lastProfile
-import io.github.asutorufa.yuhaiin.util.Constants
-import io.github.asutorufa.yuhaiin.util.Utility
 import java.util.*
 import java.util.regex.Pattern
 
-class ProfileFragment : PreferenceFragmentCompat(), Preference.OnPreferenceChangeListener {
+class ProfileFragment : PreferenceFragmentCompat() {
     private val db = MainApplication.db.ProfileDao()
     private lateinit var mProfile: Profile
-    private lateinit var mFab: FloatingActionButton
+
+    private val refreshPreferences = ArrayList<() -> Unit>()
+
     private var mBinder: IVpnService? = null
+    private lateinit var mFab: FloatingActionButton
 
     private val mConnection: ServiceConnection = object : ServiceConnection {
         override fun onServiceConnected(p1: ComponentName, binder: IBinder) {
@@ -54,8 +55,8 @@ class ProfileFragment : PreferenceFragmentCompat(), Preference.OnPreferenceChang
     private val bReceiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             when (intent.action) {
-                Constants.INTENT_DISCONNECTED -> {
-                    if (DEBUG) Log.d("yuhaiin", "onReceive: DISCONNECTED")
+                YuhaiinVpnService.INTENT_DISCONNECTED -> {
+                    Log.d(tag, "onReceive: DISCONNECTED")
 
                     mFab.isEnabled = true
                     mFab.setImageResource(R.drawable.play_arrow)
@@ -65,8 +66,8 @@ class ProfileFragment : PreferenceFragmentCompat(), Preference.OnPreferenceChang
                         Snackbar.LENGTH_SHORT
                     ).setAnchorView(mFab).show()
                 }
-                Constants.INTENT_CONNECTED -> {
-                    if (DEBUG) Log.d("yuhaiin", "onReceive: CONNECTED")
+                YuhaiinVpnService.INTENT_CONNECTED -> {
+                    Log.d(tag, "onReceive: CONNECTED")
 
                     mFab.isEnabled = true
                     mFab.setImageResource(R.drawable.stop)
@@ -82,17 +83,17 @@ class ProfileFragment : PreferenceFragmentCompat(), Preference.OnPreferenceChang
                         Context.BIND_AUTO_CREATE
                     )
                 }
-                Constants.INTENT_CONNECTING -> {
-                    if (DEBUG) Log.d("yuhaiin", "onReceive: CONNECTING")
+                YuhaiinVpnService.INTENT_CONNECTING -> {
+                    Log.d(tag, "onReceive: CONNECTING")
                     mFab.isEnabled = false
                 }
-                Constants.INTENT_DISCONNECTING -> {
-                    if (DEBUG) Log.d("yuhaiin", "onReceive: DISCONNECTING")
+                YuhaiinVpnService.INTENT_DISCONNECTING -> {
+                    Log.d(tag, "onReceive: DISCONNECTING")
                     mFab.isEnabled = false
                 }
 
-                Constants.INTENT_ERROR -> {
-                    if (DEBUG) Log.d("yuhaiin", "onReceive: ERROR")
+                YuhaiinVpnService.INTENT_ERROR -> {
+                    Log.d(tag, "onReceive: ERROR")
                     intent.getStringExtra("message")?.let {
                         Snackbar.make(
                             requireView(),
@@ -104,27 +105,6 @@ class ProfileFragment : PreferenceFragmentCompat(), Preference.OnPreferenceChang
             }
         }
     }
-    private lateinit var mPrefProfile: ListPreference
-    private lateinit var mPrefRoutes: DropDownPreference
-    private lateinit var mPrefHttpServerPort: EditTextPreference
-    private lateinit var mPrefSocks5ServerPort: EditTextPreference
-    private lateinit var mPrefUsername: EditTextPreference
-    private lateinit var mPrefPassword: EditTextPreference
-    private lateinit var mPrefFakeDnsCidr: EditTextPreference
-    private lateinit var mPrefDnsPort: EditTextPreference
-    private lateinit var mPrefAppList: MultiSelectListPreference
-    private lateinit var mPrefUserPw: SwitchPreferenceCompat
-    private lateinit var mPrefPerApp: SwitchPreferenceCompat
-    private lateinit var mPrefAppBypass: SwitchPreferenceCompat
-    private lateinit var mPrefIPv6: SwitchPreferenceCompat
-    private lateinit var mPrefAllowLan: SwitchPreferenceCompat
-    private lateinit var mPrefAuto: SwitchPreferenceCompat
-    private lateinit var mPrefYuhaiinPort: EditTextPreference
-    private lateinit var mPrefSaveLogcat: SwitchPreferenceCompat
-    private lateinit var mPrefRuleProxy: EditTextPreference
-    private lateinit var mPrefRuleDirect: EditTextPreference
-    private lateinit var mPrefRuleBlock: EditTextPreference
-
 
     override fun onStart() {
         super.onStart()
@@ -137,10 +117,10 @@ class ProfileFragment : PreferenceFragmentCompat(), Preference.OnPreferenceChang
 
 
         val f = IntentFilter().apply {
-            addAction(Constants.INTENT_DISCONNECTED)
-            addAction(Constants.INTENT_CONNECTED)
-            addAction(Constants.INTENT_CONNECTING)
-            addAction(Constants.INTENT_DISCONNECTING)
+            addAction(YuhaiinVpnService.INTENT_DISCONNECTED)
+            addAction(YuhaiinVpnService.INTENT_CONNECTED)
+            addAction(YuhaiinVpnService.INTENT_CONNECTING)
+            addAction(YuhaiinVpnService.INTENT_DISCONNECTING)
         }
         requireContext().registerReceiver(bReceiver, f)
     }
@@ -149,6 +129,7 @@ class ProfileFragment : PreferenceFragmentCompat(), Preference.OnPreferenceChang
         super.onCreate(saveInstanceState)
         addPreferencesFromResource(R.xml.settings)
         setHasOptionsMenu(true)
+        preferenceManager.preferenceDataStore = DataStore()
         initPreferences()
         mProfile =
             db.getProfileByName(db.getLastProfile() ?: "Default") ?: Profile(name = "Default")
@@ -211,7 +192,7 @@ class ProfileFragment : PreferenceFragmentCompat(), Preference.OnPreferenceChang
 
                         mProfile = Profile(name = name)
                         db.addProfile(mProfile)
-                        db.setLastProfile(lastProfile(name = name))
+                        db.setLastProfile(LastProfile(name = name))
                         reload()
                     }
                     .setNegativeButton(android.R.string.cancel) { _: DialogInterface?, _: Int -> }
@@ -237,152 +218,194 @@ class ProfileFragment : PreferenceFragmentCompat(), Preference.OnPreferenceChang
         }
     }
 
+    private fun initPreferences() {
+        findPreference<ListPreference>(resources.getString(R.string.profile_key))!!.also {
+            refreshPreferences.add {
+                it.value = mProfile.name
+                val profiles = db.getProfileNames()
+                it.entries = profiles.toTypedArray()
+                it.entryValues = profiles.toTypedArray()
+            }
 
-    override fun onPreferenceChange(p: Preference, newValue: Any): Boolean {
-        when (p) {
-            mPrefProfile -> {
+            setOnPreferenceChangeListener(it) { _, newValue ->
                 val name = newValue.toString()
                 mProfile = db.getProfileByName(name) ?: Profile(name = name)
-                db.setLastProfile(lastProfile(name = name))
+                db.setLastProfile(LastProfile(name = name))
                 reload()
             }
-            mPrefHttpServerPort -> {
-                if (newValue.toString().isEmpty()) return false
-                mProfile.httpServerPort = newValue.toString().toInt()
-                resetTextN(mPrefHttpServerPort, newValue)
-            }
-            mPrefSocks5ServerPort -> {
-                if (newValue.toString().isEmpty()) return false
-                mProfile.socks5ServerPort = newValue.toString().toInt()
-                resetTextN(mPrefSocks5ServerPort, newValue)
+        }
+
+        findPreference<EditTextPreference>(resources.getString(R.string.yuhaiin_port_key))!!.also {
+            it.setOnBindEditTextListener { editText: EditText ->
+                editText.inputType =
+                    InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
             }
 
-            mPrefUserPw -> {
-                val value = newValue as Boolean
-                mProfile.isUserPw = value
-                resetAuthVisible(value)
+            setOnPreferenceChangeListener(it) { _, newValue ->
+                mProfile.yuhaiinPort = newValue.toString().toInt()
             }
-            mPrefUsername -> {
+
+            refreshPreferences.add { it.text = mProfile.yuhaiinPort.toString() }
+        }
+
+        findPreference<EditTextPreference>(resources.getString(R.string.http_server_port_key))!!.also {
+            it.setOnBindEditTextListener { editText: EditText ->
+                editText.inputType =
+                    InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
+            }
+
+            setOnPreferenceChangeListener(it) { _, newValue ->
+                mProfile.httpServerPort = newValue.toString().toInt()
+            }
+
+            refreshPreferences.add { it.text = mProfile.httpServerPort.toString() }
+        }
+
+        findPreference<EditTextPreference>(resources.getString(R.string.socks5_server_port_key))!!.also {
+            it.setOnBindEditTextListener { editText: EditText ->
+                editText.inputType =
+                    InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
+            }
+
+            setOnPreferenceChangeListener(it) { _, newValue ->
+                mProfile.socks5ServerPort = newValue.toString().toInt()
+            }
+
+            refreshPreferences.add { it.text = mProfile.socks5ServerPort.toString() }
+        }
+
+        findPreference<SwitchPreferenceCompat>(resources.getString(R.string.auth_userpw_key))!!.also {
+            setOnPreferenceChangeListener(it) { _, newValue ->
+                mProfile.isUserPw = newValue as Boolean
+                reload()
+            }
+            refreshPreferences.add { it.isChecked = mProfile.isUserPw }
+        }
+        findPreference<EditTextPreference>(resources.getString(R.string.auth_username_key))!!.also {
+            setOnPreferenceChangeListener(it) { _, newValue ->
                 mProfile.username = newValue.toString()
-                resetTextN(mPrefUsername, newValue)
             }
-            mPrefPassword -> {
+            refreshPreferences.add {
+                it.text = mProfile.username
+                it.isVisible = mProfile.isUserPw
+            }
+        }
+        findPreference<EditTextPreference>(resources.getString(R.string.auth_password_key))!!.also {
+            it.setOnBindEditTextListener { editText: EditText ->
+                editText.inputType =
+                    InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+            }
+
+            setOnPreferenceChangeListener(it) { _, newValue ->
                 mProfile.password = newValue.toString()
-                resetTextN(mPrefPassword, newValue)
             }
-            mPrefRoutes -> {
-                mProfile.route = newValue.toString()
-                mPrefRoutes.summary = newValue.toString()
+            refreshPreferences.add {
+                it.text = mProfile.password
+                it.isVisible = mProfile.isUserPw
             }
-            mPrefFakeDnsCidr -> {
+        }
+
+        findPreference<DropDownPreference>(resources.getString(R.string.adv_route_Key))!!.also {
+            setOnPreferenceChangeListener(it) { _, newValue ->
+                mProfile.route = newValue as String
+            }
+            refreshPreferences.add { it.value = mProfile.route }
+        }
+
+        findPreference<EditTextPreference>(resources.getString(R.string.adv_fake_dns_cidr_key))!!.also {
+            setOnPreferenceChangeListener(it) { _, newValue ->
                 mProfile.fakeDnsCidr = newValue.toString()
-                resetTextN(mPrefFakeDnsCidr, newValue)
             }
-            mPrefDnsPort -> {
-                if (newValue.toString().isEmpty()) return false
+            refreshPreferences.add { it.text = mProfile.fakeDnsCidr }
+        }
+
+        findPreference<EditTextPreference>(resources.getString(R.string.adv_dns_port_key))!!.also {
+            it.setOnBindEditTextListener { editText: EditText ->
+                editText.inputType =
+                    InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
+            }
+
+            setOnPreferenceChangeListener(it) { _, newValue ->
                 mProfile.dnsPort = newValue.toString().toInt()
-                resetTextN(mPrefDnsPort, newValue)
             }
-            mPrefPerApp -> {
+
+            refreshPreferences.add { it.text = mProfile.dnsPort.toString() }
+        }
+
+        findPreference<SwitchPreferenceCompat>(resources.getString(R.string.adv_per_app_key))!!.also {
+            setOnPreferenceChangeListener(it) { _, newValue ->
                 mProfile.isPerApp = newValue as Boolean
             }
-            mPrefAppBypass -> {
+            refreshPreferences.add { it.isChecked = mProfile.isPerApp }
+        }
+        findPreference<SwitchPreferenceCompat>(resources.getString(R.string.adv_app_bypass_key))!!.also {
+            setOnPreferenceChangeListener(it) { _, newValue ->
                 mProfile.isBypassApp = newValue as Boolean
             }
-            mPrefAppList -> {
-                @Suppress("UNCHECKED_CAST")
+            refreshPreferences.add { it.isChecked = mProfile.isBypassApp }
+        }
+        findPreference<MultiSelectListPreference>(resources.getString(R.string.adv_app_list_key))!!.also {
+            it.setOnPreferenceClickListener { _ ->
+                updateAppList(it)
+                false
+            }
+
+            @Suppress("Unchecked_Cast")
+            setOnPreferenceChangeListener(it) { _, newValue ->
                 mProfile.appList = newValue as Set<String>
             }
-            mPrefIPv6 -> {
+
+            refreshPreferences.add { it.values = mProfile.appList }
+        }
+
+        findPreference<SwitchPreferenceCompat>(resources.getString(R.string.ipv6_proxy_key))!!.also {
+            setOnPreferenceChangeListener(it) { _, newValue ->
                 mProfile.hasIPv6 = newValue as Boolean
             }
-            mPrefAuto -> {
+            refreshPreferences.add { it.isChecked = mProfile.hasIPv6 }
+        }
+
+        findPreference<SwitchPreferenceCompat>(resources.getString(R.string.adv_auto_connect_key))!!.also {
+            setOnPreferenceChangeListener(it) { _, newValue ->
                 mProfile.autoConnect = newValue as Boolean
             }
-            mPrefYuhaiinPort -> {
-                mProfile.yuhaiinPort = newValue.toString().toInt()
-                resetTextN(mPrefYuhaiinPort, newValue)
-            }
-            mPrefSaveLogcat -> {
-                mProfile.saveLogcat = newValue as Boolean
-            }
-            mPrefAllowLan -> {
+            refreshPreferences.add { it.isChecked = mProfile.autoConnect }
+        }
+
+        findPreference<SwitchPreferenceCompat>(resources.getString(R.string.allow_lan_key))!!.also {
+            setOnPreferenceChangeListener(it) { _, newValue ->
                 mProfile.allowLan = newValue as Boolean
             }
-            mPrefRuleProxy -> {
-                mProfile.ruleProxy = newValue.toString().trim()
-                mPrefRuleProxy.text = newValue.toString().trim()
-            }
-            mPrefRuleDirect -> {
-                mProfile.ruleDirect = newValue.toString().trim()
-                mPrefRuleDirect.text = newValue.toString().trim()
-            }
-            mPrefRuleBlock -> {
-                mProfile.ruleBlock = newValue.toString().trim()
-                mPrefRuleBlock.text = newValue.toString().trim()
-            }
-            else -> {
-                return false
-            }
+            refreshPreferences.add { it.isChecked = mProfile.allowLan }
         }
 
-        db.updateProfile(profile = mProfile)
-        return true
-    }
-
-    private fun initPreferences() {
-        mPrefProfile = findPreferenceAndSetListener(Constants.PREF_PROFILE)!!
-
-        mPrefYuhaiinPort =
-            findPreferenceAndSetListener<EditTextPreference>(Constants.PREF_YUHAIIN_PORT)!!.also {
-                it.setOnBindEditTextListener { editText: EditText ->
-                    editText.inputType =
-                        InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
-                }
+        findPreference<EditTextPreference>(resources.getString(R.string.rule_proxy))!!.also {
+            setOnPreferenceChangeListener(it) { _, newValue ->
+                mProfile.ruleProxy = newValue.toString()
             }
-        mPrefHttpServerPort =
-            findPreferenceAndSetListener<EditTextPreference>(Constants.PREF_HTTP_SERVER_PORT)!!.also {
-                it.setOnBindEditTextListener { editText: EditText ->
-                    editText.inputType =
-                        InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
-                }
+            refreshPreferences.add { it.text = mProfile.ruleProxy }
+        }
+
+        findPreference<EditTextPreference>(resources.getString(R.string.rule_direct))!!.also {
+            setOnPreferenceChangeListener(it) { _, newValue ->
+                mProfile.ruleDirect = newValue.toString()
             }
-        mPrefSocks5ServerPort = findPreferenceAndSetListener(Constants.PREF_SOCKS5_SERVER_PORT)!!
-        mPrefSocks5ServerPort.setOnBindEditTextListener { editText: EditText ->
-            editText.inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
+            refreshPreferences.add { it.text = mProfile.ruleDirect }
         }
 
-        mPrefUserPw =
-            findPreferenceAndSetListener<SwitchPreferenceCompat>(Constants.PREF_AUTH_USERPW)!!
-        mPrefUsername = findPreferenceAndSetListener(Constants.PREF_AUTH_USERNAME)!!
-        mPrefPassword = findPreferenceAndSetListener(Constants.PREF_AUTH_PASSWORD)!!
-
-        mPrefRoutes = findPreferenceAndSetListener(Constants.PREF_ADV_ROUTE)!!
-        mPrefFakeDnsCidr = findPreferenceAndSetListener(Constants.PREF_ADV_FAKE_DNS_CIDR)!!
-        mPrefDnsPort = findPreferenceAndSetListener(Constants.PREF_ADV_DNS_PORT)!!
-        mPrefDnsPort.setOnBindEditTextListener { editText: EditText ->
-            editText.inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
-        }
-        mPrefPerApp = findPreferenceAndSetListener(Constants.PREF_ADV_PER_APP)!!
-        mPrefAppBypass = findPreferenceAndSetListener(Constants.PREF_ADV_APP_BYPASS)!!
-        mPrefAppList = findPreferenceAndSetListener(Constants.PREF_ADV_APP_LIST)!!
-        mPrefAppList.setOnPreferenceClickListener {
-            updateAppList()
-            false
+        findPreference<EditTextPreference>(resources.getString(R.string.rule_block))!!.also {
+            setOnPreferenceChangeListener(it) { _, newValue ->
+                mProfile.ruleBlock = newValue.toString()
+            }
+            refreshPreferences.add { it.text = mProfile.ruleBlock }
         }
 
-        mPrefIPv6 = findPreferenceAndSetListener(Constants.PREF_IPV6_PROXY)!!
-        mPrefAuto = findPreferenceAndSetListener(Constants.PREF_ADV_AUTO_CONNECT)!!
-        mPrefAllowLan = findPreferenceAndSetListener(Constants.PREF_ALLOW_LAN)!!
-
-        mPrefRuleProxy =
-            findPreferenceAndSetListener<EditTextPreference>(requireContext().resources.getString(R.string.rule_proxy))!!
-        mPrefRuleDirect =
-            findPreferenceAndSetListener(requireContext().resources.getString(R.string.rule_direct))!!
-        mPrefRuleBlock =
-            findPreferenceAndSetListener(requireContext().resources.getString(R.string.rule_block))!!
-
-        mPrefSaveLogcat = findPreferenceAndSetListener(Constants.PREF_SAVE_LOGCAT)!!
+        findPreference<SwitchPreferenceCompat>(resources.getString(R.string.save_logcat))!!.also {
+            setOnPreferenceChangeListener(it) { _, newValue ->
+                mProfile.saveLogcat = newValue as Boolean
+            }
+            refreshPreferences.add { it.isChecked = mProfile.saveLogcat }
+        }
 
         findPreference<Preference>(resources.getString(R.string.logcat))?.apply {
             setOnPreferenceClickListener {
@@ -428,67 +451,22 @@ class ProfileFragment : PreferenceFragmentCompat(), Preference.OnPreferenceChang
         }
     }
 
-
-    private fun <T : Preference?> findPreferenceAndSetListener(key: CharSequence): T? {
-        return findPreference<T>(key)?.apply {
-            onPreferenceChangeListener = this@ProfileFragment
+    private fun setOnPreferenceChangeListener(
+        it: Preference,
+        run: (p: Preference, newValue: Any) -> Unit
+    ) {
+        it.setOnPreferenceChangeListener { preference, newValue ->
+            run(preference, newValue)
+            db.updateProfile(profile = mProfile)
+            true
         }
     }
 
     private fun reload() {
-        val profiles = db.getProfileNames()
-        mPrefProfile.entries = profiles.toTypedArray()
-        mPrefProfile.entryValues = profiles.toTypedArray()
-        mPrefProfile.value = mProfile.name
-        mPrefRoutes.value = mProfile.route
-        resetList(mPrefProfile, mPrefRoutes)
-
-        mPrefUserPw.isChecked = mProfile.isUserPw
-        resetAuthVisible(mProfile.isUserPw)
-        mPrefUsername.text = mProfile.username
-        mPrefPassword.text = mProfile.password
-
-        mPrefPerApp.isChecked = mProfile.isPerApp
-        mPrefAppBypass.isChecked = mProfile.isBypassApp
-
-        mPrefIPv6.isChecked = mProfile.hasIPv6
-        mPrefAuto.isChecked = mProfile.autoConnect
-
-        mPrefHttpServerPort.text = mProfile.httpServerPort.toString()
-        mPrefSocks5ServerPort.text = mProfile.socks5ServerPort.toString()
-        mPrefFakeDnsCidr.text = mProfile.fakeDnsCidr
-        mPrefDnsPort.text = mProfile.dnsPort.toString()
-        mPrefYuhaiinPort.text = mProfile.yuhaiinPort.toString()
-
-        mPrefSaveLogcat.isChecked = mProfile.saveLogcat
-
-        mPrefRuleBlock.text = mProfile.ruleBlock
-        mPrefRuleDirect.text = mProfile.ruleDirect
-        mPrefRuleProxy.text = mProfile.ruleProxy
-
-        resetText(
-            mPrefHttpServerPort,
-            mPrefSocks5ServerPort,
-            mPrefUsername,
-            mPrefPassword,
-            mPrefFakeDnsCidr,
-            mPrefDnsPort,
-            mPrefYuhaiinPort
-        )
+        for (refresh in refreshPreferences) refresh()
     }
 
-
-    private fun resetAuthVisible(enabled: Boolean) {
-        if (enabled) {
-            mPrefUsername.isVisible = true
-            mPrefPassword.isVisible = true
-        } else {
-            mPrefUsername.isVisible = false
-            mPrefPassword.isVisible = false
-        }
-    }
-
-    private fun updateAppList() {
+    private fun updateAppList(mPrefAppList: MultiSelectListPreference) {
         val titles = mutableListOf<String>()
         val packageNames = mutableListOf<String>()
         var index = 0
@@ -537,47 +515,55 @@ class ProfileFragment : PreferenceFragmentCompat(), Preference.OnPreferenceChang
             return apps
         }
 
-    private fun resetList(vararg pref: ListPreference) {
-        for (p in pref) p.summary = p.entry
-    }
-
-    private fun resetText(vararg pref: EditTextPreference) {
-        for (p in pref) {
-            if (p.key != "auth_password") {
-                p.summary = p.text
-            } else {
-                if ((p.text?.length ?: 0) > 0) p.summary =
-                    String.format(Locale.US, String.format(Locale.US, "%%0%dd", p.text!!.length), 0)
-                        .replace("0", "*") else p.summary = ""
-            }
-        }
-    }
-
-    private fun resetTextN(pref: EditTextPreference, newValue: Any) {
-        if (pref.key != "auth_password") {
-            pref.summary = newValue.toString()
-        } else {
-            val text = newValue.toString()
-            if (text.isNotEmpty())
-                pref.summary =
-                    String.format(Locale.US, String.format(Locale.US, "%%0%dd", text.length), 0).replace("0", "*")
-            else
-                pref.summary = ""
-        }
-    }
-
-
-
     // You can do the assignment inside onAttach or onCreate, i.e, before the activity is displayed
     private var startVpnLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-            if (result.resultCode == Activity.RESULT_OK) Utility.startVpn(requireActivity())
+            if (result.resultCode == Activity.RESULT_OK) startVpn(requireActivity())
         }
 
     private fun startVpn() =
-        VpnService.prepare(activity)?.also { startVpnLauncher.launch(it) } ?: Utility.startVpn(
+        VpnService.prepare(activity)?.also { startVpnLauncher.launch(it) } ?: startVpn(
             requireActivity(),
         )
 
+    private fun startVpn(context: Context) = ContextCompat.startForegroundService(
+        context,
+        Intent(context, YuhaiinVpnService::class.java)
+    )
+
     private fun stopVpn() = mBinder?.stop()
+
+
+    private class DataStore : PreferenceDataStore() {
+        private val store = Collections.synchronizedMap(HashMap<String, Any>())
+        private fun put(key: String?, value: Any?) {
+            store[key] = value
+        }
+
+        override fun putString(key: String?, value: String?) = put(key, value)
+        override fun putStringSet(key: String?, values: Set<String?>?) = put(key, values)
+        override fun putInt(key: String?, value: Int) = put(key, value)
+        override fun putLong(key: String?, value: Long) = put(key, value)
+        override fun putFloat(key: String?, value: Float) = put(key, value)
+        override fun putBoolean(key: String?, value: Boolean) = put(key, value)
+
+        override fun getString(key: String?, defValue: String?): String? =
+            store[key]?.toString() ?: defValue
+
+        @Suppress("UNCHECKED_CAST")
+        override fun getStringSet(key: String?, defValues: Set<String?>?): Set<String?>? =
+            store[key] as Set<String?>? ?: defValues
+
+        override fun getInt(key: String?, defValue: Int): Int =
+            store[key]?.toString()?.toInt() ?: defValue
+
+        override fun getLong(key: String?, defValue: Long): Long =
+            store[key]?.toString()?.toLong() ?: defValue
+
+        override fun getFloat(key: String?, defValue: Float): Float =
+            store[key]?.toString()?.toFloat() ?: defValue
+
+        override fun getBoolean(key: String?, defValue: Boolean): Boolean =
+            store[key]?.toString()?.toBoolean() ?: defValue
+    }
 }

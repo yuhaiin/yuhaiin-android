@@ -27,7 +27,7 @@ interface ProfileDao {
     fun deleteProfile(profile: Profile)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun setLastProfile(profile: lastProfile)
+    fun setLastProfile(profile: LastProfile)
 
     @Query("SELECT name FROM last_profile WHERE `key`=0")
     fun getLastProfile(): String?

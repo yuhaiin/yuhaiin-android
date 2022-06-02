@@ -6,7 +6,7 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 
-@Database(entities = [Profile::class, lastProfile::class], version = 1, exportSchema = false)
+@Database(entities = [Profile::class, LastProfile::class], version = 2, exportSchema = false)
 @TypeConverters(Converters::class)
 abstract class YuhaiinDatabase : RoomDatabase() {
     abstract fun ProfileDao(): ProfileDao
@@ -20,7 +20,7 @@ abstract class YuhaiinDatabase : RoomDatabase() {
                     try {
                         it.ProfileDao().getLastProfile().let { name ->
                             if (name == null)
-                                it.ProfileDao().setLastProfile(lastProfile(name = "Default"))
+                                it.ProfileDao().setLastProfile(LastProfile(name = "Default"))
                         }
                         if (!it.ProfileDao().isProfileExists("Default")) {
                             it.ProfileDao().addProfile(Profile(name = "Default"))
@@ -36,6 +36,7 @@ abstract class YuhaiinDatabase : RoomDatabase() {
         private fun buildDatabase(context: Context): YuhaiinDatabase {
             return Room.databaseBuilder(context, YuhaiinDatabase::class.java, "yuhaiin")
                 .allowMainThreadQueries()
+                .fallbackToDestructiveMigration()
                 .build()
         }
     }

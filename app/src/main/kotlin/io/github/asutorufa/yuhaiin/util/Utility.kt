@@ -1,11 +1,7 @@
 package io.github.asutorufa.yuhaiin.util
 
-import android.content.Context
-import android.content.Intent
 import android.util.Log
-import androidx.core.content.ContextCompat
 import io.github.asutorufa.yuhaiin.BuildConfig.DEBUG
-import io.github.asutorufa.yuhaiin.YuhaiinVpnService
 import java.io.BufferedReader
 import java.io.InputStreamReader
 
@@ -37,11 +33,4 @@ object Utility {
 
         return p
     }
-
-    fun startVpn(context: Context) = ContextCompat.startForegroundService(
-        context,
-        Intent(context, YuhaiinVpnService::class.java)
-    )
-
-
 }

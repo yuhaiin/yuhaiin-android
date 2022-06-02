@@ -20,36 +20,38 @@ import java.util.*
 
 @RequiresApi(Build.VERSION_CODES.N)
 class YuhaiinDocumentProvider : DocumentsProvider() {
-    private val ALL_MIME_TYPES = "*/*"
+    companion object {
+        private const val ALL_MIME_TYPES = "*/*"
 
-    private val BASE_DIR by lazy {
+        // The default columns to return information about a root if no specific
+        // columns are requested in a query.
+        private val DEFAULT_ROOT_PROJECTION = arrayOf(
+            Root.COLUMN_ROOT_ID,
+            Root.COLUMN_MIME_TYPES,
+            Root.COLUMN_FLAGS,
+            Root.COLUMN_ICON,
+            Root.COLUMN_TITLE,
+            Root.COLUMN_SUMMARY,
+            Root.COLUMN_DOCUMENT_ID,
+            Root.COLUMN_AVAILABLE_BYTES
+        )
+
+        // The default columns to return information about a document if no specific
+        // columns are requested in a query.
+        private val DEFAULT_DOCUMENT_PROJECTION = arrayOf(
+            DocumentsContract.Document.COLUMN_DOCUMENT_ID,
+            DocumentsContract.Document.COLUMN_MIME_TYPE,
+            DocumentsContract.Document.COLUMN_DISPLAY_NAME,
+            DocumentsContract.Document.COLUMN_LAST_MODIFIED,
+            DocumentsContract.Document.COLUMN_FLAGS,
+            DocumentsContract.Document.COLUMN_SIZE
+        )
+    }
+
+    private val baseDir by lazy {
         context?.getExternalFilesDir("yuhaiin") ?: throw IllegalStateException("Context is null")
     }
 
-
-    // The default columns to return information about a root if no specific
-    // columns are requested in a query.
-    private val DEFAULT_ROOT_PROJECTION = arrayOf(
-        Root.COLUMN_ROOT_ID,
-        Root.COLUMN_MIME_TYPES,
-        Root.COLUMN_FLAGS,
-        Root.COLUMN_ICON,
-        Root.COLUMN_TITLE,
-        Root.COLUMN_SUMMARY,
-        Root.COLUMN_DOCUMENT_ID,
-        Root.COLUMN_AVAILABLE_BYTES
-    )
-
-    // The default columns to return information about a document if no specific
-    // columns are requested in a query.
-    private val DEFAULT_DOCUMENT_PROJECTION = arrayOf(
-        DocumentsContract.Document.COLUMN_DOCUMENT_ID,
-        DocumentsContract.Document.COLUMN_MIME_TYPE,
-        DocumentsContract.Document.COLUMN_DISPLAY_NAME,
-        DocumentsContract.Document.COLUMN_LAST_MODIFIED,
-        DocumentsContract.Document.COLUMN_FLAGS,
-        DocumentsContract.Document.COLUMN_SIZE
-    )
 
     override fun onCreate(): Boolean {
         return true
@@ -60,8 +62,8 @@ class YuhaiinDocumentProvider : DocumentsProvider() {
         val result = MatrixCursor(projection ?: DEFAULT_ROOT_PROJECTION)
 
         val row = result.newRow()
-        row.add(Root.COLUMN_ROOT_ID, BASE_DIR)
-        row.add(Root.COLUMN_DOCUMENT_ID, getDocIdForFile(BASE_DIR))
+        row.add(Root.COLUMN_ROOT_ID, baseDir)
+        row.add(Root.COLUMN_DOCUMENT_ID, getDocIdForFile(baseDir))
         row.add(Root.COLUMN_SUMMARY, null)
         row.add(
             Root.COLUMN_FLAGS,
@@ -69,7 +71,7 @@ class YuhaiinDocumentProvider : DocumentsProvider() {
         )
         row.add(Root.COLUMN_TITLE, context?.getString(R.string.app_name) ?: "yuhaiin")
         row.add(Root.COLUMN_MIME_TYPES, ALL_MIME_TYPES)
-        row.add(Root.COLUMN_AVAILABLE_BYTES, BASE_DIR.freeSpace)
+        row.add(Root.COLUMN_AVAILABLE_BYTES, baseDir.freeSpace)
         row.add(Root.COLUMN_ICON, R.mipmap.ic_launcher)
         return result
     }
@@ -115,16 +117,15 @@ class YuhaiinDocumentProvider : DocumentsProvider() {
         val pending = LinkedList<File>()
         pending.add(parent)
 
-        val MAX_SEARCH_RESULTS = 50
-        while (!pending.isEmpty() && result.count < MAX_SEARCH_RESULTS) {
+        val maxSearchResults = 50
+        while (!pending.isEmpty() && result.count < maxSearchResults) {
             val file = pending.removeFirst()
             // Avoid directories outside the $HOME directory linked with symlinks (to avoid e.g. search
             // through the whole SD card).
-            var isInsideHome: Boolean
-            try {
-                isInsideHome = file.canonicalPath.startsWith(BASE_DIR.toString())
+            val isInsideHome: Boolean = try {
+                file.canonicalPath.startsWith(baseDir.toString())
             } catch (e: IOException) {
-                isInsideHome = true
+                true
             }
             if (isInsideHome) {
                 if (file.isDirectory) {

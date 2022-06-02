@@ -4,17 +4,19 @@ import android.content.Context
 import android.net.VpnService
 import android.util.Log
 import io.github.asutorufa.yuhaiin.R
-import io.github.asutorufa.yuhaiin.util.Constants.ROUTE_CHN
-import io.github.asutorufa.yuhaiin.util.Constants.ROUTE_NO_LOCAL
 
 object Routes {
     fun addRoutes(context: Context, builder: VpnService.Builder, name: String) {
-        val routes: Array<String> = if (ROUTE_CHN == name) {
-            context.resources.getStringArray(R.array.simple_route)
-        } else if (ROUTE_NO_LOCAL == name) {
-            context.resources.getStringArray(R.array.all_routes_except_local)
-        } else {
-            arrayOf("0.0.0.0/0")
+        val routes: Array<String> = when (name) {
+            context.resources.getString(R.string.adv_route_non_chn) -> {
+                context.resources.getStringArray(R.array.simple_route)
+            }
+            context.resources.getString(R.string.adv_route_non_local) -> {
+                context.resources.getStringArray(R.array.all_routes_except_local)
+            }
+            else -> {
+                arrayOf("0.0.0.0/0")
+            }
         }
         for (r in routes) {
             addRoute(builder, r)
