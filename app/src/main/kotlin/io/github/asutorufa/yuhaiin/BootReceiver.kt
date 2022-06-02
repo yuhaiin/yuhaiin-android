@@ -5,11 +5,11 @@ import android.content.Context
 import android.content.Intent
 import android.net.VpnService
 import android.util.Log
+import androidx.core.content.ContextCompat
 import io.github.asutorufa.yuhaiin.BuildConfig.DEBUG
-import io.github.asutorufa.yuhaiin.util.Utility
 
 class BootReceiver : BroadcastReceiver() {
-    private val TAG = this.javaClass.simpleName
+    private val tag = this.javaClass.simpleName
 
     override fun onReceive(context: Context, intent: Intent) {
         if (Intent.ACTION_BOOT_COMPLETED == intent.action) {
@@ -18,9 +18,11 @@ class BootReceiver : BroadcastReceiver() {
 
             if (p.autoConnect && VpnService.prepare(context) == null) {
                 if (DEBUG) {
-                    Log.d(TAG, "starting VPN service on boot")
+                    Log.d(tag, "starting VPN service on boot")
                 }
-                Utility.startVpn(context)
+                ContextCompat.startForegroundService(
+                    context, Intent(context, YuhaiinVpnService::class.java)
+                )
             }
         }
     }

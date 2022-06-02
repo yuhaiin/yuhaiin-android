@@ -3,7 +3,6 @@ package io.github.asutorufa.yuhaiin.database
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import io.github.asutorufa.yuhaiin.util.Constants
 
 
 @Entity(tableName = "profile")
@@ -21,10 +20,7 @@ data class Profile(
     @ColumnInfo(name = "user_pw", defaultValue = "false") var isUserPw: Boolean = false,
     @ColumnInfo(name = "username") var username: String = "",
     @ColumnInfo(name = "password") var password: String = "",
-    @ColumnInfo(
-        name = "route",
-        defaultValue = Constants.ROUTE_ALL
-    ) var route: String = Constants.ROUTE_ALL,
+    @ColumnInfo(name = "route", defaultValue = "All (Default)") var route: String = "All (Default)",
     @ColumnInfo(
         name = "fake_dns_cidr",
         defaultValue = "10.0.2.1/24"
@@ -40,11 +36,4 @@ data class Profile(
     @ColumnInfo(name = "rule_block") var ruleBlock: String = "",
     @ColumnInfo(name = "rule_proxy") var ruleProxy: String = "",
     @ColumnInfo(name = "rule_direct") var ruleDirect: String = "",
-)
-
-@Entity(tableName = "last_profile")
-data class lastProfile(
-    @PrimaryKey @ColumnInfo(name = "key", defaultValue = "0") val key: Int = 0,
-    @ColumnInfo(name = "name", defaultValue = "Default")
-    val name: String = "Default"
 )

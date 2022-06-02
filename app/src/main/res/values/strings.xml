@@ -3,40 +3,71 @@
 
     <string name="app_name">yuhaiin</string>
 
-    <string name="profile">Profile</string>
+    <string name="profile_title">Profile</string>
+    <string name="profile_key">profile</string>
     <string name="prof_default">Default</string>
 
-    <string name="yuhaiin" translatable="false">Yuhaiin</string>
-    <string name="yuhaiin_port" translatable="false">Yuhaiin Port</string>
-    <string name="yuhaiin_host_summary" translatable="false">gRPC and HTTP listen port</string>
-    <string name="open_yuhaiin_page" translatable="false">open_yuhaiin_page</string>
+    <string name="yuhaiin">Yuhaiin</string>
+    <string name="yuhaiin_port_key">yuhaiin_port</string>
+    <string name="yuhaiin_port_title">Yuhaiin Port</string>
+    <string name="yuhaiin_host_summary">gRPC and HTTP listen port</string>
+    <string name="open_yuhaiin_page">open_yuhaiin_page</string>
 
     <string name="connection">Connection</string>
-    <string name="http_server_port" translatable="false">HTTP Port</string>
-    <string name="socks5_server_port" translatable="false">Socks5 Port</string>
-    <string name="ipv6_proxy">IPv6</string>
+    <string name="http_server_port_key">http_server_port</string>
+    <string name="http_server_port_title">HTTP Port</string>
+    <string name="socks5_server_port_key">socks5_server_port</string>
+    <string name="socks5_server_port_title">Socks5 Port</string>
+    <string name="ipv6_proxy_key">ipv6</string>
+    <string name="ipv6_proxy_title">IPv6</string>
     <string name="ipv6_proxy_sum">Enable IPv6 forwarding. If the server supports IPv6, you can access IPv6 contents from
         IPv4 network with this enabled.
     </string>
-    <string name="allow_lan" translatable="false">Allow Lan Connect</string>
+    <string name="allow_lan_key">allow_lan</string>
+    <string name="allow_lan_title">Allow Lan Connect</string>
 
     <string name="authentication">Authentication</string>
-    <string name="auth_userpw">Username &amp; Password Authentication</string>
-    <string name="auth_username">Username</string>
-    <string name="auth_password">Password</string>
+    <string name="auth_userpw_title">Username &amp; Password Authentication</string>
+    <string name="auth_userpw_key">auth_userpw</string>
+    <string name="auth_username_key">username</string>
+    <string name="auth_password_key">password</string>
+    <string name="auth_username_title">Username</string>
+    <string name="auth_password_title">Password</string>
 
     <string name="advanced">Advanced</string>
-    <string name="adv_route">Route</string>
+    <string name="adv_route_Key">route</string>
+    <string name="adv_route_title">Route</string>
     <string name="adv_route_all">All (Default)</string>
     <string name="adv_route_non_chn">Non-Chinese IPs</string>
-    <string name="adv_route_non_local" translatable="false">Non-Local IPs</string>
-    <string name="adv_fake_dns_cidr" translatable="false">Fake DNS CIDR</string>
-    <string name="adv_dns_port">DNS Port</string>
-    <string name="adv_auto_connect">Connect on Boot</string>
-    <string name="adv_per_app">Per-app Proxy</string>
-    <string name="adv_app_bypass">Bypass Mode</string>
+    <string name="adv_route_non_local">Non-Local IPs</string>
+    <string-array name="adv_routes">
+        <item>@string/adv_route_all</item>
+        <item>@string/adv_route_non_local</item>
+        <item>@string/adv_route_non_chn</item>
+    </string-array>
+
+    <string-array name="adv_routes_values">
+        <item>@string/adv_route_all</item>
+        <item>@string/adv_route_non_local</item>
+        <item>@string/adv_route_non_chn</item>
+    </string-array>
+
+    <string name="adv_fake_dns_cidr_key">fake_dns_cidr</string>
+    <string name="adv_fake_dns_cidr_title">Fake DNS CIDR</string>
+
+    <string name="adv_dns_port_key">dns_port</string>
+    <string name="adv_dns_port_title">DNS Port</string>
+
+    <string name="adv_auto_connect_key">auto_connect</string>
+    <string name="adv_auto_connect_title">Connect on Boot</string>
+
+    <string name="adv_per_app_key">per_app</string>
+    <string name="adv_per_app_title">Per-app Proxy</string>
+    <string name="adv_app_bypass_key">app_bypass</string>
+    <string name="adv_app_bypass_title">Bypass Mode</string>
     <string name="adv_app_bypass_sum">Enable this option to bypass selected apps instead of proxying them</string>
-    <string name="adv_app_list">App List</string>
+    <string name="adv_app_list_key">app_list</string>
+    <string name="adv_app_list_title">App List</string>
     <string name="adv_app_list_sum">Select apps to apply or bypass the proxy</string>
 
     <string name="prof_add">Add Profile</string>
@@ -50,16 +81,16 @@
     <string name="channel_name">Proxy active</string>
 
 
-    <string name="rule" translatable="false">Rule</string>
-    <string name="rule_block" translatable="false">Block</string>
-    <string name="rule_proxy" translatable="false">Proxy</string>
-    <string name="rule_direct" translatable="false">Direct</string>
+    <string name="rule">Rule</string>
+    <string name="rule_block">Block</string>
+    <string name="rule_proxy">Proxy</string>
+    <string name="rule_direct">Direct</string>
 
-    <string name="debug" translatable="false">Debug</string>
-    <string name="logcat" translatable="false">Logcat</string>
-    <string name="save_logcat" translatable="false">save_logcat</string>
-    <string name="save_logcat_name" translatable="false">Save Logcat</string>
-    <string name="save_logcat_summary" translatable="false">Save logcat to
+    <string name="debug">Debug</string>
+    <string name="logcat">Logcat</string>
+    <string name="save_logcat">save_logcat</string>
+    <string name="save_logcat_name">Save Logcat</string>
+    <string name="save_logcat_summary">Save logcat to
         Android/data/io.github.asutorufa.yuhaiin/files/yuhaiin/log.
     </string>
 

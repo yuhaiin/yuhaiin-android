@@ -1,23 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.preference.PreferenceScreen
-        xmlns:android="http://schemas.android.com/apk/res/android">
+<androidx.preference.PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:android="http://schemas.android.com/apk/res/android">
 
     <ListPreference
-            android:key="profile"
-            android:title="@string/profile"
-            android:icon="@drawable/person"
-    />
+        android:key="@string/profile_key"
+        android:title="@string/profile_title"
+        android:persistent="false"
+        app:useSimpleSummaryProvider="true"
+        android:icon="@drawable/person" />
 
 
     <PreferenceCategory
             android:title="@string/connection">
 
         <EditTextPreference
-                android:icon="@drawable/vpn_lock"
-                android:key="yuhaiin_port"
-                android:title="@string/yuhaiin_port"
-                android:summary="@string/yuhaiin_host_summary"
-                android:singleLine="true"/>
+            android:icon="@drawable/vpn_lock"
+            android:key="@string/yuhaiin_port_key"
+            android:title="@string/yuhaiin_port_title"
+            app:useSimpleSummaryProvider="true"
+            android:summary="@string/yuhaiin_host_summary"
+            android:singleLine="true" />
 
         <Preference
             android:title="Open Yuhaiin Page"
@@ -27,32 +29,34 @@
             />
 
         <EditTextPreference
-                android:icon="@drawable/http"
-                android:key="http_server_port"
-                android:title="@string/http_server_port"
-                android:inputType="number"
-                android:singleLine="true"/>
+            android:icon="@drawable/http"
+            android:key="@string/http_server_port_key"
+            android:title="@string/http_server_port_title"
+            android:inputType="number"
+            app:useSimpleSummaryProvider="true"
+            android:singleLine="true" />
 
         <EditTextPreference
-                android:icon="@drawable/spoke"
-                android:key="socks5_server_port"
-                android:title="@string/socks5_server_port"
-                android:inputType="numberDecimal"
-                android:digits="0123456789"
-                android:singleLine="true"/>
+            android:icon="@drawable/spoke"
+            android:key="@string/socks5_server_port_key"
+            android:title="@string/socks5_server_port_title"
+            android:inputType="numberDecimal"
+            android:digits="0123456789"
+            app:useSimpleSummaryProvider="true"
+            android:singleLine="true" />
 
         <SwitchPreferenceCompat
-                android:icon="@drawable/lan"
-                android:key="allow_lan"
-                android:title="@string/allow_lan"
-                android:layout_height="match_parent"/>
+            android:icon="@drawable/lan"
+            android:key="@string/allow_lan_key"
+            android:title="@string/allow_lan_title"
+            android:layout_height="match_parent" />
 
         <SwitchPreferenceCompat
-                android:icon="@drawable/hub"
-                android:key="ipv6_proxy"
-                android:title="@string/ipv6_proxy"
-                android:summary="@string/ipv6_proxy_sum"
-                android:layout_height="match_parent"/>
+            android:icon="@drawable/hub"
+            android:key="@string/ipv6_proxy_key"
+            android:title="@string/ipv6_proxy_title"
+            android:summary="@string/ipv6_proxy_sum"
+            android:layout_height="match_parent" />
 
     </PreferenceCategory>
 
@@ -60,25 +64,26 @@
             android:title="@string/authentication">
 
         <SwitchPreferenceCompat
-                android:icon="@drawable/authenticator"
-                android:key="auth_userpw"
-                android:title="@string/auth_userpw"
-                android:defaultValue="false"/>
+            android:icon="@drawable/authenticator"
+            android:key="@string/auth_userpw_key"
+            android:title="@string/auth_userpw_title" />
 
         <EditTextPreference
-                android:key="auth_username"
-                android:title="@string/auth_username"
-                android:icon="@drawable/face"
-                android:dependency="auth_userpw"
-                android:singleLine="true"/>
+            android:key="@string/auth_username_key"
+            android:title="@string/auth_username_title"
+            android:icon="@drawable/face"
+            android:dependency="@string/auth_userpw_key"
+            app:useSimpleSummaryProvider="true"
+            android:singleLine="true" />
 
         <EditTextPreference
-                android:key="auth_password"
-                android:title="@string/auth_password"
-                android:icon="@drawable/password"
-                android:inputType="textPassword"
-                android:dependency="auth_userpw"
-                android:singleLine="true"/>
+            android:key="@string/auth_password_key"
+            android:title="@string/auth_password_title"
+            android:icon="@drawable/password"
+            android:inputType="textPassword"
+            android:dependency="@string/auth_userpw_key"
+            app:useSimpleSummaryProvider="true"
+            android:singleLine="true" />
 
     </PreferenceCategory>
 
@@ -86,48 +91,51 @@
             android:title="@string/advanced">
 
         <DropDownPreference
-                android:icon="@drawable/router"
-                android:key="adv_route"
-                android:title="@string/adv_route"
-                android:entries="@array/adv_routes"
-                android:entryValues="@array/adv_routes_values"/>
+            android:icon="@drawable/router"
+            android:key="@string/adv_route_Key"
+            android:title="@string/adv_route_title"
+            android:entries="@array/adv_routes"
+            app:useSimpleSummaryProvider="true"
+            android:entryValues="@array/adv_routes_values" />
 
         <EditTextPreference
-                android:icon="@drawable/dns"
-                android:key="adv_fake_dns_cidr"
-                android:title="@string/adv_fake_dns_cidr"
-                android:singleLine="true"/>
+            android:icon="@drawable/dns"
+            android:key="@string/adv_fake_dns_cidr_key"
+            android:title="@string/adv_fake_dns_cidr_title"
+            app:useSimpleSummaryProvider="true"
+            android:singleLine="true" />
 
         <EditTextPreference
-                android:icon="@drawable/dns"
-                android:key="adv_dns_port"
-                android:title="@string/adv_dns_port"
-                android:inputType="number"
-                android:singleLine="true"/>
+            android:icon="@drawable/dns"
+            android:key="@string/adv_dns_port_key"
+            android:title="@string/adv_dns_port_title"
+            android:inputType="number"
+            app:useSimpleSummaryProvider="true"
+            android:singleLine="true" />
 
         <SwitchPreferenceCompat
-                android:icon="@drawable/auto_mode"
-                android:key="adv_auto_connect"
-                android:title="@string/adv_auto_connect"/>
+            android:icon="@drawable/auto_mode"
+            android:key="@string/adv_auto_connect_key"
+            android:title="@string/adv_auto_connect_title" />
 
         <SwitchPreferenceCompat
-                android:key="adv_per_app"
-                android:icon="@drawable/settop_component"
-                android:title="@string/adv_per_app"/>
+            android:key="@string/adv_per_app_key"
+            android:icon="@drawable/settop_component"
+            android:title="@string/adv_per_app_title" />
 
         <SwitchPreferenceCompat
-                android:key="adv_app_bypass"
-                android:icon="@drawable/alt_route"
-                android:title="@string/adv_app_bypass"
-                android:summary="@string/adv_app_bypass_sum"
-                android:dependency="adv_per_app"/>
+            android:key="@string/adv_app_bypass_key"
+            android:icon="@drawable/alt_route"
+            android:title="@string/adv_app_bypass_title"
+            android:summary="@string/adv_app_bypass_sum"
+            android:dependency="@string/adv_per_app_key" />
 
         <MultiSelectListPreference
-            android:key="adv_app_list"
+            android:key="@string/adv_app_list_key"
             android:icon="@drawable/apps"
-            android:title="@string/adv_app_list"
+            android:title="@string/adv_app_list_title"
             android:summary="@string/adv_app_list_sum"
-            android:dependency="adv_per_app" />
+            android:dependency="@string/adv_per_app_key" />
 
     </PreferenceCategory>
 
@@ -146,6 +154,7 @@
             android:key="@string/rule_block"
             android:title="@string/rule_block"
             android:icon="@drawable/block"
+            app:useSimpleSummaryProvider="true"
             android:singleLine="false" />
     </PreferenceCategory>
 
