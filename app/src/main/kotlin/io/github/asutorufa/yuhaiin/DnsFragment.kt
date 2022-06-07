@@ -2,7 +2,7 @@ package io.github.asutorufa.yuhaiin
 
 import android.os.Bundle
 import androidx.preference.*
-import io.github.asutorufa.yuhaiin.database.DNSType
+import io.github.asutorufa.yuhaiin.database.DNS
 import io.github.asutorufa.yuhaiin.database.Manager
 import io.github.asutorufa.yuhaiin.database.Profile
 import io.github.asutorufa.yuhaiin.util.DataStore
@@ -46,7 +46,7 @@ class DnsFragment : PreferenceFragmentCompat() {
         }
 
         findPreference<DropDownPreference>(resources.getString(R.string.remote_dns_type_key))!!.apply {
-            value = dnsTypeToStr(DNSType.fromInt(profile.remoteDns.type))
+            value = dnsTypeToStr(DNS.Type.fromInt(profile.remoteDns.type))
             setOnPreferenceChangeListener(this) { _, newValue ->
                 profile.remoteDns.type = strToDNSType(newValue as String).value
             }
@@ -82,7 +82,7 @@ class DnsFragment : PreferenceFragmentCompat() {
             }
         }
         findPreference<DropDownPreference>(resources.getString(R.string.local_dns_type_key))!!.apply {
-            value = dnsTypeToStr(DNSType.fromInt(profile.localDns.type))
+            value = dnsTypeToStr(DNS.Type.fromInt(profile.localDns.type))
             setOnPreferenceChangeListener(this) { _, newValue ->
                 profile.localDns.type = strToDNSType(newValue as String).value
             }
@@ -111,7 +111,7 @@ class DnsFragment : PreferenceFragmentCompat() {
             }
         }
         findPreference<DropDownPreference>(resources.getString(R.string.bootstrap_dns_type_key))!!.apply {
-            value = dnsTypeToStr(DNSType.fromInt(profile.bootstrapDns.type))
+            value = dnsTypeToStr(DNS.Type.fromInt(profile.bootstrapDns.type))
             setOnPreferenceChangeListener(this) { _, newValue ->
                 profile.bootstrapDns.type = strToDNSType(newValue as String).value
             }
@@ -132,26 +132,26 @@ class DnsFragment : PreferenceFragmentCompat() {
         }
     }
 
-    private fun strToDNSType(str: String): DNSType {
+    private fun strToDNSType(str: String): DNS.Type {
         return when (str) {
-            resources.getString(R.string.dns_type_doudp) -> DNSType.UDP
-            resources.getString(R.string.dns_type_dotcp) -> DNSType.TCP
-            resources.getString(R.string.dns_type_doh) -> DNSType.HTTPS
-            resources.getString(R.string.dns_type_dot) -> DNSType.TLS
-            resources.getString(R.string.dns_type_doq) -> DNSType.QUIC
-            resources.getString(R.string.dns_type_doh3) -> DNSType.HTTPS3
-            else -> DNSType.Reserve
+            resources.getString(R.string.dns_type_doudp) -> DNS.Type.UDP
+            resources.getString(R.string.dns_type_dotcp) -> DNS.Type.TCP
+            resources.getString(R.string.dns_type_doh) -> DNS.Type.HTTPS
+            resources.getString(R.string.dns_type_dot) -> DNS.Type.TLS
+            resources.getString(R.string.dns_type_doq) -> DNS.Type.QUIC
+            resources.getString(R.string.dns_type_doh3) -> DNS.Type.HTTPS3
+            else -> DNS.Type.Reserve
         }
     }
 
-    private fun dnsTypeToStr(type: DNSType): String {
+    private fun dnsTypeToStr(type: DNS.Type): String {
         return when (type) {
-            DNSType.UDP -> resources.getString(R.string.dns_type_doudp)
-            DNSType.TCP -> resources.getString(R.string.dns_type_dotcp)
-            DNSType.HTTPS -> resources.getString(R.string.dns_type_doh)
-            DNSType.TLS -> resources.getString(R.string.dns_type_dot)
-            DNSType.QUIC -> resources.getString(R.string.dns_type_doq)
-            DNSType.HTTPS3 -> resources.getString(R.string.dns_type_doh3)
+            DNS.Type.UDP -> resources.getString(R.string.dns_type_doudp)
+            DNS.Type.TCP -> resources.getString(R.string.dns_type_dotcp)
+            DNS.Type.HTTPS -> resources.getString(R.string.dns_type_doh)
+            DNS.Type.TLS -> resources.getString(R.string.dns_type_dot)
+            DNS.Type.QUIC -> resources.getString(R.string.dns_type_doq)
+            DNS.Type.HTTPS3 -> resources.getString(R.string.dns_type_doh3)
             else -> resources.getString(R.string.dns_type_doudp)
         }
     }
