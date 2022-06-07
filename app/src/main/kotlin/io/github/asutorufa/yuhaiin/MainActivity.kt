@@ -7,6 +7,9 @@ import android.view.WindowInsetsController
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.core.content.ContextCompat
+import androidx.navigation.fragment.findNavController
+import androidx.navigation.ui.setupWithNavController
+
 
 class MainActivity : AppCompatActivity() {
 
@@ -37,11 +40,16 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-
         findViewById<Toolbar>(R.id.toolbar).also {
             setSupportActionBar(it)
             it.overflowIcon = ContextCompat.getDrawable(this@MainActivity, R.drawable.sort)
+            it.setupWithNavController(
+                supportFragmentManager.findFragmentById(R.id.fragment_container)!!
+                    .findNavController()
+            )
         }
-        supportFragmentManager.beginTransaction().replace(R.id.settings, ProfileFragment()).commit()
+
     }
+
+
 }

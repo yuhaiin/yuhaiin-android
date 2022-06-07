@@ -46,17 +46,46 @@
         <item>@string/adv_route_non_chn</item>
     </string-array>
 
-    <string-array name="adv_routes_values">
-        <item>@string/adv_route_all</item>
-        <item>@string/adv_route_non_local</item>
-        <item>@string/adv_route_non_chn</item>
-    </string-array>
+
+    <string name="adv_dns_Key">dns</string>
 
     <string name="adv_fake_dns_cidr_key">fake_dns_cidr</string>
     <string name="adv_fake_dns_cidr_title">Fake DNS CIDR</string>
 
     <string name="adv_dns_port_key">dns_port</string>
     <string name="adv_dns_port_title">DNS Port</string>
+
+    <string name="remote_dns_host_key">remote_dns_host</string>
+    <string name="remote_dns_type_key">remote_dns_type</string>
+    <string name="remote_dns_subnet_key">remote_dns_subnet</string>
+    <string name="remote_dns_tls_server_name_key">remote_dns_tls_server_name</string>
+    <string name="remote_dns_proxy_key">remote_dns_proxy</string>
+
+    <string name="local_dns_host_key">local_dns_host</string>
+    <string name="local_dns_type_key">local_dns_type</string>
+    <string name="local_dns_subnet_key">local_dns_subnet</string>
+    <string name="local_dns_tls_server_name_key">local_dns_tls_server_name</string>
+
+    <string name="bootstrap_dns_host_key">bootstrap_dns_host</string>
+    <string name="bootstrap_dns_type_key">bootstrap_dns_type</string>
+    <string name="bootstrap_dns_subnet_key">bootstrap_dns_subnet</string>
+    <string name="bootstrap_dns_tls_server_name_key">bootstrap_dns_tls_server_name</string>
+
+    <string name="dns_type_doudp">DNS over UDP</string>
+    <string name="dns_type_dotcp">DNS over TCP</string>
+    <string name="dns_type_doh">DNS over HTTPS</string>
+    <string name="dns_type_dot">DNS over TLS</string>
+    <string name="dns_type_doq">DNS over QUIC</string>
+    <string name="dns_type_doh3">DNS over HTTPS3</string>
+    <string-array name="dns_types">
+        <item>@string/dns_type_doudp</item>
+        <item>@string/dns_type_dotcp</item>
+        <item>@string/dns_type_doh</item>
+        <item>@string/dns_type_dot</item>
+        <item>@string/dns_type_doq</item>
+        <item>@string/dns_type_doh3</item>
+    </string-array>
+
 
     <string name="adv_auto_connect_key">auto_connect</string>
     <string name="adv_auto_connect_title">Connect on Boot</string>

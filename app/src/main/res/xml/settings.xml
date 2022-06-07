@@ -87,8 +87,12 @@
 
     </PreferenceCategory>
 
-    <PreferenceCategory
-            android:title="@string/advanced">
+    <PreferenceCategory android:title="@string/advanced">
+
+        <Preference
+            android:title="DNS"
+            android:icon="@drawable/dns"
+            android:key="@string/adv_dns_Key" />
 
         <DropDownPreference
             android:icon="@drawable/router"
@@ -96,22 +100,8 @@
             android:title="@string/adv_route_title"
             android:entries="@array/adv_routes"
             app:useSimpleSummaryProvider="true"
-            android:entryValues="@array/adv_routes_values" />
+            android:entryValues="@array/adv_routes" />
 
-        <EditTextPreference
-            android:icon="@drawable/dns"
-            android:key="@string/adv_fake_dns_cidr_key"
-            android:title="@string/adv_fake_dns_cidr_title"
-            app:useSimpleSummaryProvider="true"
-            android:singleLine="true" />
-
-        <EditTextPreference
-            android:icon="@drawable/dns"
-            android:key="@string/adv_dns_port_key"
-            android:title="@string/adv_dns_port_title"
-            android:inputType="number"
-            app:useSimpleSummaryProvider="true"
-            android:singleLine="true" />
 
         <SwitchPreferenceCompat
             android:icon="@drawable/auto_mode"
@@ -157,6 +147,7 @@
             app:useSimpleSummaryProvider="true"
             android:singleLine="false" />
     </PreferenceCategory>
+
 
     <PreferenceCategory android:title="@string/debug">
 
