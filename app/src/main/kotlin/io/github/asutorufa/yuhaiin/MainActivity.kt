@@ -48,7 +48,6 @@ class MainActivity : AppCompatActivity() {
                     .findNavController()
             )
         }
-
     }
 
 
