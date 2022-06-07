@@ -16,6 +16,9 @@ import io.github.asutorufa.yuhaiin.database.Profile
 import io.github.asutorufa.yuhaiin.util.Routes
 import io.github.asutorufa.yuhaiin.util.Utility
 import yuhaiin.App
+import yuhaiin.DNS
+import yuhaiin.DNSSetting
+import yuhaiin.Opts
 import java.io.File
 
 
@@ -272,22 +275,48 @@ class YuhaiinVpnService : VpnService() {
         Log.d(tag, "start, yuhaiin: $profile")
 
         if (profile.yuhaiinPort > 0) {
+
             var address = "127.0.0.1"
             if (profile.allowLan) address = "0.0.0.0"
+
+            val opts = Opts().apply {
+                host = "${address}:${profile.yuhaiinPort}"
+                savepath = getExternalFilesDir("yuhaiin")!!.absolutePath
+                socks5 = "${address}:${profile.socks5ServerPort}"
+                http = "${address}:${profile.httpServerPort}"
+                saveLogcat = profile.saveLogcat
+                block = profile.ruleBlock
+                proxy = profile.ruleProxy
+                direct = profile.ruleProxy
+                dns = DNSSetting().apply {
+                    server = "${address}:${profile.dnsPort}"
+                    fakedns = profile.fakeDnsCidr.isNotEmpty()
+                    fakednsIpRange = profile.fakeDnsCidr
+                    remote = DNS().apply {
+                        host = profile.remoteDns.host
+                        subnet = profile.remoteDns.subnet
+                        type = profile.remoteDns.type
+                        tlsServername = profile.remoteDns.tlsServerName
+                        proxy = profile.remoteDns.proxy
+                    }
+                    local = DNS().apply {
+                        host = profile.localDns.host
+                        subnet = profile.localDns.subnet
+                        type = profile.localDns.type
+                        tlsServername = profile.localDns.tlsServerName
+                        proxy = profile.localDns.proxy
+                    }
+                    bootstrap = DNS().apply {
+                        host = profile.bootstrapDns.host
+                        subnet = profile.bootstrapDns.subnet
+                        type = profile.bootstrapDns.type
+                        tlsServername = profile.bootstrapDns.tlsServerName
+                        proxy = profile.bootstrapDns.proxy
+                    }
+                }
+            }
             try {
-                yuhaiin.start(
-                    "${address}:${profile.yuhaiinPort}",
-                    getExternalFilesDir("yuhaiin")!!.absolutePath,
-                    "${address}:${profile.dnsPort}",
-                    "${address}:${profile.socks5ServerPort}",
-                    "${address}:${profile.httpServerPort}",
-                    profile.fakeDnsCidr.isNotEmpty(),
-                    profile.fakeDnsCidr,
-                    profile.saveLogcat,
-                    profile.ruleBlock,
-                    profile.ruleProxy,
-                    profile.ruleDirect
-                )
+                yuhaiin.start(opts)
             } catch (e: Exception) {
                 throw e
             }

@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.preference.PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <EditTextPreference
+        android:key="@string/adv_dns_port_key"
+        android:title="@string/adv_dns_port_title"
+        android:inputType="number"
+        app:useSimpleSummaryProvider="true"
+        android:singleLine="true" />
+
+    <EditTextPreference
+        android:key="@string/adv_fake_dns_cidr_key"
+        android:title="@string/adv_fake_dns_cidr_title"
+        app:useSimpleSummaryProvider="true"
+        android:singleLine="true" />
+
+    <PreferenceCategory
+        android:title="Remote"
+        android:icon="@drawable/dns">
+        <EditTextPreference
+            android:title="Host"
+            android:singleLine="true"
+            android:key="@string/remote_dns_host_key"
+            app:useSimpleSummaryProvider="true" />
+        <DropDownPreference
+            android:title="Type"
+            android:entries="@array/dns_types"
+            android:key="@string/remote_dns_type_key"
+            app:useSimpleSummaryProvider="true"
+            android:entryValues="@array/dns_types" />
+        <SwitchPreferenceCompat
+            android:title="Proxy"
+            android:key="@string/remote_dns_proxy_key" />
+        <EditTextPreference
+            android:title="Subnet"
+            android:singleLine="true"
+            android:key="@string/remote_dns_subnet_key"
+            app:useSimpleSummaryProvider="true" />
+        <EditTextPreference
+            android:title="Tls Server Name"
+            android:singleLine="true"
+            android:key="@string/remote_dns_tls_server_name_key"
+            app:useSimpleSummaryProvider="true" />
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        android:title="Local"
+        android:icon="@drawable/dns">
+
+        <EditTextPreference
+            android:title="Host"
+            android:singleLine="true"
+            android:key="@string/local_dns_host_key"
+            app:useSimpleSummaryProvider="true" />
+        <DropDownPreference
+            android:title="Type"
+            android:entries="@array/dns_types"
+            app:useSimpleSummaryProvider="true"
+            android:key="@string/local_dns_type_key"
+            android:entryValues="@array/dns_types" />
+        <EditTextPreference
+            android:title="Subnet"
+            android:singleLine="true"
+            android:key="@string/local_dns_subnet_key"
+            app:useSimpleSummaryProvider="true" />
+        <EditTextPreference
+            android:title="Tls Server Name"
+            android:singleLine="true"
+            android:key="@string/local_dns_tls_server_name_key"
+            app:useSimpleSummaryProvider="true" />
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        android:title="Bootstrap"
+        android:icon="@drawable/dns">
+        <EditTextPreference
+            android:title="Host"
+            android:key="@string/bootstrap_dns_host_key"
+            android:singleLine="true"
+            app:useSimpleSummaryProvider="true" />
+        <DropDownPreference
+            android:title="Type"
+            android:key="@string/bootstrap_dns_type_key"
+            android:entries="@array/dns_types"
+            app:useSimpleSummaryProvider="true"
+            android:entryValues="@array/dns_types" />
+        <EditTextPreference
+            android:title="Subnet"
+            android:key="@string/bootstrap_dns_subnet_key"
+            android:singleLine="true"
+            app:useSimpleSummaryProvider="true" />
+        <EditTextPreference
+            android:title="Tls Server Name"
+            android:key="@string/bootstrap_dns_tls_server_name_key"
+            android:singleLine="true"
+            app:useSimpleSummaryProvider="true" />
+    </PreferenceCategory>
+</androidx.preference.PreferenceScreen>
