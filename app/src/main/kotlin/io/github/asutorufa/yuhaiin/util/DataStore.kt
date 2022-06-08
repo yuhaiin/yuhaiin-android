@@ -4,6 +4,7 @@ import androidx.preference.PreferenceDataStore
 import java.util.*
 
 class DataStore : PreferenceDataStore() {
+
     private val store = Collections.synchronizedMap(HashMap<String, Any>())
     private fun put(key: String?, value: Any?) {
         store[key] = value

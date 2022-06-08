@@ -1,24 +1,20 @@
 package io.github.asutorufa.yuhaiin
 
 import android.os.Bundle
-import androidx.preference.*
+import androidx.preference.DropDownPreference
+import androidx.preference.EditTextPreference
+import androidx.preference.PreferenceFragmentCompat
+import androidx.preference.SwitchPreferenceCompat
 import io.github.asutorufa.yuhaiin.database.DNS
-import io.github.asutorufa.yuhaiin.database.Manager
-import io.github.asutorufa.yuhaiin.database.Profile
+import io.github.asutorufa.yuhaiin.database.Manager.profile
+import io.github.asutorufa.yuhaiin.database.Manager.setOnPreferenceChangeListener
 import io.github.asutorufa.yuhaiin.util.DataStore
 
 class DnsFragment : PreferenceFragmentCompat() {
-    private val profile: Profile
-        get() = Manager.profile
 
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
         setPreferencesFromResource(R.xml.dns, rootKey)
     }
-
-    private fun setOnPreferenceChangeListener(
-        it: Preference,
-        run: (p: Preference, newValue: Any) -> Unit
-    ) = Manager.setOnPreferenceChangeListener(it, run)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

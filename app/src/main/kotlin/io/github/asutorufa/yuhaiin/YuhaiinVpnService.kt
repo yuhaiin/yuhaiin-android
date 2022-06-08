@@ -12,7 +12,7 @@ import android.os.ParcelFileDescriptor
 import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
-import io.github.asutorufa.yuhaiin.database.Profile
+import io.github.asutorufa.yuhaiin.database.Manager.profile
 import io.github.asutorufa.yuhaiin.util.Routes
 import io.github.asutorufa.yuhaiin.util.Utility
 import yuhaiin.App
@@ -49,7 +49,7 @@ class YuhaiinVpnService : VpnService() {
     private var tun2socks: Process? = null
 
     private val mBinder: IBinder = object : IVpnService.Stub() {
-        override fun isRunning() = this@YuhaiinVpnService.mRunning
+        override fun isRunning() = mRunning
         override fun stop() = stopMe()
     }
 
@@ -57,7 +57,7 @@ class YuhaiinVpnService : VpnService() {
     var underlyingNetwork: Network? = null
         set(value) {
             field = value
-            if (this.mRunning && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1) {
+            if (mRunning && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1) {
                 setUnderlyingNetworks(underlyingNetworks)
             }
         }
@@ -173,8 +173,6 @@ class YuhaiinVpnService : VpnService() {
         )
 
         try {
-            val db = MainApplication.db.ProfileDao()
-            val profile = db.getProfileByName(db.getLastProfile() ?: "Default")!!
 
             startForeground(
                 1, builder
@@ -185,9 +183,9 @@ class YuhaiinVpnService : VpnService() {
                     .build()
             )
 
-            configure(profile)
+            configure()
             Log.d(tag, "fd: ${mInterface?.fd}")
-            start(profile)
+            start()
 
         } catch (e: Exception) {
             e.printStackTrace()
@@ -203,7 +201,7 @@ class YuhaiinVpnService : VpnService() {
         return START_STICKY
     }
 
-    private fun configure(profile: Profile) {
+    private fun configure() {
         val b = Builder()
         b.setMtu(VPN_MTU)
             .setSession(profile.name)
@@ -270,16 +268,13 @@ class YuhaiinVpnService : VpnService() {
         mInterface = b.establish()
     }
 
-    private fun start(profile: Profile) {
-
-        Log.d(tag, "start, yuhaiin: $profile")
+    private fun start() {
+        Log.d(tag, "start yuhaiin: $profile")
 
         if (profile.yuhaiinPort > 0) {
-
             var address = "127.0.0.1"
             if (profile.allowLan) address = "0.0.0.0"
-
-            val opts = Opts().apply {
+            yuhaiin.start(Opts().apply {
                 host = "${address}:${profile.yuhaiinPort}"
                 savepath = getExternalFilesDir("yuhaiin")!!.absolutePath
                 socks5 = "${address}:${profile.socks5ServerPort}"
@@ -314,12 +309,7 @@ class YuhaiinVpnService : VpnService() {
                         proxy = profile.bootstrapDns.proxy
                     }
                 }
-            }
-            try {
-                yuhaiin.start(opts)
-            } catch (e: Exception) {
-                throw e
-            }
+            })
         }
 
         val command = buildString {
@@ -337,12 +327,12 @@ class YuhaiinVpnService : VpnService() {
                 append(" --username ${profile.username}")
                 append(" --password ${profile.password}")
             }
+
             if (profile.hasIPv6) {
                 append(" --netif-ip6addr $PRIVATE_VLAN6_ROUTER")
             }
             append(" --dnsgw 127.0.0.1:${profile.dnsPort} --enable-udprelay")
         }
-        Log.d(tag, (command))
         tun2socks = Utility.exec(command) { stopMe() }
 
         // Try to send the Fd through socket.
