@@ -10,8 +10,13 @@
         android:icon="@drawable/person" />
 
 
-    <PreferenceCategory
-            android:title="@string/connection">
+    <PreferenceCategory android:title="@string/connection">
+
+        <Preference
+            android:title="Open Yuhaiin Page"
+            android:key="@string/open_yuhaiin_page"
+            android:singleLine="true"
+            android:icon="@drawable/open_in_browser" />
 
         <EditTextPreference
             android:icon="@drawable/vpn_lock"
@@ -20,13 +25,6 @@
             app:useSimpleSummaryProvider="true"
             android:summary="@string/yuhaiin_host_summary"
             android:singleLine="true" />
-
-        <Preference
-            android:title="Open Yuhaiin Page"
-            android:key="@string/open_yuhaiin_page"
-            android:singleLine="true"
-            android:icon="@drawable/open_in_browser"
-            />
 
         <EditTextPreference
             android:icon="@drawable/http"

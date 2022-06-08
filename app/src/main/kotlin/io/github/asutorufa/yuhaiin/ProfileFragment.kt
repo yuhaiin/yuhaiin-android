@@ -6,7 +6,6 @@ import android.app.Activity
 import android.content.*
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
-import android.net.Uri
 import android.net.VpnService
 import android.os.Bundle
 import android.os.IBinder
@@ -21,7 +20,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.view.menu.MenuBuilder
 import androidx.appcompat.widget.AppCompatEditText
-import androidx.browser.customtabs.CustomTabsIntent
 import androidx.core.content.ContextCompat
 import androidx.navigation.fragment.findNavController
 import androidx.preference.*
@@ -29,65 +27,24 @@ import com.github.logviewer.LogcatActivity
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.snackbar.Snackbar
 import io.github.asutorufa.yuhaiin.database.Manager
-import io.github.asutorufa.yuhaiin.database.Profile
+import io.github.asutorufa.yuhaiin.database.Manager.profile
+import io.github.asutorufa.yuhaiin.database.Manager.setOnPreferenceChangeListener
 import io.github.asutorufa.yuhaiin.util.DataStore
-import java.util.*
 import java.util.regex.Pattern
 
 class ProfileFragment : PreferenceFragmentCompat() {
-    private val mProfile: Profile
-        get() = Manager.profile
     private val refreshPreferences = ArrayList<() -> Unit>()
-
 
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
         setPreferencesFromResource(R.xml.settings, rootKey)
         setHasOptionsMenu(true)
     }
-    
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         preferenceManager.preferenceDataStore = DataStore()
         initPreferences()
         reload()
-        mFab =
-            requireActivity().findViewById<FloatingActionButton>(R.id.floatingActionButton)!!.also {
-                it.setOnClickListener {
-                    mBinder?.also { it2 ->
-                        if (it2.isRunning) stopVpn()
-                        else startVpn()
-                    } ?: startVpn()
-                }
-            }
-    }
-
-    override fun onStart() {
-        super.onStart()
-        if (mBinder == null)
-            context?.bindService(
-                Intent(context, YuhaiinVpnService::class.java),
-                mConnection,
-                Context.BIND_AUTO_CREATE
-            )
-
-
-        val f = IntentFilter().apply {
-            addAction(YuhaiinVpnService.INTENT_DISCONNECTED)
-            addAction(YuhaiinVpnService.INTENT_CONNECTED)
-            addAction(YuhaiinVpnService.INTENT_CONNECTING)
-            addAction(YuhaiinVpnService.INTENT_DISCONNECTING)
-            addAction(YuhaiinVpnService.INTENT_ERROR)
-        }
-        requireContext().registerReceiver(bReceiver, f)
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        try {
-            requireContext().unregisterReceiver(bReceiver)
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
     }
 
     @SuppressLint("RestrictedApi")
@@ -119,7 +76,7 @@ class ProfileFragment : PreferenceFragmentCompat() {
                                     requireActivity().findViewById(android.R.id.content),
                                     it,
                                     Snackbar.LENGTH_SHORT
-                                ).setAnchorView(mFab).show()
+                                ).setAnchorView(R.id.floatingActionButton).show()
                             }
                         }
                         reload()
@@ -132,10 +89,18 @@ class ProfileFragment : PreferenceFragmentCompat() {
             R.id.prof_del -> {
                 AlertDialog.Builder(requireActivity())
                     .setTitle(R.string.prof_del)
-                    .setMessage(String.format(getString(R.string.prof_del_confirm), mProfile.name))
+                    .setMessage(String.format(getString(R.string.prof_del_confirm), profile.name))
                     .setPositiveButton(android.R.string.ok) { _: DialogInterface?, _: Int ->
-                        Manager.deleteProfile()
-                        reload()
+                        try {
+                            Manager.deleteProfile()
+                            reload()
+                        } catch (e: Exception) {
+                            Snackbar.make(
+                                requireActivity().findViewById(android.R.id.content),
+                                e.message ?: "",
+                                Snackbar.LENGTH_SHORT
+                            ).setAnchorView(R.id.floatingActionButton).show()
+                        }
                     }
                     .setNegativeButton(android.R.string.cancel) { _: DialogInterface?, _: Int -> }
                     .create()
@@ -149,7 +114,7 @@ class ProfileFragment : PreferenceFragmentCompat() {
     private fun initPreferences() {
         findPreference<ListPreference>(resources.getString(R.string.profile_key))!!.also {
             refreshPreferences.add {
-                it.value = mProfile.name
+                it.value = profile.name
                 val profiles = Manager.getProfileNames()
                 it.entries = profiles.toTypedArray()
                 it.entryValues = profiles.toTypedArray()
@@ -168,10 +133,10 @@ class ProfileFragment : PreferenceFragmentCompat() {
             }
 
             setOnPreferenceChangeListener(it) { _, newValue ->
-                mProfile.yuhaiinPort = newValue.toString().toInt()
+                profile.yuhaiinPort = newValue.toString().toInt()
             }
 
-            refreshPreferences.add { it.text = mProfile.yuhaiinPort.toString() }
+            refreshPreferences.add { it.text = profile.yuhaiinPort.toString() }
         }
 
         findPreference<EditTextPreference>(resources.getString(R.string.http_server_port_key))!!.also {
@@ -181,10 +146,10 @@ class ProfileFragment : PreferenceFragmentCompat() {
             }
 
             setOnPreferenceChangeListener(it) { _, newValue ->
-                mProfile.httpServerPort = newValue.toString().toInt()
+                profile.httpServerPort = newValue.toString().toInt()
             }
 
-            refreshPreferences.add { it.text = mProfile.httpServerPort.toString() }
+            refreshPreferences.add { it.text = profile.httpServerPort.toString() }
         }
 
         findPreference<EditTextPreference>(resources.getString(R.string.socks5_server_port_key))!!.also {
@@ -194,28 +159,30 @@ class ProfileFragment : PreferenceFragmentCompat() {
             }
 
             setOnPreferenceChangeListener(it) { _, newValue ->
-                mProfile.socks5ServerPort = newValue.toString().toInt()
+                profile.socks5ServerPort = newValue.toString().toInt()
             }
 
-            refreshPreferences.add { it.text = mProfile.socks5ServerPort.toString() }
+            refreshPreferences.add { it.text = profile.socks5ServerPort.toString() }
         }
 
         findPreference<SwitchPreferenceCompat>(resources.getString(R.string.auth_userpw_key))!!.also {
             setOnPreferenceChangeListener(it) { _, newValue ->
-                mProfile.isUserPw = newValue as Boolean
+                profile.isUserPw = newValue as Boolean
                 reload()
             }
-            refreshPreferences.add { it.isChecked = mProfile.isUserPw }
+            refreshPreferences.add { it.isChecked = profile.isUserPw }
         }
+
         findPreference<EditTextPreference>(resources.getString(R.string.auth_username_key))!!.also {
             setOnPreferenceChangeListener(it) { _, newValue ->
-                mProfile.username = newValue.toString()
+                profile.username = newValue.toString()
             }
             refreshPreferences.add {
-                it.text = mProfile.username
-                it.isVisible = mProfile.isUserPw
+                it.text = profile.username
+                it.isVisible = profile.isUserPw
             }
         }
+
         findPreference<EditTextPreference>(resources.getString(R.string.auth_password_key))!!.also {
             it.setOnBindEditTextListener { editText: EditText ->
                 editText.inputType =
@@ -223,32 +190,32 @@ class ProfileFragment : PreferenceFragmentCompat() {
             }
 
             setOnPreferenceChangeListener(it) { _, newValue ->
-                mProfile.password = newValue.toString()
+                profile.password = newValue.toString()
             }
             refreshPreferences.add {
-                it.text = mProfile.password
-                it.isVisible = mProfile.isUserPw
+                it.text = profile.password
+                it.isVisible = profile.isUserPw
             }
         }
 
         findPreference<DropDownPreference>(resources.getString(R.string.adv_route_Key))!!.also {
             setOnPreferenceChangeListener(it) { _, newValue ->
-                mProfile.route = newValue as String
+                profile.route = newValue as String
             }
-            refreshPreferences.add { it.value = mProfile.route }
+            refreshPreferences.add { it.value = profile.route }
         }
 
         findPreference<SwitchPreferenceCompat>(resources.getString(R.string.adv_per_app_key))!!.also {
             setOnPreferenceChangeListener(it) { _, newValue ->
-                mProfile.isPerApp = newValue as Boolean
+                profile.isPerApp = newValue as Boolean
             }
-            refreshPreferences.add { it.isChecked = mProfile.isPerApp }
+            refreshPreferences.add { it.isChecked = profile.isPerApp }
         }
         findPreference<SwitchPreferenceCompat>(resources.getString(R.string.adv_app_bypass_key))!!.also {
             setOnPreferenceChangeListener(it) { _, newValue ->
-                mProfile.isBypassApp = newValue as Boolean
+                profile.isBypassApp = newValue as Boolean
             }
-            refreshPreferences.add { it.isChecked = mProfile.isBypassApp }
+            refreshPreferences.add { it.isChecked = profile.isBypassApp }
         }
         findPreference<MultiSelectListPreference>(resources.getString(R.string.adv_app_list_key))!!.also {
             it.setOnPreferenceClickListener { _ ->
@@ -258,59 +225,59 @@ class ProfileFragment : PreferenceFragmentCompat() {
 
             @Suppress("Unchecked_Cast")
             setOnPreferenceChangeListener(it) { _, newValue ->
-                mProfile.appList = newValue as Set<String>
+                profile.appList = newValue as Set<String>
             }
 
-            refreshPreferences.add { it.values = mProfile.appList }
+            refreshPreferences.add { it.values = profile.appList }
         }
 
         findPreference<SwitchPreferenceCompat>(resources.getString(R.string.ipv6_proxy_key))!!.also {
             setOnPreferenceChangeListener(it) { _, newValue ->
-                mProfile.hasIPv6 = newValue as Boolean
+                profile.hasIPv6 = newValue as Boolean
             }
-            refreshPreferences.add { it.isChecked = mProfile.hasIPv6 }
+            refreshPreferences.add { it.isChecked = profile.hasIPv6 }
         }
 
         findPreference<SwitchPreferenceCompat>(resources.getString(R.string.adv_auto_connect_key))!!.also {
             setOnPreferenceChangeListener(it) { _, newValue ->
-                mProfile.autoConnect = newValue as Boolean
+                profile.autoConnect = newValue as Boolean
             }
-            refreshPreferences.add { it.isChecked = mProfile.autoConnect }
+            refreshPreferences.add { it.isChecked = profile.autoConnect }
         }
 
         findPreference<SwitchPreferenceCompat>(resources.getString(R.string.allow_lan_key))!!.also {
             setOnPreferenceChangeListener(it) { _, newValue ->
-                mProfile.allowLan = newValue as Boolean
+                profile.allowLan = newValue as Boolean
             }
-            refreshPreferences.add { it.isChecked = mProfile.allowLan }
+            refreshPreferences.add { it.isChecked = profile.allowLan }
         }
 
         findPreference<EditTextPreference>(resources.getString(R.string.rule_proxy))!!.also {
             setOnPreferenceChangeListener(it) { _, newValue ->
-                mProfile.ruleProxy = newValue.toString()
+                profile.ruleProxy = newValue.toString()
             }
-            refreshPreferences.add { it.text = mProfile.ruleProxy }
+            refreshPreferences.add { it.text = profile.ruleProxy }
         }
 
         findPreference<EditTextPreference>(resources.getString(R.string.rule_direct))!!.also {
             setOnPreferenceChangeListener(it) { _, newValue ->
-                mProfile.ruleDirect = newValue.toString()
+                profile.ruleDirect = newValue.toString()
             }
-            refreshPreferences.add { it.text = mProfile.ruleDirect }
+            refreshPreferences.add { it.text = profile.ruleDirect }
         }
 
         findPreference<EditTextPreference>(resources.getString(R.string.rule_block))!!.also {
             setOnPreferenceChangeListener(it) { _, newValue ->
-                mProfile.ruleBlock = newValue.toString()
+                profile.ruleBlock = newValue.toString()
             }
-            refreshPreferences.add { it.text = mProfile.ruleBlock }
+            refreshPreferences.add { it.text = profile.ruleBlock }
         }
 
         findPreference<SwitchPreferenceCompat>(resources.getString(R.string.save_logcat))!!.also {
             setOnPreferenceChangeListener(it) { _, newValue ->
-                mProfile.saveLogcat = newValue as Boolean
+                profile.saveLogcat = newValue as Boolean
             }
-            refreshPreferences.add { it.isChecked = mProfile.saveLogcat }
+            refreshPreferences.add { it.isChecked = profile.saveLogcat }
         }
 
         findPreference<Preference>(resources.getString(R.string.logcat))?.apply {
@@ -327,31 +294,16 @@ class ProfileFragment : PreferenceFragmentCompat() {
 
         findPreference<Preference>(resources.getString(R.string.open_yuhaiin_page))?.apply {
             setOnPreferenceClickListener {
-                if (mBinder == null || mBinder?.isRunning == false) {
+                if (mBinder?.isRunning == false) {
                     Snackbar.make(
                         requireActivity().findViewById(android.R.id.content),
                         "yuhaiin is not running",
                         Snackbar.LENGTH_SHORT
-                    ).setAnchorView(mFab).show()
+                    ).setAnchorView(R.id.floatingActionButton).show()
                     return@setOnPreferenceClickListener true
                 }
 
-                CustomTabsIntent.Builder().apply {
-                    setColorScheme(CustomTabsIntent.COLOR_SCHEME_SYSTEM)
-                    setStartAnimations(
-                        requireContext(),
-                        R.anim.slide_in_right,
-                        R.anim.slide_out_left
-                    )
-                    setExitAnimations(
-                        requireContext(),
-                        android.R.anim.slide_in_left,
-                        android.R.anim.slide_out_right
-                    )
-                }.build().launchUrl(
-                    requireContext(),
-                    Uri.parse("http://127.0.0.1:${mProfile.yuhaiinPort}")
-                )
+                findNavController().navigate(ProfileFragmentDirections.actionProfileFragmentToPageFragment())
                 true
             }
         }
@@ -364,11 +316,6 @@ class ProfileFragment : PreferenceFragmentCompat() {
         }
     }
 
-    private fun setOnPreferenceChangeListener(
-        it: Preference,
-        run: (p: Preference, newValue: Any) -> Unit
-    ) = Manager.setOnPreferenceChangeListener(it, run)
-
     private fun reload() {
         for (refresh in refreshPreferences) refresh()
     }
@@ -379,7 +326,7 @@ class ProfileFragment : PreferenceFragmentCompat() {
         var index = 0
 
         for ((key, value) in packages.toList().sortedBy { it.second }.toMap()) {
-            if (mProfile.appList.contains(key)) {
+            if (profile.appList.contains(key)) {
                 packageNames.add(index, key)
                 titles.add(index, value)
                 index++
@@ -389,7 +336,7 @@ class ProfileFragment : PreferenceFragmentCompat() {
             }
         }
 
-        mPrefAppList.values = mProfile.appList
+        mPrefAppList.values = profile.appList
         mPrefAppList.entries = titles.toTypedArray()
         mPrefAppList.entryValues = packageNames.toTypedArray()
     }
@@ -404,7 +351,7 @@ class ProfileFragment : PreferenceFragmentCompat() {
         get() {
             val packageManager = requireContext().packageManager
             val packages = packageManager.getInstalledPackages(PackageManager.GET_PERMISSIONS)
-            val apps = TreeMap<String, String>()
+            val apps = HashMap<String, String>()
 
             for (pkg in packages) {
                 if (!pkg.hasInternetPermission && pkg.packageName != "android") continue
@@ -418,12 +365,53 @@ class ProfileFragment : PreferenceFragmentCompat() {
                 apps[pkg.packageName] = "$appName\n${pkg.packageName}"
             }
 
-
             return apps
         }
 
+
+    // floating action button
     private var mBinder: IVpnService? = null
-    private lateinit var mFab: FloatingActionButton
+
+    private val mFab: FloatingActionButton by lazy {
+        requireActivity().findViewById<FloatingActionButton>(R.id.floatingActionButton)!!
+            .also { it ->
+                it.setOnClickListener {
+                    mBinder?.let {
+                        if (it.isRunning) it.stop() else startVpn()
+                    } ?: startVpn()
+                }
+            }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        
+        if (mBinder == null)
+            context?.bindService(
+                Intent(context, YuhaiinVpnService::class.java),
+                mConnection,
+                Context.BIND_AUTO_CREATE
+            )
+
+
+        val f = IntentFilter().apply {
+            addAction(YuhaiinVpnService.INTENT_DISCONNECTED)
+            addAction(YuhaiinVpnService.INTENT_CONNECTED)
+            addAction(YuhaiinVpnService.INTENT_CONNECTING)
+            addAction(YuhaiinVpnService.INTENT_DISCONNECTING)
+            addAction(YuhaiinVpnService.INTENT_ERROR)
+        }
+        requireContext().registerReceiver(bReceiver, f)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        try {
+            requireContext().unregisterReceiver(bReceiver)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
 
     private val mConnection: ServiceConnection = object : ServiceConnection {
         override fun onServiceConnected(p1: ComponentName, binder: IBinder) {
@@ -450,7 +438,7 @@ class ProfileFragment : PreferenceFragmentCompat() {
                         requireActivity().findViewById(android.R.id.content),
                         "yuhaiin disconnected",
                         Snackbar.LENGTH_SHORT
-                    ).setAnchorView(mFab).show()
+                    ).setAnchorView(R.id.floatingActionButton).show()
                 }
                 YuhaiinVpnService.INTENT_CONNECTED -> {
                     Log.d(tag, "onReceive: CONNECTED")
@@ -460,9 +448,9 @@ class ProfileFragment : PreferenceFragmentCompat() {
 
                     Snackbar.make(
                         requireActivity().findViewById(android.R.id.content),
-                        "yuhaiin connected, listen at: ${mProfile.yuhaiinPort}",
+                        "yuhaiin connected, listen at: ${profile.yuhaiinPort}",
                         Snackbar.LENGTH_SHORT
-                    ).setAnchorView(mFab).show()
+                    ).setAnchorView(R.id.floatingActionButton).show()
 
                     context.bindService(
                         Intent(context, YuhaiinVpnService::class.java),
@@ -486,7 +474,7 @@ class ProfileFragment : PreferenceFragmentCompat() {
                             requireActivity().findViewById(android.R.id.content),
                             it,
                             Snackbar.LENGTH_SHORT
-                        ).show()
+                        ).setAnchorView(R.id.floatingActionButton).show()
                     }
                 }
             }
@@ -496,19 +484,16 @@ class ProfileFragment : PreferenceFragmentCompat() {
     // You can do the assignment inside onAttach or onCreate, i.e, before the activity is displayed
     private var startVpnLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-            if (result.resultCode == Activity.RESULT_OK) startVpn(requireActivity())
+            if (result.resultCode == Activity.RESULT_OK) ContextCompat.startForegroundService(
+                requireActivity(),
+                Intent(context, YuhaiinVpnService::class.java)
+            )
         }
 
     private fun startVpn() =
-        VpnService.prepare(activity)?.also { startVpnLauncher.launch(it) } ?: startVpn(
-            requireActivity(),
-        )
-
-    private fun startVpn(context: Context) = ContextCompat.startForegroundService(
-        context,
-        Intent(context, YuhaiinVpnService::class.java)
-    )
-
-    private fun stopVpn() = mBinder?.stop()
-
+        VpnService.prepare(activity)?.also { startVpnLauncher.launch(it) }
+            ?: ContextCompat.startForegroundService(
+                requireActivity(),
+                Intent(context, YuhaiinVpnService::class.java)
+            )
 }

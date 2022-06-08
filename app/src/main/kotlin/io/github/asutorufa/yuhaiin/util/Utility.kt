@@ -10,6 +10,8 @@ object Utility {
     private val TAG = Utility::class.java.simpleName
 
     fun exec(cmd: String, callback: () -> Unit): Process {
+        Log.d(TAG, (cmd))
+
         val p = Runtime.getRuntime().exec(cmd)
 
         if (DEBUG) {

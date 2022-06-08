@@ -2,7 +2,6 @@ package io.github.asutorufa.yuhaiin.database
 
 import androidx.room.*
 
-
 @Dao
 interface ProfileDao {
     @Query("SELECT * FROM profile")
@@ -12,11 +11,11 @@ interface ProfileDao {
     fun getProfileNames(): List<String>
 
     @Query("SELECT * FROM profile WHERE profile_name = :name")
-    fun getProfileByName(name: String): Profile?
+    fun getProfileByName(name: String): Profile
 
     @Query("SELECT EXISTS(SELECT * FROM profile WHERE profile_name = :name)")
     fun isProfileExists(name: String): Boolean
-    
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun addProfile(profile: Profile)
 
