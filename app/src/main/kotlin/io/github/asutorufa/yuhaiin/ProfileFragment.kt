@@ -6,6 +6,7 @@ import android.app.Activity
 import android.content.*
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.net.VpnService
 import android.os.Bundle
 import android.os.IBinder
@@ -20,6 +21,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.view.menu.MenuBuilder
 import androidx.appcompat.widget.AppCompatEditText
+import androidx.browser.customtabs.CustomTabsIntent
 import androidx.core.content.ContextCompat
 import androidx.navigation.fragment.findNavController
 import androidx.preference.*
@@ -27,13 +29,13 @@ import com.github.logviewer.LogcatActivity
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.snackbar.Snackbar
 import io.github.asutorufa.yuhaiin.database.Manager
-import io.github.asutorufa.yuhaiin.database.Manager.profile
 import io.github.asutorufa.yuhaiin.database.Manager.setOnPreferenceChangeListener
 import io.github.asutorufa.yuhaiin.util.DataStore
 import java.util.regex.Pattern
 
 class ProfileFragment : PreferenceFragmentCompat() {
     private val refreshPreferences = ArrayList<() -> Unit>()
+    private val profile = Manager.profile
 
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
         setPreferencesFromResource(R.xml.settings, rootKey)
@@ -303,7 +305,15 @@ class ProfileFragment : PreferenceFragmentCompat() {
                     return@setOnPreferenceClickListener true
                 }
 
-                findNavController().navigate(ProfileFragmentDirections.actionProfileFragmentToPageFragment())
+                CustomTabsIntent.Builder()
+                    .apply {
+                        setColorScheme(CustomTabsIntent.COLOR_SCHEME_SYSTEM)
+                    }.build()
+                    .launchUrl(
+                        requireActivity(),
+                        Uri.parse("http://localhost:${profile.yuhaiinPort}")
+                    )
+//                findNavController().navigate(ProfileFragmentDirections.actionProfileFragmentToPageFragment())
                 true
             }
         }

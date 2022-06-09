@@ -17,7 +17,7 @@
       ],
       "attributes": [],
       "versionCode": 5,
-      "versionName": "20307522.8684-20cce0c",
+      "versionName": "20315733.297-b665d54",
       "outputFile": "app-x86_64-release.apk"
     },
     {
@@ -30,7 +30,7 @@
       ],
       "attributes": [],
       "versionCode": 5,
-      "versionName": "20307522.8684-20cce0c",
+      "versionName": "20315733.297-b665d54",
       "outputFile": "app-arm64-v8a-release.apk"
     }
   ],

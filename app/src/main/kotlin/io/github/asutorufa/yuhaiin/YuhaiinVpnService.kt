@@ -12,7 +12,8 @@ import android.os.ParcelFileDescriptor
 import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
-import io.github.asutorufa.yuhaiin.database.Manager.profile
+import io.github.asutorufa.yuhaiin.database.Manager
+import io.github.asutorufa.yuhaiin.database.Profile
 import io.github.asutorufa.yuhaiin.util.Routes
 import io.github.asutorufa.yuhaiin.util.Utility
 import yuhaiin.App
@@ -173,6 +174,11 @@ class YuhaiinVpnService : VpnService() {
         )
 
         try {
+            val profile = Manager.db.getProfileByName(
+                Manager.db.getLastProfile() ?: "Default"
+            )
+
+            Log.d(tag, "onStartCommand-------------: ${profile.localDns.type}")
 
             startForeground(
                 1, builder
@@ -183,9 +189,9 @@ class YuhaiinVpnService : VpnService() {
                     .build()
             )
 
-            configure()
+            configure(profile)
             Log.d(tag, "fd: ${mInterface?.fd}")
-            start()
+            start(profile)
 
         } catch (e: Exception) {
             e.printStackTrace()
@@ -201,7 +207,7 @@ class YuhaiinVpnService : VpnService() {
         return START_STICKY
     }
 
-    private fun configure() {
+    private fun configure(profile: Profile) {
         val b = Builder()
         b.setMtu(VPN_MTU)
             .setSession(profile.name)
@@ -268,8 +274,8 @@ class YuhaiinVpnService : VpnService() {
         mInterface = b.establish()
     }
 
-    private fun start() {
-        Log.d(tag, "start yuhaiin: $profile")
+    private fun start(profile: Profile) {
+        Log.d(tag, "start yuhaiin: $profile,${profile.localDns.type}")
 
         if (profile.yuhaiinPort > 0) {
             var address = "127.0.0.1"
