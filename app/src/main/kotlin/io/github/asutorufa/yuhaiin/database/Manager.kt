@@ -1,23 +1,12 @@
 package io.github.asutorufa.yuhaiin.database
 
-import android.util.Log
 import androidx.preference.Preference
 import io.github.asutorufa.yuhaiin.MainApplication
 
 object Manager {
-    private val tag = Manager::class.java.simpleName
-    private val db: ProfileDao
-        get() = MainApplication.db
+    val db: ProfileDao = MainApplication.db
 
-    var profile: Profile
-        get() = MainApplication.profile
-        set(value) {
-            MainApplication.profile = value
-        }
-
-    init {
-        Log.d(tag, "init Manager")
-    }
+    var profile: Profile = db.getProfileByName(db.getLastProfile() ?: "Default")
 
     fun switchProfile(name: String) {
         db.getProfileByName(name).let {
