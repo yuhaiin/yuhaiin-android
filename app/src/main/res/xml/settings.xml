@@ -90,7 +90,7 @@
         <Preference
             android:title="DNS"
             android:icon="@drawable/dns"
-            android:summary="DNS Port, Fake DNS, Remote DNS, Local DNS,Bootstrap DNS"
+            android:summary="DNS Port, Fake DNS, Remote DNS, Local DNS, Bootstrap DNS."
             android:key="@string/adv_dns_Key" />
 
         <DropDownPreference
@@ -101,6 +101,10 @@
             app:useSimpleSummaryProvider="true"
             android:entryValues="@array/adv_routes" />
 
+        <Preference
+            android:title="Rule"
+            android:summary="Update Bypass File, Custom Direct, Proxy, Block."
+            android:key="@string/rule" />
 
         <SwitchPreferenceCompat
             android:icon="@drawable/auto_mode"
@@ -126,27 +130,6 @@
             android:summary="@string/adv_app_list_sum"
             android:dependency="@string/adv_per_app_key" />
 
-    </PreferenceCategory>
-
-    <PreferenceCategory android:title="Rule">
-        <EditTextPreference
-            android:key="@string/rule_direct"
-            android:title="@string/rule_direct"
-            android:icon="@drawable/unblock_flipped"
-            app:useSimpleSummaryProvider="true"
-            android:singleLine="false" />
-        <EditTextPreference
-            android:key="@string/rule_proxy"
-            android:title="@string/rule_proxy"
-            android:icon="@drawable/vpn_key"
-            app:useSimpleSummaryProvider="true"
-            android:singleLine="false" />
-        <EditTextPreference
-            android:key="@string/rule_block"
-            android:title="@string/rule_block"
-            android:icon="@drawable/block"
-            app:useSimpleSummaryProvider="true"
-            android:singleLine="false" />
     </PreferenceCategory>
 
 

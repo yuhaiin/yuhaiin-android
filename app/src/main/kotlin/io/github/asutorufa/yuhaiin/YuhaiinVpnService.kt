@@ -39,6 +39,7 @@ class YuhaiinVpnService : VpnService() {
         private const val PRIVATE_VLAN6_CLIENT = "fdfe:dcba:9876::1"
     }
 
+    var yuhaiin: App = App()
     private val tag = this.javaClass.simpleName
 
     private var mRunning = false
@@ -46,12 +47,23 @@ class YuhaiinVpnService : VpnService() {
 
     private var mg: ConnectivityManager? = null
     private var mInterface: ParcelFileDescriptor? = null
-    private var yuhaiin: App = App()
     private var tun2socks: Process? = null
 
     private val mBinder: IBinder = object : IVpnService.Stub() {
         override fun isRunning() = mRunning
         override fun stop() = stopMe()
+        override fun SaveNewBypass(url: String?): String? {
+            Log.d(tag, "SaveNewBypass: $url")
+            return try {
+                yuhaiin.saveNewBypass(
+                    Uri.parse(url).toString(),
+                    getExternalFilesDir("yuhaiin")!!.absolutePath
+                )
+                ""
+            } catch (e: Exception) {
+                e.message
+            }
+        }
     }
 
     @Volatile
@@ -177,9 +189,7 @@ class YuhaiinVpnService : VpnService() {
             val profile = Manager.db.getProfileByName(
                 Manager.db.getLastProfile() ?: "Default"
             )
-
-            Log.d(tag, "onStartCommand-------------: ${profile.localDns.type}")
-
+            
             startForeground(
                 1, builder
                     .setContentTitle("yuhaiin running")

@@ -4,4 +4,5 @@ interface IVpnService
 {
 	boolean isRunning();
 	void stop();
+	String SaveNewBypass(String url);
 }
