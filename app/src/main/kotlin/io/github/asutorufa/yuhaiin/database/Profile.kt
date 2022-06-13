@@ -32,6 +32,10 @@ data class Profile(
     @ColumnInfo(name = "auto_connect", defaultValue = "false") var autoConnect: Boolean = false,
     @ColumnInfo(name = "save_logcat", defaultValue = "false") var saveLogcat: Boolean = false,
     @ColumnInfo(name = "allow_lan", defaultValue = "false") var allowLan: Boolean = false,
+    @ColumnInfo(
+        name = "rule_update_bypass_url",
+        defaultValue = ""
+    ) var ruleUpdateBypassUrl: String = "",
     @ColumnInfo(name = "rule_block") var ruleBlock: String = "",
     @ColumnInfo(name = "rule_proxy") var ruleProxy: String = "",
     @ColumnInfo(name = "rule_direct") var ruleDirect: String = "",

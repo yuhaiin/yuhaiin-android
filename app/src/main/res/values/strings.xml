@@ -111,6 +111,7 @@
 
 
     <string name="rule">Rule</string>
+    <string name="rule_update_bypass_file">Rule Update Bypass</string>
     <string name="rule_block">Block</string>
     <string name="rule_proxy">Proxy</string>
     <string name="rule_direct">Direct</string>

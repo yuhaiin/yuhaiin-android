@@ -253,26 +253,11 @@ class ProfileFragment : PreferenceFragmentCompat() {
             }
             refreshPreferences.add { it.isChecked = profile.allowLan }
         }
-
-        findPreference<EditTextPreference>(resources.getString(R.string.rule_proxy))!!.also {
-            setOnPreferenceChangeListener(it) { _, newValue ->
-                profile.ruleProxy = newValue.toString()
+        findPreference<Preference>(resources.getString(R.string.rule))!!.also {
+            it.setOnPreferenceClickListener {
+                findNavController().navigate(ProfileFragmentDirections.actionProfileFragmentToRuleFragment())
+                true
             }
-            refreshPreferences.add { it.text = profile.ruleProxy }
-        }
-
-        findPreference<EditTextPreference>(resources.getString(R.string.rule_direct))!!.also {
-            setOnPreferenceChangeListener(it) { _, newValue ->
-                profile.ruleDirect = newValue.toString()
-            }
-            refreshPreferences.add { it.text = profile.ruleDirect }
-        }
-
-        findPreference<EditTextPreference>(resources.getString(R.string.rule_block))!!.also {
-            setOnPreferenceChangeListener(it) { _, newValue ->
-                profile.ruleBlock = newValue.toString()
-            }
-            refreshPreferences.add { it.text = profile.ruleBlock }
         }
 
         findPreference<SwitchPreferenceCompat>(resources.getString(R.string.save_logcat))!!.also {
@@ -417,7 +402,8 @@ class ProfileFragment : PreferenceFragmentCompat() {
     override fun onDestroy() {
         super.onDestroy()
         try {
-            requireContext().unregisterReceiver(bReceiver)
+            activity?.unregisterReceiver(bReceiver)
+            activity?.unbindService(mConnection)
         } catch (e: Exception) {
             e.printStackTrace()
         }

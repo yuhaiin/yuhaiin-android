@@ -10,7 +10,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 
 @Database(
     entities = [Profile::class, LastProfile::class],
-    version = 3,
+    version = 4,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -42,7 +42,7 @@ abstract class YuhaiinDatabase : RoomDatabase() {
         private fun buildDatabase(context: Context): YuhaiinDatabase {
             return Room.databaseBuilder(context, YuhaiinDatabase::class.java, "yuhaiin")
                 .allowMainThreadQueries()
-                .addMigrations(MIGRATION_2_3)
+                .addMigrations(MIGRATION_2_3, MIGRATION_3_4)
                 .build()
         }
 
@@ -51,6 +51,12 @@ abstract class YuhaiinDatabase : RoomDatabase() {
                 database.execSQL("ALTER TABLE profile ADD COLUMN remote_dns TEXT NOT NULL DEFAULT '${DNS.DefaultRemoteJson}'")
                 database.execSQL("ALTER TABLE profile ADD COLUMN local_dns TEXT NOT NULL DEFAULT '${DNS.DefaultLocalJson}'")
                 database.execSQL("ALTER TABLE profile ADD COLUMN bootstrap_dns TEXT NOT NULL DEFAULT '${DNS.DefaultBootstrapJson}'")
+            }
+        }
+
+        private val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("ALTER TABLE profile ADD COLUMN rule_update_bypass_url TEXT NOT NULL DEFAULT ''")
             }
         }
     }
