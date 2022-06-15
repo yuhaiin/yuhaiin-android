@@ -2,41 +2,36 @@ package io.github.asutorufa.yuhaiin
 
 import android.Manifest
 import android.annotation.SuppressLint
-import android.app.Activity
-import android.content.*
+import android.content.DialogInterface
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.net.Uri
-import android.net.VpnService
 import android.os.Bundle
-import android.os.IBinder
 import android.text.InputType
-import android.util.Log
 import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.View
 import android.widget.EditText
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.view.menu.MenuBuilder
 import androidx.appcompat.widget.AppCompatEditText
 import androidx.browser.customtabs.CustomTabsIntent
-import androidx.core.content.ContextCompat
 import androidx.navigation.fragment.findNavController
 import androidx.preference.*
 import com.github.logviewer.LogcatActivity
-import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.snackbar.Snackbar
 import io.github.asutorufa.yuhaiin.database.Manager
 import io.github.asutorufa.yuhaiin.database.Manager.setOnPreferenceChangeListener
+import io.github.asutorufa.yuhaiin.database.Profile
 import io.github.asutorufa.yuhaiin.util.DataStore
 import java.util.regex.Pattern
 
 class ProfileFragment : PreferenceFragmentCompat() {
     private val refreshPreferences = ArrayList<() -> Unit>()
-    private val profile = Manager.profile
-
+    private val profile: Profile
+        get() = (activity as MainActivity).profile
+    
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
         setPreferencesFromResource(R.xml.settings, rootKey)
         setHasOptionsMenu(true)
@@ -281,7 +276,7 @@ class ProfileFragment : PreferenceFragmentCompat() {
 
         findPreference<Preference>(resources.getString(R.string.open_yuhaiin_page))?.apply {
             setOnPreferenceClickListener {
-                if (mBinder?.isRunning == false) {
+                if ((activity as MainActivity).mBinder?.isRunning() == false) {
                     Snackbar.make(
                         requireActivity().findViewById(android.R.id.content),
                         "yuhaiin is not running",
@@ -362,134 +357,4 @@ class ProfileFragment : PreferenceFragmentCompat() {
 
             return apps
         }
-
-
-    // floating action button
-    private var mBinder: IVpnService? = null
-
-    private val mFab: FloatingActionButton by lazy {
-        requireActivity().findViewById<FloatingActionButton>(R.id.floatingActionButton)!!
-            .also { it ->
-                it.setOnClickListener {
-                    mBinder?.let {
-                        if (it.isRunning) it.stop() else startVpn()
-                    } ?: startVpn()
-                }
-            }
-    }
-
-    override fun onStart() {
-        super.onStart()
-        
-        if (mBinder == null)
-            context?.bindService(
-                Intent(context, YuhaiinVpnService::class.java),
-                mConnection,
-                Context.BIND_AUTO_CREATE
-            )
-
-
-        val f = IntentFilter().apply {
-            addAction(YuhaiinVpnService.INTENT_DISCONNECTED)
-            addAction(YuhaiinVpnService.INTENT_CONNECTED)
-            addAction(YuhaiinVpnService.INTENT_CONNECTING)
-            addAction(YuhaiinVpnService.INTENT_DISCONNECTING)
-            addAction(YuhaiinVpnService.INTENT_ERROR)
-        }
-        requireContext().registerReceiver(bReceiver, f)
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        try {
-            activity?.unregisterReceiver(bReceiver)
-            activity?.unbindService(mConnection)
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-    }
-
-    private val mConnection: ServiceConnection = object : ServiceConnection {
-        override fun onServiceConnected(p1: ComponentName, binder: IBinder) {
-            mBinder = IVpnService.Stub.asInterface(binder).also {
-                if (it.isRunning) mFab.setImageResource(R.drawable.stop)
-                else mFab.setImageResource(R.drawable.play_arrow)
-            }
-        }
-
-        override fun onServiceDisconnected(p1: ComponentName) {
-            mBinder = null
-        }
-    }
-
-    private val bReceiver: BroadcastReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context, intent: Intent) {
-            when (intent.action) {
-                YuhaiinVpnService.INTENT_DISCONNECTED -> {
-                    Log.d(tag, "onReceive: DISCONNECTED")
-
-                    mFab.isEnabled = true
-                    mFab.setImageResource(R.drawable.play_arrow)
-                    Snackbar.make(
-                        requireActivity().findViewById(android.R.id.content),
-                        "yuhaiin disconnected",
-                        Snackbar.LENGTH_SHORT
-                    ).setAnchorView(R.id.floatingActionButton).show()
-                }
-                YuhaiinVpnService.INTENT_CONNECTED -> {
-                    Log.d(tag, "onReceive: CONNECTED")
-
-                    mFab.isEnabled = true
-                    mFab.setImageResource(R.drawable.stop)
-
-                    Snackbar.make(
-                        requireActivity().findViewById(android.R.id.content),
-                        "yuhaiin connected, listen at: ${profile.yuhaiinPort}",
-                        Snackbar.LENGTH_SHORT
-                    ).setAnchorView(R.id.floatingActionButton).show()
-
-                    context.bindService(
-                        Intent(context, YuhaiinVpnService::class.java),
-                        mConnection,
-                        Context.BIND_AUTO_CREATE
-                    )
-                }
-                YuhaiinVpnService.INTENT_CONNECTING -> {
-                    Log.d(tag, "onReceive: CONNECTING")
-                    mFab.isEnabled = false
-                }
-                YuhaiinVpnService.INTENT_DISCONNECTING -> {
-                    Log.d(tag, "onReceive: DISCONNECTING")
-                    mFab.isEnabled = false
-                }
-
-                YuhaiinVpnService.INTENT_ERROR -> {
-                    Log.d(tag, "onReceive: ERROR")
-                    intent.getStringExtra("message")?.let {
-                        Snackbar.make(
-                            requireActivity().findViewById(android.R.id.content),
-                            it,
-                            Snackbar.LENGTH_SHORT
-                        ).setAnchorView(R.id.floatingActionButton).show()
-                    }
-                }
-            }
-        }
-    }
-
-    // You can do the assignment inside onAttach or onCreate, i.e, before the activity is displayed
-    private var startVpnLauncher =
-        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-            if (result.resultCode == Activity.RESULT_OK) ContextCompat.startForegroundService(
-                requireActivity(),
-                Intent(context, YuhaiinVpnService::class.java)
-            )
-        }
-
-    private fun startVpn() =
-        VpnService.prepare(activity)?.also { startVpnLauncher.launch(it) }
-            ?: ContextCompat.startForegroundService(
-                requireActivity(),
-                Intent(context, YuhaiinVpnService::class.java)
-            )
 }
