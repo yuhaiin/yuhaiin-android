@@ -2,8 +2,10 @@ package io.github.asutorufa.yuhaiin
 
 import android.annotation.SuppressLint
 import android.os.Bundle
-import android.util.Log
-import android.view.*
+import android.view.KeyEvent
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.fragment.app.Fragment
@@ -36,14 +38,5 @@ class PageFragment : Fragment() {
             }
         }
         super.onViewCreated(view, savedInstanceState)
-    }
-
-    override fun onCreateContextMenu(
-        menu: ContextMenu,
-        v: View,
-        menuInfo: ContextMenu.ContextMenuInfo?
-    ) {
-        Log.d(tag, "onCreateContextMenu: ---------------")
-        super.onCreateContextMenu(menu, v, menuInfo)
     }
 }

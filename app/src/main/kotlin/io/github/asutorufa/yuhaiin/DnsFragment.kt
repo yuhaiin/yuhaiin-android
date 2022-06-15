@@ -6,12 +6,13 @@ import androidx.preference.EditTextPreference
 import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.SwitchPreferenceCompat
 import io.github.asutorufa.yuhaiin.database.DNS
-import io.github.asutorufa.yuhaiin.database.Manager
 import io.github.asutorufa.yuhaiin.database.Manager.setOnPreferenceChangeListener
+import io.github.asutorufa.yuhaiin.database.Profile
 import io.github.asutorufa.yuhaiin.util.DataStore
 
 class DnsFragment : PreferenceFragmentCompat() {
-    private val profile = Manager.profile
+    private val profile: Profile
+        get() = (activity as MainActivity).profile
 
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
         setPreferencesFromResource(R.xml.dns, rootKey)

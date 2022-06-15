@@ -6,8 +6,8 @@ import android.app.PendingIntent
 import android.content.Intent
 import android.net.*
 import android.net.ConnectivityManager.NetworkCallback
+import android.os.Binder
 import android.os.Build
-import android.os.IBinder
 import android.os.ParcelFileDescriptor
 import android.util.Log
 import androidx.annotation.RequiresApi
@@ -49,10 +49,14 @@ class YuhaiinVpnService : VpnService() {
     private var mInterface: ParcelFileDescriptor? = null
     private var tun2socks: Process? = null
 
-    private val mBinder: IBinder = object : IVpnService.Stub() {
-        override fun isRunning() = mRunning
-        override fun stop() = stopMe()
-        override fun SaveNewBypass(url: String?): String? {
+    inner class VpnBinder : Binder() {
+//        fun getService(): YuhaiinVpnService {
+//            return this@YuhaiinVpnService
+//        }
+
+        fun isRunning() = mRunning
+        fun stop() = stopMe()
+        fun saveNewBypass(url: String?): String? {
             Log.d(tag, "SaveNewBypass: $url")
             return try {
                 yuhaiin.saveNewBypass(
@@ -65,6 +69,8 @@ class YuhaiinVpnService : VpnService() {
             }
         }
     }
+
+    private val mBinder = VpnBinder()
 
     @Volatile
     var underlyingNetwork: Network? = null
@@ -186,9 +192,7 @@ class YuhaiinVpnService : VpnService() {
         )
 
         try {
-            val profile = Manager.db.getProfileByName(
-                Manager.db.getLastProfile() ?: "Default"
-            )
+            val profile = Manager.db.getProfileByName(Manager.db.getLastProfile() ?: "Default")
             
             startForeground(
                 1, builder
