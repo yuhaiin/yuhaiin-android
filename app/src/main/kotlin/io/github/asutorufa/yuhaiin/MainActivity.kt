@@ -17,6 +17,7 @@ import androidx.navigation.ui.setupWithNavController
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.snackbar.Snackbar
 import io.github.asutorufa.yuhaiin.database.Manager
+import io.github.asutorufa.yuhaiin.service.YuhaiinVpnService
 
 
 class MainActivity : AppCompatActivity() {

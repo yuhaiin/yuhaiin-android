@@ -8,8 +8,6 @@ import android.widget.BaseAdapter;
 import android.widget.Filter;
 import android.widget.Filterable;
 
-import androidx.annotation.Nullable;
-
 import com.github.logviewer.databinding.LogcatViewerItemLogcatBinding;
 
 import java.text.SimpleDateFormat;
@@ -19,9 +17,8 @@ import java.util.Locale;
 public class LogcatAdapter extends BaseAdapter implements Filterable {
 
     private final ArrayList<LogItem> mData;
-    @Nullable
     private ArrayList<LogItem> mFilteredData = null;
-    @Nullable private String mFilter = null;
+    private String mFilter = null;
 
     LogcatAdapter() {
         mData = new ArrayList<>();

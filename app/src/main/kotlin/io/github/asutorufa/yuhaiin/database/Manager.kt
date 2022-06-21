@@ -41,9 +41,14 @@ object Manager {
         run: (p: Preference, newValue: Any) -> Unit
     ) {
         it.setOnPreferenceChangeListener { preference, newValue ->
-            run(preference, newValue)
-            db.updateProfile(profile)
-            true
+            try {
+                run(preference, newValue)
+                db.updateProfile(profile)
+                true
+            } catch (e: Exception) {
+                false
+            }
+
         }
     }
 }

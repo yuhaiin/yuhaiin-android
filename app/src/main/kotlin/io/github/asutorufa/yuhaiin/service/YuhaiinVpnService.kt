@@ -1,4 +1,4 @@
-package io.github.asutorufa.yuhaiin
+package io.github.asutorufa.yuhaiin.service
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -12,10 +12,14 @@ import android.os.ParcelFileDescriptor
 import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
+import io.github.asutorufa.yuhaiin.BuildConfig
+import io.github.asutorufa.yuhaiin.MainActivity
+import io.github.asutorufa.yuhaiin.R
 import io.github.asutorufa.yuhaiin.database.Manager
 import io.github.asutorufa.yuhaiin.database.Profile
 import io.github.asutorufa.yuhaiin.util.Routes
 import io.github.asutorufa.yuhaiin.util.Utility
+import kotlinx.coroutines.DelicateCoroutinesApi
 import yuhaiin.App
 import yuhaiin.DNS
 import yuhaiin.DNSSetting
@@ -50,12 +54,12 @@ class YuhaiinVpnService : VpnService() {
     private var tun2socks: Process? = null
 
     inner class VpnBinder : Binder() {
-//        fun getService(): YuhaiinVpnService {
-//            return this@YuhaiinVpnService
-//        }
+        fun getService(): YuhaiinVpnService {
+            return this@YuhaiinVpnService
+        }
 
         fun isRunning() = mRunning
-        fun stop() = stopMe()
+        fun stop() = this@YuhaiinVpnService.stop()
         fun saveNewBypass(url: String?): String? {
             Log.d(tag, "SaveNewBypass: $url")
             return try {
@@ -106,7 +110,7 @@ class YuhaiinVpnService : VpnService() {
         }
     }
 
-    fun stopMe() {
+    fun stop() {
         if (mStopping || !mRunning) return
 
         mStopping = true
@@ -134,32 +138,29 @@ class YuhaiinVpnService : VpnService() {
 
     override fun onRevoke() {
         Log.d(tag, "onRevoke")
-        stopMe()
+        stop()
         super.onRevoke()
     }
 
     override fun onDestroy() {
         Log.d(tag, "onDestroy")
-        stopMe()
+        stop()
         super.onDestroy()
-    }
-
-    override fun onTaskRemoved(rootIntent: Intent?) {
-        super.onTaskRemoved(rootIntent)
     }
 
     override fun onLowMemory() {
         Log.d(tag, "onLowMemory")
-        stopMe()
+        stop()
         super.onLowMemory()
     }
 
     override fun stopService(name: Intent?): Boolean {
         Log.d(tag, "stopService")
-        stopMe()
+        stop()
         return super.stopService(name)
     }
 
+    @OptIn(DelicateCoroutinesApi::class)
     @RequiresApi(Build.VERSION_CODES.M)
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         applicationContext.sendBroadcast(Intent(INTENT_CONNECTING))
@@ -193,7 +194,7 @@ class YuhaiinVpnService : VpnService() {
 
         try {
             val profile = Manager.db.getProfileByName(Manager.db.getLastProfile() ?: "Default")
-            
+
             startForeground(
                 1, builder
                     .setContentTitle("yuhaiin running")
@@ -215,7 +216,7 @@ class YuhaiinVpnService : VpnService() {
                     e.toString()
                 )
             })
-            stopMe()
+            stop()
         }
 
         return START_STICKY
@@ -288,6 +289,7 @@ class YuhaiinVpnService : VpnService() {
         mInterface = b.establish()
     }
 
+    @DelicateCoroutinesApi
     private fun start(profile: Profile) {
         Log.d(tag, "start yuhaiin: $profile,${profile.localDns.type}")
 
@@ -353,7 +355,7 @@ class YuhaiinVpnService : VpnService() {
             }
             append(" --dnsgw 127.0.0.1:${profile.dnsPort} --enable-udprelay")
         }
-        tun2socks = Utility.exec(command) { stopMe() }
+        tun2socks = Utility.exec(command) { stop() }
 
         // Try to send the Fd through socket.
         Log.d(tag, "send sock_path:" + File(applicationInfo.dataDir + "/sock_path").absolutePath)
