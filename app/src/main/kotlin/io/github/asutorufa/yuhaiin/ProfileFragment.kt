@@ -220,6 +220,7 @@ class ProfileFragment : PreferenceFragmentCompat() {
                 false
             }
 
+
             @Suppress("Unchecked_Cast")
             setOnPreferenceChangeListener(it) { _, newValue ->
                 profile.appList = newValue as Set<String>

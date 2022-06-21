@@ -8,6 +8,7 @@ import android.util.Log
 import androidx.core.content.ContextCompat
 import io.github.asutorufa.yuhaiin.BuildConfig.DEBUG
 import io.github.asutorufa.yuhaiin.database.Manager
+import io.github.asutorufa.yuhaiin.service.YuhaiinVpnService
 
 class BootReceiver : BroadcastReceiver() {
     private val tag = this.javaClass.simpleName
