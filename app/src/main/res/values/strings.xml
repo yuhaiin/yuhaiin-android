@@ -16,6 +16,7 @@
     <string name="connection">Connection</string>
     <string name="http_server_port_key">http_server_port</string>
     <string name="http_server_port_title">HTTP Port</string>
+    <string name="append_http_proxy_to_vpn">Append HTTP Proxy to VPN</string>
     <string name="socks5_server_port_key">socks5_server_port</string>
     <string name="socks5_server_port_title">Socks5 Port</string>
     <string name="ipv6_proxy_key">ipv6</string>
@@ -55,11 +56,14 @@
     <string name="adv_dns_port_key">dns_port</string>
     <string name="adv_dns_port_title">DNS Port</string>
 
+    <string name="dns_hijacking">dns_hijacking</string>
+
     <string name="remote_dns_host_key">remote_dns_host</string>
     <string name="remote_dns_type_key">remote_dns_type</string>
     <string name="remote_dns_subnet_key">remote_dns_subnet</string>
     <string name="remote_dns_tls_server_name_key">remote_dns_tls_server_name</string>
     <string name="remote_dns_proxy_key">remote_dns_proxy</string>
+
 
     <string name="local_dns_host_key">local_dns_host</string>
     <string name="local_dns_type_key">local_dns_type</string>

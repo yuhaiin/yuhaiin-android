@@ -16,13 +16,6 @@
             app:popEnterAnim="@anim/nav_dynamic_pop_enter_anim"
             app:popExitAnim="@anim/nav_dynamic_pop_exit_anim" />
         <action
-            android:id="@+id/action_profileFragment_to_pageFragment"
-            app:destination="@id/pageFragment"
-            app:enterAnim="@anim/nav_dynamic_enter_anim"
-            app:exitAnim="@anim/nav_dynamic_exit_anim"
-            app:popEnterAnim="@anim/nav_dynamic_pop_enter_anim"
-            app:popExitAnim="@anim/nav_dynamic_pop_exit_anim" />
-        <action
             android:id="@+id/action_profileFragment_to_ruleFragment"
             app:destination="@id/ruleFragment"
             app:enterAnim="@anim/nav_dynamic_enter_anim"
@@ -35,10 +28,6 @@
         android:id="@+id/dnsFragment"
         android:name="io.github.asutorufa.yuhaiin.DnsFragment"
         android:label="DNS Settings" />
-    <fragment
-        android:id="@+id/pageFragment"
-        android:name="io.github.asutorufa.yuhaiin.PageFragment"
-        android:label="Yuhaiin" />
     <fragment
         android:id="@+id/ruleFragment"
         android:name="io.github.asutorufa.yuhaiin.RuleFragment"

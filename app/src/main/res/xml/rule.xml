@@ -1,6 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.preference.PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <com.takisoft.preferencex.SimpleMenuPreference
+        android:icon="@drawable/router"
+        android:key="@string/adv_route_Key"
+        android:title="@string/adv_route_title"
+        android:entries="@array/adv_routes"
+        app:useSimpleSummaryProvider="true"
+        android:entryValues="@array/adv_routes" />
+
     <EditTextPreference android:title="Update Bypass"
         android:key="@string/rule_update_bypass_file"
         app:useSimpleSummaryProvider="true"

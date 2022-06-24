@@ -1,14 +1,13 @@
 package io.github.asutorufa.yuhaiin
 
 import android.os.Bundle
-import androidx.preference.DropDownPreference
 import androidx.preference.EditTextPreference
 import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.SwitchPreferenceCompat
+import com.takisoft.preferencex.SimpleMenuPreference
 import io.github.asutorufa.yuhaiin.database.DNS
 import io.github.asutorufa.yuhaiin.database.Manager.setOnPreferenceChangeListener
 import io.github.asutorufa.yuhaiin.database.Profile
-import io.github.asutorufa.yuhaiin.util.DataStore
 
 class DnsFragment : PreferenceFragmentCompat() {
     private val profile: Profile
@@ -20,7 +19,7 @@ class DnsFragment : PreferenceFragmentCompat() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        preferenceManager.preferenceDataStore = DataStore()
+        preferenceManager.preferenceDataStore = (activity as MainActivity).dataStore
 
         findPreference<EditTextPreference>(resources.getString(R.string.adv_dns_port_key))!!.apply {
             text = profile.dnsPort.toString()
@@ -36,6 +35,13 @@ class DnsFragment : PreferenceFragmentCompat() {
             }
         }
 
+        findPreference<SwitchPreferenceCompat>(resources.getString(R.string.dns_hijacking))!!.apply {
+            isChecked = profile.dnsHijacking
+            setOnPreferenceChangeListener(this) { _, newValue ->
+                profile.dnsHijacking = newValue as Boolean
+            }
+        }
+
         findPreference<EditTextPreference>(resources.getString(R.string.remote_dns_host_key))!!.apply {
             text = profile.remoteDns.host
             setOnPreferenceChangeListener(this) { _, newValue ->
@@ -43,7 +49,7 @@ class DnsFragment : PreferenceFragmentCompat() {
             }
         }
 
-        findPreference<DropDownPreference>(resources.getString(R.string.remote_dns_type_key))!!.apply {
+        findPreference<SimpleMenuPreference>(resources.getString(R.string.remote_dns_type_key))!!.apply {
             value = dnsTypeToStr(DNS.Type.fromInt(profile.remoteDns.type))
             setOnPreferenceChangeListener(this) { _, newValue ->
                 profile.remoteDns.type = strToDNSType(newValue as String).value
@@ -71,7 +77,6 @@ class DnsFragment : PreferenceFragmentCompat() {
             }
         }
 
-
         // localdns
         findPreference<EditTextPreference>(resources.getString(R.string.local_dns_host_key))!!.apply {
             text = profile.localDns.host
@@ -79,7 +84,7 @@ class DnsFragment : PreferenceFragmentCompat() {
                 profile.localDns.host = newValue as String
             }
         }
-        findPreference<DropDownPreference>(resources.getString(R.string.local_dns_type_key))!!.apply {
+        findPreference<SimpleMenuPreference>(resources.getString(R.string.local_dns_type_key))!!.apply {
             value = dnsTypeToStr(DNS.Type.fromInt(profile.localDns.type))
             setOnPreferenceChangeListener(this) { _, newValue ->
                 profile.localDns.type = strToDNSType(newValue as String).value
@@ -108,7 +113,7 @@ class DnsFragment : PreferenceFragmentCompat() {
                 profile.bootstrapDns.host = newValue as String
             }
         }
-        findPreference<DropDownPreference>(resources.getString(R.string.bootstrap_dns_type_key))!!.apply {
+        findPreference<SimpleMenuPreference>(resources.getString(R.string.bootstrap_dns_type_key))!!.apply {
             value = dnsTypeToStr(DNS.Type.fromInt(profile.bootstrapDns.type))
             setOnPreferenceChangeListener(this) { _, newValue ->
                 profile.bootstrapDns.type = strToDNSType(newValue as String).value

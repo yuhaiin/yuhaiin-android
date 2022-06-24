@@ -18,11 +18,13 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.snackbar.Snackbar
 import io.github.asutorufa.yuhaiin.database.Manager
 import io.github.asutorufa.yuhaiin.service.YuhaiinVpnService
+import io.github.asutorufa.yuhaiin.util.DataStore
 
 
 class MainActivity : AppCompatActivity() {
     val tag: String = this.javaClass.simpleName
     val profile = Manager.profile
+    val dataStore = DataStore()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -68,7 +70,7 @@ class MainActivity : AppCompatActivity() {
             .apply {
                 setOnClickListener {
                     if (mBinder != null && mBinder!!.isRunning()) mBinder!!.stop()
-                    else startVpn()
+                    else startService()
                 }
             }
     }
@@ -149,8 +151,7 @@ class MainActivity : AppCompatActivity() {
         ).setAnchorView(mFab).show()
     }
 
-    // You can do the assignment inside onAttach or onCreate, i.e, before the activity is displayed
-    private var startVpnLauncher =
+    private val vpnPermissionDialogLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == Activity.RESULT_OK) startService(
                 Intent(
@@ -160,7 +161,9 @@ class MainActivity : AppCompatActivity() {
             )
         }
 
-    private fun startVpn() =
-        VpnService.prepare(this)?.also { startVpnLauncher.launch(it) }
-            ?: startService(Intent(this, YuhaiinVpnService::class.java))
+    private fun startService() =
+        // prepare to get vpn permission
+        VpnService.prepare(this)?.apply {
+            vpnPermissionDialogLauncher.launch(this)
+        } ?: startService(Intent(this, YuhaiinVpnService::class.java))
 }

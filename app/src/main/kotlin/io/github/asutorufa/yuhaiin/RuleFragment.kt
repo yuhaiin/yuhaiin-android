@@ -8,6 +8,7 @@ import android.widget.Toast
 import androidx.preference.EditTextPreference
 import androidx.preference.PreferenceFragmentCompat
 import com.google.android.material.snackbar.Snackbar
+import com.takisoft.preferencex.SimpleMenuPreference
 import io.github.asutorufa.yuhaiin.database.Manager.setOnPreferenceChangeListener
 import io.github.asutorufa.yuhaiin.database.Profile
 import kotlinx.coroutines.DelicateCoroutinesApi
@@ -30,6 +31,14 @@ class RuleFragment : PreferenceFragmentCompat() {
     @OptIn(DelicateCoroutinesApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        preferenceManager.preferenceDataStore = (activity as MainActivity).dataStore
+
+        findPreference<SimpleMenuPreference>(resources.getString(R.string.adv_route_Key))!!.also {
+            it.value = profile.route
+            setOnPreferenceChangeListener(it) { _, newValue ->
+                profile.route = newValue as String
+            }
+        }
 
         findPreference<EditTextPreference>(resources.getString(R.string.rule_update_bypass_file))?.apply {
             text = profile.ruleUpdateBypassUrl
