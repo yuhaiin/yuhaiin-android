@@ -10,29 +10,42 @@
         android:icon="@drawable/person" />
 
 
+    <EditTextPreference
+        android:icon="@drawable/vpn_lock"
+        android:key="@string/yuhaiin_port_key"
+        android:title="@string/yuhaiin_port_title"
+        android:digits="0123456789"
+        app:useSimpleSummaryProvider="true"
+        android:summary="@string/yuhaiin_host_summary"
+        android:singleLine="true" />
+
+    <Preference
+        android:title="Open Yuhaiin Page"
+        android:key="@string/open_yuhaiin_page"
+        android:singleLine="true"
+        android:icon="@drawable/open_in_browser" />
+
     <PreferenceCategory android:title="@string/connection">
 
-        <Preference
-            android:title="Open Yuhaiin Page"
-            android:key="@string/open_yuhaiin_page"
-            android:singleLine="true"
-            android:icon="@drawable/open_in_browser" />
-
-        <EditTextPreference
-            android:icon="@drawable/vpn_lock"
-            android:key="@string/yuhaiin_port_key"
-            android:title="@string/yuhaiin_port_title"
-            app:useSimpleSummaryProvider="true"
-            android:summary="@string/yuhaiin_host_summary"
-            android:singleLine="true" />
+        <SwitchPreferenceCompat
+            android:icon="@drawable/lan"
+            android:key="@string/allow_lan_key"
+            android:title="@string/allow_lan_title"
+            android:layout_height="match_parent" />
 
         <EditTextPreference
             android:icon="@drawable/http"
             android:key="@string/http_server_port_key"
             android:title="@string/http_server_port_title"
             android:inputType="number"
+            android:digits="0123456789"
             app:useSimpleSummaryProvider="true"
             android:singleLine="true" />
+
+        <SwitchPreferenceCompat
+            android:title="Append HTTP Proxy to VPN"
+            android:summary="HTTP proxy will be used directly from without going through the virtual NIC device(Android 10+)"
+            android:key="@string/append_http_proxy_to_vpn" />
 
         <EditTextPreference
             android:icon="@drawable/spoke"
@@ -44,12 +57,6 @@
             android:singleLine="true" />
 
         <SwitchPreferenceCompat
-            android:icon="@drawable/lan"
-            android:key="@string/allow_lan_key"
-            android:title="@string/allow_lan_title"
-            android:layout_height="match_parent" />
-
-        <SwitchPreferenceCompat
             android:icon="@drawable/hub"
             android:key="@string/ipv6_proxy_key"
             android:title="@string/ipv6_proxy_title"
@@ -58,32 +65,6 @@
 
     </PreferenceCategory>
 
-    <PreferenceCategory
-            android:title="@string/authentication">
-
-        <SwitchPreferenceCompat
-            android:icon="@drawable/authenticator"
-            android:key="@string/auth_userpw_key"
-            android:title="@string/auth_userpw_title" />
-
-        <EditTextPreference
-            android:key="@string/auth_username_key"
-            android:title="@string/auth_username_title"
-            android:icon="@drawable/face"
-            android:dependency="@string/auth_userpw_key"
-            app:useSimpleSummaryProvider="true"
-            android:singleLine="true" />
-
-        <EditTextPreference
-            android:key="@string/auth_password_key"
-            android:title="@string/auth_password_title"
-            android:icon="@drawable/password"
-            android:inputType="textPassword"
-            android:dependency="@string/auth_userpw_key"
-            app:useSimpleSummaryProvider="true"
-            android:singleLine="true" />
-
-    </PreferenceCategory>
 
     <PreferenceCategory android:title="@string/advanced">
 
@@ -93,16 +74,9 @@
             android:summary="DNS Port, Fake DNS, Remote DNS, Local DNS, Bootstrap DNS."
             android:key="@string/adv_dns_Key" />
 
-        <DropDownPreference
-            android:icon="@drawable/router"
-            android:key="@string/adv_route_Key"
-            android:title="@string/adv_route_title"
-            android:entries="@array/adv_routes"
-            app:useSimpleSummaryProvider="true"
-            android:entryValues="@array/adv_routes" />
-
         <Preference
             android:title="Rule"
+            android:icon="@drawable/router"
             android:summary="Update Bypass File, Custom Direct, Proxy, Block."
             android:key="@string/rule" />
 
@@ -132,6 +106,32 @@
 
     </PreferenceCategory>
 
+
+    <PreferenceCategory android:title="@string/authentication">
+
+        <SwitchPreferenceCompat
+            android:icon="@drawable/authenticator"
+            android:key="@string/auth_userpw_key"
+            android:title="@string/auth_userpw_title" />
+
+        <EditTextPreference
+            android:key="@string/auth_username_key"
+            android:title="@string/auth_username_title"
+            android:icon="@drawable/face"
+            android:dependency="@string/auth_userpw_key"
+            app:useSimpleSummaryProvider="true"
+            android:singleLine="true" />
+
+        <EditTextPreference
+            android:key="@string/auth_password_key"
+            android:title="@string/auth_password_title"
+            android:icon="@drawable/password"
+            android:inputType="textPassword"
+            android:dependency="@string/auth_userpw_key"
+            app:useSimpleSummaryProvider="true"
+            android:singleLine="true" />
+
+    </PreferenceCategory>
 
     <PreferenceCategory android:title="@string/debug">
 

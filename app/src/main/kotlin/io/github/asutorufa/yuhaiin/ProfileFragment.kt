@@ -24,7 +24,6 @@ import com.google.android.material.snackbar.Snackbar
 import io.github.asutorufa.yuhaiin.database.Manager
 import io.github.asutorufa.yuhaiin.database.Manager.setOnPreferenceChangeListener
 import io.github.asutorufa.yuhaiin.database.Profile
-import io.github.asutorufa.yuhaiin.util.DataStore
 import java.util.regex.Pattern
 
 class ProfileFragment : PreferenceFragmentCompat() {
@@ -39,7 +38,7 @@ class ProfileFragment : PreferenceFragmentCompat() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        preferenceManager.preferenceDataStore = DataStore()
+        preferenceManager.preferenceDataStore = (activity as MainActivity).dataStore
         initPreferences()
         reload()
     }
@@ -149,6 +148,13 @@ class ProfileFragment : PreferenceFragmentCompat() {
             refreshPreferences.add { it.text = profile.httpServerPort.toString() }
         }
 
+        findPreference<SwitchPreferenceCompat>(resources.getString(R.string.append_http_proxy_to_vpn))!!.also {
+            setOnPreferenceChangeListener(it) { _, newValue ->
+                profile.appendHttpProxyToSystem = newValue as Boolean
+            }
+            refreshPreferences.add { it.isChecked = profile.appendHttpProxyToSystem }
+        }
+
         findPreference<EditTextPreference>(resources.getString(R.string.socks5_server_port_key))!!.also {
             it.setOnBindEditTextListener { editText: EditText ->
                 editText.inputType =
@@ -195,19 +201,13 @@ class ProfileFragment : PreferenceFragmentCompat() {
             }
         }
 
-        findPreference<DropDownPreference>(resources.getString(R.string.adv_route_Key))!!.also {
-            setOnPreferenceChangeListener(it) { _, newValue ->
-                profile.route = newValue as String
-            }
-            refreshPreferences.add { it.value = profile.route }
-        }
-
         findPreference<SwitchPreferenceCompat>(resources.getString(R.string.adv_per_app_key))!!.also {
             setOnPreferenceChangeListener(it) { _, newValue ->
                 profile.isPerApp = newValue as Boolean
             }
             refreshPreferences.add { it.isChecked = profile.isPerApp }
         }
+        
         findPreference<SwitchPreferenceCompat>(resources.getString(R.string.adv_app_bypass_key))!!.also {
             setOnPreferenceChangeListener(it) { _, newValue ->
                 profile.isBypassApp = newValue as Boolean

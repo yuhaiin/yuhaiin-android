@@ -12,6 +12,10 @@ data class Profile(
     ) val name: String,
     @ColumnInfo(name = "http_server_port", defaultValue = "8188") var httpServerPort: Int = 8188,
     @ColumnInfo(
+        name = "append_http_proxy_to_system",
+        defaultValue = "0"
+    ) var appendHttpProxyToSystem: Boolean = false,
+    @ColumnInfo(
         name = "socks5_server_port",
         defaultValue = "1080"
     ) var socks5ServerPort: Int = 1080,
@@ -50,6 +54,8 @@ data class Profile(
     @ColumnInfo(
         name = "bootstrap_dns",
         defaultValue = DNS.DefaultBootstrapJson
-    ) var bootstrapDns: DNS = DNS.DefaultBootstrap
+    ) var bootstrapDns: DNS = DNS.DefaultBootstrap,
+    @ColumnInfo(name = "dns_hijacking", defaultValue = "0")
+    var dnsHijacking: Boolean = false,
 )
 
