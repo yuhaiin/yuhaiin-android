@@ -219,52 +219,51 @@ class YuhaiinVpnService : VpnService() {
 
     private fun start(profile: Profile) {
         Log.d(tag, "start yuhaiin: $profile")
-        if (profile.yuhaiinPort > 0) {
-            var address = "127.0.0.1"
-            if (profile.allowLan) address = "0.0.0.0"
-            yuhaiin.start(Opts().apply {
-                host = "${address}:${profile.yuhaiinPort}"
-                savepath = getExternalFilesDir("yuhaiin")!!.absolutePath
-                socks5 = "${address}:${profile.socks5ServerPort}"
-                http = "${address}:${profile.httpServerPort}"
-                saveLogcat = profile.saveLogcat
-                block = profile.ruleBlock
-                proxy = profile.ruleProxy
-                direct = profile.ruleProxy
-                dns = DNSSetting().apply {
-                    server = "${address}:${profile.dnsPort}"
-                    fakedns = profile.fakeDnsCidr.isNotEmpty()
-                    fakednsIpRange = profile.fakeDnsCidr
-                    remote = DNS().apply {
-                        host = profile.remoteDns.host
-                        subnet = profile.remoteDns.subnet
-                        type = profile.remoteDns.type
-                        tlsServername = profile.remoteDns.tlsServerName
-                        proxy = profile.remoteDns.proxy
-                    }
-                    local = DNS().apply {
-                        host = profile.localDns.host
-                        subnet = profile.localDns.subnet
-                        type = profile.localDns.type
-                        tlsServername = profile.localDns.tlsServerName
-                        proxy = profile.localDns.proxy
-                    }
-                    bootstrap = DNS().apply {
-                        host = profile.bootstrapDns.host
-                        subnet = profile.bootstrapDns.subnet
-                        type = profile.bootstrapDns.type
-                        tlsServername = profile.bootstrapDns.tlsServerName
-                        proxy = profile.bootstrapDns.proxy
-                    }
-                    tun = TUN().apply {
-                        fd = mInterface!!.fd
-                        mtu = VPN_MTU
-                        gateway = PRIVATE_VLAN4_ROUTER
-                        dnsHijacking = profile.dnsHijacking
-                    }
+        if (profile.yuhaiinPort <= 0) throw Exception("Invalid yuhaiin port: ${profile.yuhaiinPort}")
+        var address = "127.0.0.1"
+        if (profile.allowLan) address = "0.0.0.0"
+        yuhaiin.start(Opts().apply {
+            host = "${address}:${profile.yuhaiinPort}"
+            savepath = getExternalFilesDir("yuhaiin")!!.absolutePath
+            socks5 = "${address}:${profile.socks5ServerPort}"
+            http = "${address}:${profile.httpServerPort}"
+            saveLogcat = profile.saveLogcat
+            block = profile.ruleBlock
+            proxy = profile.ruleProxy
+            direct = profile.ruleProxy
+            dns = DNSSetting().apply {
+                server = "${address}:${profile.dnsPort}"
+                fakedns = profile.fakeDnsCidr.isNotEmpty()
+                fakednsIpRange = profile.fakeDnsCidr
+                remote = DNS().apply {
+                    host = profile.remoteDns.host
+                    subnet = profile.remoteDns.subnet
+                    type = profile.remoteDns.type
+                    tlsServername = profile.remoteDns.tlsServerName
+                    proxy = profile.remoteDns.proxy
                 }
-            })
-        }
+                local = DNS().apply {
+                    host = profile.localDns.host
+                    subnet = profile.localDns.subnet
+                    type = profile.localDns.type
+                    tlsServername = profile.localDns.tlsServerName
+                    proxy = profile.localDns.proxy
+                }
+                bootstrap = DNS().apply {
+                    host = profile.bootstrapDns.host
+                    subnet = profile.bootstrapDns.subnet
+                    type = profile.bootstrapDns.type
+                    tlsServername = profile.bootstrapDns.tlsServerName
+                    proxy = profile.bootstrapDns.proxy
+                }
+                tun = TUN().apply {
+                    fd = mInterface!!.fd
+                    mtu = VPN_MTU
+                    gateway = PRIVATE_VLAN4_ROUTER
+                    dnsHijacking = profile.dnsHijacking
+                }
+            }
+        })
     }
 
     private fun startNotification(name: String) {
