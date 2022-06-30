@@ -12,3 +12,4 @@ gradle.properties
 /script/
 yuhaiin/build.sh
 yuhaiin/build/
+app/release/

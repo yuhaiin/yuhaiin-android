@@ -283,7 +283,7 @@ class YuhaiinVpnService : VpnService() {
             NotificationCompat.Builder(this, packageName)
                 .setContentTitle("yuhaiin running")
                 .setContentText(String.format(getString(R.string.notify_msg), name))
-                .setSmallIcon(R.drawable.ic_vpn)
+                .setSmallIcon(R.drawable.emoji_nature)
                 .setContentIntent(
                     PendingIntent.getActivity(
                         this,
