@@ -24,7 +24,7 @@ class DnsFragment : PreferenceFragmentCompat() {
         findPreference<EditTextPreference>(resources.getString(R.string.adv_dns_port_key))!!.apply {
             text = profile.dnsPort.toString()
             setOnPreferenceChangeListener(this) { _, newValue ->
-                profile.dnsPort = newValue as Int
+                profile.dnsPort = newValue.toString().toInt()
             }
         }
 
