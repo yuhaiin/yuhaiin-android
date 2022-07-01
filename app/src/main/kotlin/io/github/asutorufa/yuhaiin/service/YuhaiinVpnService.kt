@@ -103,15 +103,15 @@ class YuhaiinVpnService : VpnService() {
         if (state != State.CONNECTED) return
         setState(State.DISCONNECTING)
 
-        stopForeground(true)
-        yuhaiin.stop()
-        mInterface?.close()
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            try {
+        try {
+            stopForeground(true)
+            yuhaiin.stop()
+            mInterface?.close()
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                 connectivityManager.unregisterNetworkCallback(defaultNetworkCallback)
-            } catch (ignored: Exception) {
-                // ignored
             }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
 
         setState(State.DISCONNECTED)
@@ -225,14 +225,16 @@ class YuhaiinVpnService : VpnService() {
         yuhaiin.start(Opts().apply {
             host = "${address}:${profile.yuhaiinPort}"
             savepath = getExternalFilesDir("yuhaiin")!!.absolutePath
-            socks5 = "${address}:${profile.socks5ServerPort}"
-            http = "${address}:${profile.httpServerPort}"
+
+            if (profile.socks5ServerPort > 0) socks5 = "${address}:${profile.socks5ServerPort}"
+            if (profile.httpServerPort > 0) http = "${address}:${profile.httpServerPort}"
+
             saveLogcat = profile.saveLogcat
             block = profile.ruleBlock
             proxy = profile.ruleProxy
             direct = profile.ruleProxy
             dns = DNSSetting().apply {
-                server = "${address}:${profile.dnsPort}"
+                if (profile.dnsPort > 0) server = "${address}:${profile.dnsPort}"
                 fakedns = profile.fakeDnsCidr.isNotEmpty()
                 fakednsIpRange = profile.fakeDnsCidr
                 remote = DNS().apply {

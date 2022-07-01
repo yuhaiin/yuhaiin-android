@@ -6,6 +6,7 @@
         android:key="@string/adv_dns_port_key"
         android:title="@string/adv_dns_port_title"
         android:inputType="number"
+        android:digits="0123456789"
         app:useSimpleSummaryProvider="true"
         android:singleLine="true" />
 
