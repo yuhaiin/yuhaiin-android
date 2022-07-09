@@ -4,14 +4,15 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Intent
-import android.net.*
-import android.net.ConnectivityManager.NetworkCallback
-import android.os.Binder
+import android.net.ProxyInfo
+import android.net.Uri
+import android.net.VpnService
 import android.os.Build
 import android.os.ParcelFileDescriptor
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import io.github.asutorufa.yuhaiin.BuildConfig
+import io.github.asutorufa.yuhaiin.IYuhaiinVpnBinder
 import io.github.asutorufa.yuhaiin.MainActivity
 import io.github.asutorufa.yuhaiin.R
 import io.github.asutorufa.yuhaiin.database.Manager
@@ -43,61 +44,64 @@ class YuhaiinVpnService : VpnService() {
         private const val PRIVATE_VLAN6_CLIENT = "fdfe:dcba:9876::1"
     }
 
-    private val yuhaiin = App()
     private val mBinder = VpnBinder()
     private val tag = this.javaClass.simpleName
     private var state = State.DISCONNECTED
     private var mInterface: ParcelFileDescriptor? = null
+    private var yuhaiin: Process? = null
+    private val app = App()
 
 
-    inner class VpnBinder : Binder() {
-        fun isRunning() = state == State.CONNECTED
-        fun stop() = this@YuhaiinVpnService.onRevoke()
-        fun saveNewBypass(url: String?): String? {
+    inner class VpnBinder : IYuhaiinVpnBinder.Stub() {
+        override fun isRunning() = state == State.CONNECTED
+        override fun stop() = this@YuhaiinVpnService.onRevoke()
+        override fun saveNewBypass(url: String): String {
             Log.d(tag, "SaveNewBypass: $url")
             return try {
-                yuhaiin.saveNewBypass(
+                app.saveNewBypass(
                     Uri.parse(url).toString(),
                     getExternalFilesDir("yuhaiin")!!.absolutePath
                 )
                 ""
             } catch (e: Exception) {
-                e.message
+                e.message.toString()
             }
         }
     }
 
-    private val connectivityManager: ConnectivityManager by lazy {
-        getSystemService(
-            CONNECTIVITY_SERVICE
-        ) as ConnectivityManager
-    }
-    private val defaultNetworkRequest by lazy {
-        NetworkRequest.Builder()
-            .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-            .addCapability(NetworkCapabilities.NET_CAPABILITY_NOT_RESTRICTED)
-            .build()
-    }
-    private val defaultNetworkCallback: NetworkCallback = object : NetworkCallback() {
-        override fun onAvailable(network: Network) {
-            setUnderlyingNetworks(arrayOf(network))
-        }
-
-        override fun onCapabilitiesChanged(
-            network: Network,
-            networkCapabilities: NetworkCapabilities
-        ) {
-            setUnderlyingNetworks(arrayOf(network))
-        }
-
-        override fun onLost(network: Network) {
-            setUnderlyingNetworks(null)
-        }
-    }
-
+    //    private val connectivityManager: ConnectivityManager by lazy {
+//        getSystemService(
+//            CONNECTIVITY_SERVICE
+//        ) as ConnectivityManager
+//    }
+//    private val defaultNetworkRequest by lazy {
+//        NetworkRequest.Builder()
+//            .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+//            .addCapability(NetworkCapabilities.NET_CAPABILITY_NOT_RESTRICTED)
+//            .build()
+//    }
+//    private val defaultNetworkCallback: NetworkCallback = object : NetworkCallback() {
+//        override fun onAvailable(network: Network) {
+//            setUnderlyingNetworks(arrayOf(network))
+//        }
+//
+//        override fun onCapabilitiesChanged(
+//            network: Network,
+//            networkCapabilities: NetworkCapabilities
+//        ) {
+//            setUnderlyingNetworks(arrayOf(network))
+//        }
+//
+//        override fun onLost(network: Network) {
+//            setUnderlyingNetworks(null)
+//        }
+//    }
 
     override fun onBind(intent: Intent?) =
         if (intent?.action == SERVICE_INTERFACE) super.onBind(intent) else mBinder
+
+    private fun getPid(p: Process): Int =
+        p.javaClass.getDeclaredField("pid").apply { isAccessible = true }.getInt(p)
 
     private fun stop() {
         if (state != State.CONNECTED) return
@@ -105,16 +109,28 @@ class YuhaiinVpnService : VpnService() {
 
         try {
             stopForeground(true)
-            yuhaiin.stop()
             mInterface?.close()
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                connectivityManager.unregisterNetworkCallback(defaultNetworkCallback)
+            if (yuhaiin != null) {
+                //  Runtime.getRuntime().exec("killall libyuhaiin.so")
+                //  Os.kill(getPid(yuhaiin!!), OsConstants.SIGTERM)
+                yuhaiin!!.destroy()
+                while (yuhaiin != null || state != State.DISCONNECTED) {
+                    Log.d(tag, "stop: waiting for yuhaiin stopped")
+                    Thread.sleep(100)
+                }
             }
+
+            app.stop()
+            stopSelf()
+            setState(State.DISCONNECTED)
+
+//            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+//                connectivityManager.unregisterNetworkCallback(defaultNetworkCallback)
+//            }
         } catch (e: Exception) {
             e.printStackTrace()
         }
 
-        setState(State.DISCONNECTED)
     }
 
     override fun onRevoke() {
@@ -125,8 +141,7 @@ class YuhaiinVpnService : VpnService() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Log.d(tag, "starting")
-        if (state == State.CONNECTED) {
-            setState(State.CONNECTED)
+        if (state == State.CONNECTED || state == State.CONNECTING || yuhaiin != null) {
             return START_STICKY
         }
 
@@ -136,7 +151,7 @@ class YuhaiinVpnService : VpnService() {
             val profile = Manager.db.getProfileByName(Manager.db.getLastProfile() ?: "Default")
 
             configure(profile)
-            start(profile)
+            start2(profile)
             startNotification(profile.name)
 
             setState(State.CONNECTED)
@@ -172,9 +187,9 @@ class YuhaiinVpnService : VpnService() {
         Routes.addRoutes(this, b, profile.route)
         Routes.addRoute(b, profile.fakeDnsCidr)
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            connectivityManager.requestNetwork(defaultNetworkRequest, defaultNetworkCallback)
-        }
+//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+//            connectivityManager.requestNetwork(defaultNetworkRequest, defaultNetworkCallback)
+//        }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             b.setMetered(false)
@@ -217,12 +232,12 @@ class YuhaiinVpnService : VpnService() {
         mInterface = b.establish()
     }
 
-    private fun start(profile: Profile) {
+    private fun start2(profile: Profile) {
         Log.d(tag, "start yuhaiin: $profile")
         if (profile.yuhaiinPort <= 0) throw Exception("Invalid yuhaiin port: ${profile.yuhaiinPort}")
         var address = "127.0.0.1"
         if (profile.allowLan) address = "0.0.0.0"
-        yuhaiin.start(Opts().apply {
+        app.start(Opts().apply {
             host = "${address}:${profile.yuhaiinPort}"
             savepath = getExternalFilesDir("yuhaiin")!!.absolutePath
 
@@ -263,10 +278,139 @@ class YuhaiinVpnService : VpnService() {
                     mtu = VPN_MTU
                     gateway = PRIVATE_VLAN4_ROUTER
                     dnsHijacking = profile.dnsHijacking
+                    // 0: fdbased, 1: channel
+                    driver = 0
                 }
             }
         })
     }
+
+//    @OptIn(DelicateCoroutinesApi::class)
+//    private fun start(profile: Profile) {
+//        Log.d(tag, "start yuhaiin: $profile")
+//        if (profile.yuhaiinPort <= 0) throw Exception("Invalid yuhaiin port: ${profile.yuhaiinPort}")
+//
+//
+//        val opts = JsonObject().apply {
+//            var address = "127.0.0.1"
+//            if (profile.allowLan) address = "0.0.0.0"
+//            addProperty("host", getAddress(address, profile.yuhaiinPort))
+//            addProperty("savepath", getExternalFilesDir("yuhaiin")!!.absolutePath)
+//            addProperty("socks5", getAddress(address, profile.socks5ServerPort))
+//            addProperty("http", getAddress(address, profile.httpServerPort))
+//            addProperty("save_logcat", profile.saveLogcat)
+//            addProperty("block", profile.ruleBlock)
+//            add("dns", JsonObject().apply {
+//                addProperty("server", getAddress(address, profile.dnsPort))
+//                addProperty("fakedns", profile.fakeDnsCidr.isNotEmpty())
+//                addProperty("fakedns_ip_range", profile.fakeDnsCidr)
+//                add("remote", JsonObject().apply {
+//                    addProperty("host", profile.remoteDns.host)
+//                    addProperty("type", profile.remoteDns.type)
+//                    addProperty("subnet", profile.remoteDns.subnet)
+//                    addProperty("proxy", profile.remoteDns.proxy)
+//                    addProperty("tls_servername", profile.remoteDns.tlsServerName)
+//                })
+//                add("local", JsonObject().apply {
+//                    addProperty("host", profile.localDns.host)
+//                    addProperty("type", profile.localDns.type)
+//                    addProperty("subnet", profile.localDns.subnet)
+//                    addProperty("proxy", profile.localDns.proxy)
+//                    addProperty("tls_servername", profile.localDns.tlsServerName)
+//                })
+//                add("bootstrap", JsonObject().apply {
+//                    addProperty("host", profile.bootstrapDns.host)
+//                    addProperty("type", profile.bootstrapDns.type)
+//                    addProperty("subnet", profile.bootstrapDns.subnet)
+//                    addProperty("proxy", profile.bootstrapDns.proxy)
+//                    addProperty("tls_servername", profile.bootstrapDns.tlsServerName)
+//                })
+//            })
+//            add("tun", JsonObject().apply {
+//                addProperty("fd", 0)
+//                addProperty("mtu", VPN_MTU)
+//                addProperty("gateway", PRIVATE_VLAN4_ROUTER)
+//                addProperty("dns_hijacking", profile.dnsHijacking)
+//            })
+//        }
+//
+//        val socksPath = File(applicationInfo.dataDir + "/sock_path").absolutePath
+//
+//        GlobalScope.launch(Dispatchers.IO) {
+//            try {
+////                val optBase64 = Base64.encodeToString(opts.toString().toByteArray(), Base64.NO_WRAP)
+////                Log.d(tag, "start: $optBase64")
+//
+//                val command = buildList<String> {
+//                    add("${applicationInfo.nativeLibraryDir}/libyuhaiin.so")
+//                    add(opts.toString())
+//                    add(socksPath)
+//                }
+//
+//                Log.d(tag, "start: $command")
+//
+//                yuhaiin = ProcessBuilder(command).start()
+//
+//                launch {
+//                    Scanner(yuhaiin!!.errorStream).apply {
+//                        while (hasNextLine()) {
+//                            println(nextLine())
+//                        }
+//                        close()
+//                    }
+//                }
+////                launch {
+//                Scanner(yuhaiin!!.inputStream).apply {
+//                    while (hasNextLine()) println(nextLine())
+//                    close()
+//                }
+////                }
+//
+//                yuhaiin!!.waitFor()
+//            } catch (e: Exception) {
+//                e.printStackTrace()
+//            }
+//
+//            yuhaiin = null
+//            onRevoke()
+//            setState(State.DISCONNECTED)
+//        }
+//        sendFd(socksPath)
+//    }
+//
+//
+//    private fun getAddress(hostname: String, port: Int): String {
+//        if (port <= 0) {
+//            return ""
+//        }
+//
+//        return "${hostname}:${port}"
+//    }
+//
+//    private fun sendFd(path: String) {
+//        val fd = mInterface!!.fileDescriptor
+//
+//        var tries = 0
+//        while (true) try {
+//            Thread.sleep(50L shl tries)
+//            Log.d(packageName, "sendFd tries: $tries, $path")
+//            LocalSocket().use { localSocket ->
+//                localSocket.connect(
+//                    LocalSocketAddress(
+//                        path,
+//                        LocalSocketAddress.Namespace.FILESYSTEM
+//                    )
+//                )
+//                localSocket.setFileDescriptorsForSend(arrayOf(fd))
+//                localSocket.outputStream.write(42)
+//            }
+//            break
+//        } catch (e: Exception) {
+//            Log.d(packageName, e.toString())
+//            if (tries > 5) throw e
+//            tries += 1
+//        }
+//    }
 
     private fun startNotification(name: String) {
         // Notifications on Oreo and above need a channel

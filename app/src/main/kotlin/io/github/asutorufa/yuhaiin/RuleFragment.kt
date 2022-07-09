@@ -67,8 +67,8 @@ class RuleFragment : PreferenceFragmentCompat() {
                         if (activity is MainActivity && (activity as MainActivity).mBinder != null)
                             (activity as MainActivity).mBinder?.saveNewBypass(
                                 newValue
-                            )?.let {
-                                if (it.isNotEmpty()) throw Exception(it)
+                            ).let {
+                                if (it?.isNotEmpty() == true) throw Exception(it)
                             }
                         else App().saveNewBypass(
                             newValue,

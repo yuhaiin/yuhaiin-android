@@ -6,7 +6,7 @@ import androidx.room.PrimaryKey
 
 @Entity(tableName = "last_profile")
 data class LastProfile(
-    @PrimaryKey @ColumnInfo(name = "key", defaultValue = "0") val key: Int = 0,
+    @PrimaryKey @ColumnInfo(name = "key", defaultValue = "0") var key: Int = 0,
     @ColumnInfo(name = "name", defaultValue = "Default")
-    val name: String = "Default"
+    var name: String = "Default"
 )

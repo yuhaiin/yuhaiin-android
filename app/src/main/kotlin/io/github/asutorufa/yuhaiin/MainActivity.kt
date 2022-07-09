@@ -63,13 +63,13 @@ class MainActivity : AppCompatActivity() {
 
 
     // floating action button
-    var mBinder: YuhaiinVpnService.VpnBinder? = null
+    var mBinder: IYuhaiinVpnBinder? = null
 
     private val mFab: FloatingActionButton by lazy {
         findViewById<FloatingActionButton>(R.id.floatingActionButton)!!
             .apply {
                 setOnClickListener {
-                    if (mBinder != null && mBinder!!.isRunning()) mBinder!!.stop()
+                    if (mBinder != null && mBinder!!.isRunning) mBinder!!.stop()
                     else startService()
                 }
             }
@@ -105,8 +105,8 @@ class MainActivity : AppCompatActivity() {
 
     private val mConnection: ServiceConnection = object : ServiceConnection {
         override fun onServiceConnected(p1: ComponentName, binder: IBinder) {
-            mBinder = (binder as YuhaiinVpnService.VpnBinder).also {
-                if (it.isRunning()) mFab.setImageResource(R.drawable.stop)
+            mBinder = IYuhaiinVpnBinder.Stub.asInterface(binder).also {
+                if (it.isRunning) mFab.setImageResource(R.drawable.stop)
                 else mFab.setImageResource(R.drawable.play_arrow)
             }
         }

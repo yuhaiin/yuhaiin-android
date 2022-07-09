@@ -48,6 +48,18 @@ def getCommit = { ->
 
 android {
     compileSdkVersion 32
+
+    compileOptions {
+        // Flag to enable support for the new language APIs
+
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
+    }
+    // For Kotlin projects
+    kotlinOptions {
+        jvmTarget = "11"
+    }
+
     defaultConfig {
         applicationId "io.github.asutorufa.yuhaiin"
         def documentsAuthorityValue = applicationId + ".documents"
@@ -110,6 +122,7 @@ android {
 
         namespace 'io.github.asutorufa.yuhaiin'
     }
+
 }
 
 dependencies {

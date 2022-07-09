@@ -9,7 +9,7 @@ data class Profile(
     @PrimaryKey @ColumnInfo(
         name = "profile_name",
         defaultValue = "Default"
-    ) val name: String,
+    ) var name: String,
     @ColumnInfo(name = "http_server_port", defaultValue = "8188") var httpServerPort: Int = 8188,
     @ColumnInfo(
         name = "append_http_proxy_to_system",
