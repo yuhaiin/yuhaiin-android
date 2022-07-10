@@ -24,7 +24,6 @@ import com.google.android.material.snackbar.Snackbar
 import io.github.asutorufa.yuhaiin.database.Manager
 import io.github.asutorufa.yuhaiin.database.Manager.setOnPreferenceChangeListener
 import io.github.asutorufa.yuhaiin.database.Profile
-import java.util.regex.Pattern
 
 class ProfileFragment : PreferenceFragmentCompat() {
     private val refreshPreferences = ArrayList<() -> Unit>()
@@ -265,10 +264,10 @@ class ProfileFragment : PreferenceFragmentCompat() {
 
         findPreference<Preference>(resources.getString(R.string.logcat))?.apply {
             setOnPreferenceClickListener {
-                val logcatExcludeRules = listOf(
-                    Pattern.compile(".*]: processMotionEvent MotionEvent \\{ action=ACTION_.*"),
-                    Pattern.compile(".*]: dispatchPointerEvent handled=true, event=MotionEvent \\{ action=ACTION_.*"),
-                    Pattern.compile(".*Davey! duration=.*")
+                val logcatExcludeRules = arrayListOf(
+                    ".*]: processMotionEvent MotionEvent \\{ action=ACTION_.*",
+                    ".*]: dispatchPointerEvent handled=true, event=MotionEvent \\{ action=ACTION_.*",
+                    ".*Davey! duration=.*"
                 )
                 LogcatActivity.start(context, logcatExcludeRules)
                 true

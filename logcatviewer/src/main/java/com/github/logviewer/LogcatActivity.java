@@ -26,42 +26,23 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.github.logviewer.databinding.LogcatViewerActivityLogcatBinding;
 import com.google.android.material.snackbar.Snackbar;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.text.ParseException;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import java.util.concurrent.Executors;
-import java.util.regex.Pattern;
 
 public class LogcatActivity extends AppCompatActivity {
 
-    public static void start(Context context) {
-        start(context, Collections.emptyList());
-    }
-
-    public static void start(Context context, List<Pattern> excludeList) {
-        ArrayList<String> list = new ArrayList<>();
-        for (Pattern pattern : excludeList) {
-            list.add(pattern.pattern());
-        }
+    public static void start(Context context, ArrayList<String> excludeList) {
         @SuppressLint("InlinedApi")
         Intent starter = new Intent(context, LogcatActivity.class)
                 .addFlags(Intent.FLAG_ACTIVITY_LAUNCH_ADJACENT)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                .putStringArrayListExtra("exclude_list", list);
+                .putStringArrayListExtra("exclude_list", excludeList);
         context.startActivity(starter);
     }
 
     private static final int REQUEST_SCREEN_OVERLAY = 23453;
-
     private LogcatViewerActivityLogcatBinding mBinding;
-
-    private final LogcatAdapter mAdapter = new LogcatAdapter();
-    private boolean mReading = false;
-    private final List<Pattern> mExcludeList = new ArrayList<>();
+    private final ReadLogcat readLogcat = new ReadLogcat();
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -91,10 +72,7 @@ public class LogcatActivity extends AppCompatActivity {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         }
 
-        List<String> excludeList = getIntent().getStringArrayListExtra("exclude_list");
-        for (String pattern : excludeList) {
-            mExcludeList.add(Pattern.compile(pattern));
-        }
+        readLogcat.setExcludeList(getIntent().getStringArrayListExtra("exclude_list"));
 
         ArrayAdapter<CharSequence> spinnerAdapter = ArrayAdapter.createFromResource(this,
                 R.array.logcat_viewer_logcat_spinner, R.layout.logcat_viewer_item_logcat_dropdown);
@@ -104,7 +82,7 @@ public class LogcatActivity extends AppCompatActivity {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 String filter = getResources().getStringArray(R.array.logcat_viewer_logcat_spinner)[position];
-                mAdapter.getFilter().filter(filter);
+                readLogcat.getAdapter().getFilter().filter(filter);
             }
 
             @Override
@@ -115,8 +93,10 @@ public class LogcatActivity extends AppCompatActivity {
 
         mBinding.list.setTranscriptMode(ListView.TRANSCRIPT_MODE_NORMAL);
         mBinding.list.setStackFromBottom(true);
-        mBinding.list.setAdapter(mAdapter);
-        mBinding.list.setOnItemClickListener((parent, view, position, id) -> LogcatDetailActivity.launch(LogcatActivity.this, mAdapter.getItem(position)));
+        mBinding.list.setAdapter(readLogcat.getAdapter());
+        mBinding.list.setOnItemClickListener(
+                (parent, view, position, id) ->
+                        LogcatDetailActivity.launch(LogcatActivity.this, readLogcat.getAdapter().getItem(position)));
     }
 
     @Override
@@ -131,14 +111,14 @@ public class LogcatActivity extends AppCompatActivity {
             finish();
             return true;
         } else if (item.getItemId() == R.id.clear) {
-            mAdapter.clear();
+            readLogcat.getAdapter().clear();
             return true;
         } else if (item.getItemId() == R.id.export) {
-            Executors.newSingleThreadExecutor().execute(new ExportLogFileTask(mAdapter.getData(), mBinding, getApplicationContext()));
+            Executors.newSingleThreadExecutor().execute(new ExportLogFileTask(readLogcat.getAdapter().getData(), mBinding, getApplicationContext()));
             return true;
         } else if (item.getItemId() == R.id.floating) {
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M || Settings.canDrawOverlays(getApplicationContext())) {
-                FloatingLogcatService.launch(getApplicationContext(), mExcludeList);
+                FloatingLogcatService.launch(getApplicationContext(), readLogcat.getExcludeList());
                 finish();
                 return true;
             }
@@ -160,7 +140,7 @@ public class LogcatActivity extends AppCompatActivity {
                 if (result.getResultCode() == REQUEST_SCREEN_OVERLAY
                         && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M
                         && Settings.canDrawOverlays(getApplicationContext())) {
-                    FloatingLogcatService.launch(getApplicationContext(), mExcludeList);
+                    FloatingLogcatService.launch(getApplicationContext(), readLogcat.getExcludeList());
                     finish();
                 }
             });
@@ -168,65 +148,12 @@ public class LogcatActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        startReadLogcat();
+        readLogcat.startReadLogcat(mBinding);
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        stopReadLogcat();
-    }
-
-    private void startReadLogcat() {
-        new Thread("logcat-activity") {
-            @Override
-            public void run() {
-                super.run();
-                mReading = true;
-                BufferedReader reader = null;
-                try {
-                    Process process = new ProcessBuilder("logcat", "-v", "threadtime").start();
-                    reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-                    String line;
-
-                    while (mReading && (line = reader.readLine()) != null) {
-                        if (LogItem.IGNORED_LOG.contains(line)) {
-                            continue;
-                        }
-                        boolean skip = false;
-                        for (Pattern pattern : mExcludeList) {
-                            if (pattern.matcher(line).matches()) {
-                                skip = true;
-                                break;
-                            }
-                        }
-                        if (skip) {
-                            continue;
-                        }
-                        try {
-                            final LogItem item = new LogItem(line);
-                            mBinding.list.post(() -> mAdapter.append(item));
-                        } catch (ParseException | NumberFormatException | IllegalStateException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                    stopReadLogcat();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    stopReadLogcat();
-                }
-                if (reader != null) {
-                    try {
-                        reader.close();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-        }.start();
-    }
-
-    private void stopReadLogcat() {
-        mReading = false;
+        readLogcat.stopReadLogcat();
     }
 }
