@@ -26,30 +26,19 @@ import androidx.annotation.Nullable;
 
 import com.github.logviewer.databinding.LogcatViewerActivityLogcatBinding;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.text.ParseException;
 import java.util.ArrayList;
-import java.util.List;
-import java.util.regex.Pattern;
 
 public class FloatingLogcatService extends Service {
 
-    public static void launch(Context context, List<Pattern> excludeList) {
-        ArrayList<String> list = new ArrayList<>();
-        for (Pattern pattern : excludeList) {
-            list.add(pattern.pattern());
-        }
+    public static void launch(Context context, ArrayList<String> excludeList) {
         context.startService(new Intent(context, FloatingLogcatService.class)
-                .putStringArrayListExtra("exclude_list", list));
+                .putStringArrayListExtra("exclude_list", excludeList));
     }
 
-    @Nullable private LogcatViewerActivityLogcatBinding mBinding = null;
-    private final LogcatAdapter mAdapter = new LogcatAdapter();
-    private volatile boolean mReading = false;
-    private final List<Pattern> mExcludeList = new ArrayList<>();
+    @Nullable
+    private LogcatViewerActivityLogcatBinding mBinding = null;
     private Context mThemedContext;
+    private final ReadLogcat readLogcat = new ReadLogcat();
 
     @Nullable
     @Override
@@ -65,7 +54,7 @@ public class FloatingLogcatService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        if (mReading) {
+        if (readLogcat.running()) {
             return super.onStartCommand(intent, flags, startId);
         }
 
@@ -77,13 +66,9 @@ public class FloatingLogcatService extends Service {
             mBinding.getRoot().setBackgroundColor(colorWindowBackground);
         }
 
-        List<String> excludeList = intent.getStringArrayListExtra("exclude_list");
-        for (String pattern : excludeList) {
-            mExcludeList.add(Pattern.compile(pattern));
-        }
-
+        readLogcat.setExcludeList(intent.getStringArrayListExtra("exclude_list"));
         initViews();
-        startReadLogcat();
+        readLogcat.startReadLogcat(mBinding);
 
         return super.onStartCommand(intent, flags, startId);
     }
@@ -95,7 +80,7 @@ public class FloatingLogcatService extends Service {
             wm.removeView(mBinding.root);
         }
 
-        stopReadLogcat();
+        readLogcat.stopReadLogcat();
         super.onDestroy();
     }
 
@@ -149,7 +134,7 @@ public class FloatingLogcatService extends Service {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 String filter = getResources().getStringArray(R.array.logcat_viewer_logcat_spinner)[position];
-                mAdapter.getFilter().filter(filter);
+                readLogcat.getAdapter().getFilter().filter(filter);
             }
 
             @Override
@@ -160,9 +145,9 @@ public class FloatingLogcatService extends Service {
 
         mBinding.list.setTranscriptMode(ListView.TRANSCRIPT_MODE_NORMAL);
         mBinding.list.setStackFromBottom(true);
-        mBinding.list.setAdapter(mAdapter);
+        mBinding.list.setAdapter(readLogcat.getAdapter());
         mBinding.list.setOnItemClickListener((parent, view, position, id) ->
-                LogcatDetailActivity.launch(getApplicationContext(), mAdapter.getItem(position)));
+                LogcatDetailActivity.launch(getApplicationContext(), readLogcat.getAdapter().getItem(position)));
 
         mBinding.toolbar.setOnTouchListener(new View.OnTouchListener() {
 
@@ -216,60 +201,5 @@ public class FloatingLogcatService extends Service {
                 return mIntercepted;
             }
         });
-    }
-
-    private void startReadLogcat() {
-        new Thread("logcat-service") {
-            @Override
-            public void run() {
-                super.run();
-                mReading = true;
-                BufferedReader reader = null;
-                try {
-                    Process process = new ProcessBuilder("logcat", "-v", "threadtime").start();
-                    reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-                    String line;
-                    while (mReading && (line = reader.readLine()) != null) {
-                        if (LogItem.IGNORED_LOG.contains(line)) {
-                            continue;
-                        }
-                        boolean skip = false;
-                        for (Pattern pattern : mExcludeList) {
-                            if (pattern.matcher(line).matches()) {
-                                skip = true;
-                                break;
-                            }
-                        }
-                        if (skip) {
-                            continue;
-                        }
-                        try {
-                            final LogItem item = new LogItem(line);
-                            if (mBinding != null) {
-                                mBinding.list.post(() -> mAdapter.append(item));
-                            }
-                        } catch (ParseException | NumberFormatException | IllegalStateException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                    stopReadLogcat();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    stopReadLogcat();
-                }
-
-                if (reader != null) {
-                    try {
-                        reader.close();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-        }.start();
-    }
-
-    private void stopReadLogcat() {
-        mReading = false;
     }
 }
