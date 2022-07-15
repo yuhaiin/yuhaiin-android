@@ -47,6 +47,19 @@
         <item>@string/adv_route_non_chn</item>
     </string-array>
 
+    <string name="bypass_tcp">TCP</string>
+    <string name="bypass_udp">UDP</string>
+    <string name="bypass_bypass">BYPASS</string>
+    <string name="bypass_direct">DIRECT</string>
+    <string name="bypass_proxy">PROXY</string>
+    <string name="bypass_block">BLOCK</string>
+    <string-array name="adv_bypass_mode">
+        <item>@string/bypass_bypass</item>
+        <item>@string/bypass_direct</item>
+        <item>@string/bypass_proxy</item>
+        <item>@string/bypass_block</item>
+    </string-array>
+
 
     <string name="adv_dns_Key">dns</string>
 

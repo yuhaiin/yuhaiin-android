@@ -29,4 +29,15 @@ object Converters {
     fun fromDNS(dns: DNS?): String {
         return gson.toJson(dns)
     }
+
+    @TypeConverter
+    fun stringToBypass(value: String?): Bypass {
+        val bypassType: Type = object : TypeToken<Bypass?>() {}.type
+        return gson.fromJson(value, bypassType)
+    }
+    
+    @TypeConverter
+    fun fromBypass(b: Bypass?): String {
+        return gson.toJson(b)
+    }
 }

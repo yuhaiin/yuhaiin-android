@@ -10,10 +10,25 @@
         app:useSimpleSummaryProvider="true"
         android:entryValues="@array/adv_routes" />
 
-    <EditTextPreference android:title="Update Bypass"
+    <EditTextPreference
+        android:title="Update Bypass"
         android:key="@string/rule_update_bypass_file"
         app:useSimpleSummaryProvider="true"
-        android:singleLine="true"/>
+        android:singleLine="true" />
+
+    <com.takisoft.preferencex.SimpleMenuPreference
+        android:key="@string/bypass_tcp"
+        android:title="@string/bypass_tcp"
+        android:entries="@array/adv_bypass_mode"
+        app:useSimpleSummaryProvider="true"
+        android:entryValues="@array/adv_bypass_mode" />
+
+    <com.takisoft.preferencex.SimpleMenuPreference
+        android:key="@string/bypass_udp"
+        android:title="@string/bypass_udp"
+        android:entries="@array/adv_bypass_mode"
+        app:useSimpleSummaryProvider="true"
+        android:entryValues="@array/adv_bypass_mode" />
 
     <EditTextPreference
         android:key="@string/rule_direct"
