@@ -9,6 +9,7 @@ import androidx.preference.EditTextPreference
 import androidx.preference.PreferenceFragmentCompat
 import com.google.android.material.snackbar.Snackbar
 import com.takisoft.preferencex.SimpleMenuPreference
+import io.github.asutorufa.yuhaiin.database.Bypass
 import io.github.asutorufa.yuhaiin.database.Manager.setOnPreferenceChangeListener
 import io.github.asutorufa.yuhaiin.database.Profile
 import kotlinx.coroutines.DelicateCoroutinesApi
@@ -109,6 +110,41 @@ class RuleFragment : PreferenceFragmentCompat() {
             setOnPreferenceChangeListener(it) { _, newValue ->
                 profile.ruleBlock = newValue.toString()
             }
+        }
+
+        findPreference<SimpleMenuPreference>(resources.getString(R.string.bypass_tcp))!!.also {
+            it.value = bypassTypeToStr(Bypass.Type.fromInt(profile.bypass.tcp))
+            setOnPreferenceChangeListener(it) { _, newValue ->
+                profile.bypass.tcp = strToBypassType(newValue as String).value
+            }
+        }
+
+        findPreference<SimpleMenuPreference>(resources.getString(R.string.bypass_udp))!!.also {
+            it.value = bypassTypeToStr(Bypass.Type.fromInt(profile.bypass.udp))
+            setOnPreferenceChangeListener(it) { _, newValue ->
+                profile.bypass.udp = strToBypassType(newValue as String).value
+            }
+        }
+    }
+
+
+    private fun strToBypassType(str: String): Bypass.Type {
+        return when (str) {
+            resources.getString(R.string.bypass_bypass) -> Bypass.Type.Bypass
+            resources.getString(R.string.bypass_direct) -> Bypass.Type.Direct
+            resources.getString(R.string.bypass_block) -> Bypass.Type.Block
+            resources.getString(R.string.bypass_proxy) -> Bypass.Type.Proxy
+            else -> Bypass.Type.Bypass
+        }
+    }
+
+    private fun bypassTypeToStr(type: Bypass.Type): String {
+        return when (type) {
+            Bypass.Type.Bypass -> resources.getString(R.string.bypass_bypass)
+            Bypass.Type.Direct -> resources.getString(R.string.bypass_direct)
+            Bypass.Type.Block -> resources.getString(R.string.bypass_block)
+            Bypass.Type.Proxy -> resources.getString(R.string.bypass_proxy)
+            else -> resources.getString(R.string.bypass_bypass)
         }
     }
 }

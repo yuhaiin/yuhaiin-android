@@ -48,7 +48,7 @@ class YuhaiinVpnService : VpnService() {
     private val tag = this.javaClass.simpleName
     private var state = State.DISCONNECTED
     private var mInterface: ParcelFileDescriptor? = null
-    private var yuhaiin: Process? = null
+//    private var yuhaiin: Process? = null
     private val app = App()
 
 
@@ -110,18 +110,17 @@ class YuhaiinVpnService : VpnService() {
         try {
             stopForeground(true)
             mInterface?.close()
-            if (yuhaiin != null) {
-                //  Runtime.getRuntime().exec("killall libyuhaiin.so")
-                //  Os.kill(getPid(yuhaiin!!), OsConstants.SIGTERM)
-                yuhaiin!!.destroy()
-                while (yuhaiin != null || state != State.DISCONNECTED) {
-                    Log.d(tag, "stop: waiting for yuhaiin stopped")
-                    Thread.sleep(100)
-                }
-            }
+//            if (yuhaiin != null) {
+//                //  Runtime.getRuntime().exec("killall libyuhaiin.so")
+//                //  Os.kill(getPid(yuhaiin!!), OsConstants.SIGTERM)
+//                yuhaiin!!.destroy()
+//                while (yuhaiin != null || state != State.DISCONNECTED) {
+//                    Log.d(tag, "stop: waiting for yuhaiin stopped")
+//                    Thread.sleep(100)
+//                }
+//            }
 
             app.stop()
-            stopSelf()
             setState(State.DISCONNECTED)
 
 //            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
@@ -141,7 +140,8 @@ class YuhaiinVpnService : VpnService() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Log.d(tag, "starting")
-        if (state == State.CONNECTED || state == State.CONNECTING || yuhaiin != null) {
+        if (state == State.CONNECTED || state == State.CONNECTING || app.running()) {
+            Log.d(tag, "already running")
             return START_STICKY
         }
 
@@ -151,7 +151,7 @@ class YuhaiinVpnService : VpnService() {
             val profile = Manager.db.getProfileByName(Manager.db.getLastProfile() ?: "Default")
 
             configure(profile)
-            start2(profile)
+            start(profile)
             startNotification(profile.name)
 
             setState(State.CONNECTED)
@@ -232,7 +232,7 @@ class YuhaiinVpnService : VpnService() {
         mInterface = b.establish()
     }
 
-    private fun start2(profile: Profile) {
+    private fun start(profile: Profile) {
         Log.d(tag, "start yuhaiin: $profile")
         if (profile.yuhaiinPort <= 0) throw Exception("Invalid yuhaiin port: ${profile.yuhaiinPort}")
         var address = "127.0.0.1"
@@ -245,9 +245,14 @@ class YuhaiinVpnService : VpnService() {
             if (profile.httpServerPort > 0) http = "${address}:${profile.httpServerPort}"
 
             saveLogcat = profile.saveLogcat
-            block = profile.ruleBlock
-            proxy = profile.ruleProxy
-            direct = profile.ruleProxy
+            bypass = Bypass().apply {
+                block = profile.ruleBlock
+                proxy = profile.ruleProxy
+                direct = profile.ruleDirect
+                tcp = profile.bypass.tcp
+                udp = profile.bypass.udp
+            }
+
             dns = DNSSetting().apply {
                 if (profile.dnsPort > 0) server = "${address}:${profile.dnsPort}"
                 fakedns = profile.fakeDnsCidr.isNotEmpty()

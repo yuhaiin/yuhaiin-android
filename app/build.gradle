@@ -76,19 +76,21 @@ android {
         targetSdkVersion 32
         versionCode getVersionCode()
         versionName getVersionName() + getCommit()
-        multiDexEnabled true
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner" // 追加
     }
     buildTypes {
         release {
+            // Enables code shrinking, obfuscation, and optimization for only
+            // your project's release build type.
             minifyEnabled false
+
+            // Enables resource shrinking, which is performed by the
+            // Android Gradle plugin.
+            shrinkResources false
+
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
-    }
-
-    composeOptions {
-        kotlinCompilerExtensionVersion "1.1.1"
     }
 
 
@@ -104,7 +106,7 @@ android {
     }
 
     buildFeatures {
-        compose true
+        compose false
     }
 
     sourceSets {
@@ -131,7 +133,7 @@ dependencies {
     implementation "androidx.preference:preference-ktx:1.2.0"
     implementation 'com.takisoft.preferencex:preferencex-simplemenu:1.1.0'
     implementation 'com.google.android.material:material:1.6.1'
-    implementation "androidx.activity:activity-compose:1.5.0"
+//    implementation "androidx.activity:activity-compose:1.5.0"
     implementation "androidx.browser:browser:1.4.0"
 
     // room
