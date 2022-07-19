@@ -56,7 +56,6 @@ abstract class YuhaiinDatabase : RoomDatabase() {
                 database.execSQL("ALTER TABLE profile ADD COLUMN bootstrap_dns TEXT NOT NULL DEFAULT '${DNS.DefaultBootstrapJson}'")
             }
         }
-
         private val MIGRATION_3_4 = object : Migration(3, 4) {
             override fun migrate(database: SupportSQLiteDatabase) {
                 database.execSQL("ALTER TABLE profile ADD COLUMN rule_update_bypass_url TEXT NOT NULL DEFAULT ''")
