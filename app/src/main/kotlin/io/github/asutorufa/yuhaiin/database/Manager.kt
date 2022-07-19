@@ -48,7 +48,6 @@ object Manager {
             } catch (e: Exception) {
                 false
             }
-
         }
     }
 }
