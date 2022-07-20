@@ -1,13 +1,20 @@
 package com.github.logviewer;
 
+import android.util.Log;
+
+import androidx.annotation.NonNull;
+
 import com.github.logviewer.databinding.LogcatViewerActivityLogcatBinding;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
+import java.util.Scanner;
 import java.util.regex.Pattern;
 
 class ReadLogcat {
@@ -15,6 +22,7 @@ class ReadLogcat {
     private ArrayList<String> excludeList;
     private final LogcatAdapter mAdapter = new LogcatAdapter();
     private boolean mReading = false;
+    private Date time = null;
 
     public LogcatAdapter getAdapter() {
         return mAdapter;
@@ -24,7 +32,7 @@ class ReadLogcat {
         return excludeList;
     }
 
-    public void setExcludeList(ArrayList<String> list) {
+    public void setExcludeList(@NonNull ArrayList<String> list) {
         mExcludeList.clear();
         excludeList = list;
         for (String pattern : list) {
@@ -42,40 +50,41 @@ class ReadLogcat {
             public void run() {
                 super.run();
                 mReading = true;
-                BufferedReader reader = null;
                 try {
-                    Process process = new ProcessBuilder("logcat", "-v", "threadtime").start();
-                    reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-                    String line;
-
-                    while (mReading && (line = reader.readLine()) != null) {
+                    ArrayList<String> cmd = new ArrayList<>(Arrays.asList("logcat", "-v", "threadtime"));
+                    if (time != null) {
+                        SimpleDateFormat sdf = new SimpleDateFormat("MM-dd HH:mm:ss.mmm", Locale.getDefault());
+                        cmd.add("-T");
+                        cmd.add(sdf.format(time));
+                    }
+                    Log.d("logcat", "run: " + cmd);
+                    Process process = new ProcessBuilder(cmd).start();
+                    Scanner reader = new Scanner(process.getInputStream());
+                    while (mReading && reader.hasNext()) {
+                        String line = reader.nextLine();
                         if (LogItem.IGNORED_LOG.contains(line) || skip(mExcludeList, line)) {
                             continue;
                         }
                         try {
                             final LogItem item = new LogItem(line);
+                            time = item.time;
                             mBinding.list.post(() -> mAdapter.append(item));
                         } catch (ParseException | NumberFormatException | IllegalStateException e) {
                             e.printStackTrace();
                         }
                     }
-                    stopReadLogcat();
+                    process.destroy();
+                    reader.close();
+                    mReading = false;
+                    Log.d("logcat", "read logcat exit");
                 } catch (IOException e) {
                     e.printStackTrace();
-                    stopReadLogcat();
-                }
-                if (reader != null) {
-                    try {
-                        reader.close();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
                 }
             }
         }.start();
     }
 
-    private boolean skip(List<Pattern> mExcludeList, String line) {
+    private boolean skip(@NonNull List<Pattern> mExcludeList, String line) {
         for (Pattern pattern : mExcludeList) {
             if (pattern.matcher(line).matches()) {
                 return true;

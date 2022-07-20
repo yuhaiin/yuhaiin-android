@@ -11,16 +11,17 @@
     <application>
         <activity
             android:name="com.github.logviewer.LogcatActivity"
+            android:launchMode="singleTask"
             android:theme="@style/AppTheme" />
 
         <activity
             android:name="com.github.logviewer.LogcatDetailActivity"
+            android:launchMode="singleTask"
             android:label="Log detail"
-            android:theme="@style/AppTheme"
-            >
+            android:theme="@style/AppTheme">
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
-                android:value="com.github.logviewer.LogcatActivity"/>
+                android:value="com.github.logviewer.LogcatActivity" />
         </activity>
 
         <service android:name="com.github.logviewer.FloatingLogcatService"/>

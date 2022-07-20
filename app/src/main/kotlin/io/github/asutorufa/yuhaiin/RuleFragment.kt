@@ -10,8 +10,8 @@ import androidx.preference.PreferenceFragmentCompat
 import com.google.android.material.snackbar.Snackbar
 import com.takisoft.preferencex.SimpleMenuPreference
 import io.github.asutorufa.yuhaiin.database.Bypass
+import io.github.asutorufa.yuhaiin.database.Manager.profile
 import io.github.asutorufa.yuhaiin.database.Manager.setOnPreferenceChangeListener
-import io.github.asutorufa.yuhaiin.database.Profile
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -20,19 +20,16 @@ import yuhaiin.App
 
 
 class RuleFragment : PreferenceFragmentCompat() {
-    private val profile: Profile
-        get() = (activity as MainActivity).profile
-
-    override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
+    override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) =
         setPreferencesFromResource(R.xml.rule, rootKey)
-    }
 
     private var updating = false
+    private val mainActivity by lazy { requireActivity() as MainActivity }
 
     @OptIn(DelicateCoroutinesApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        preferenceManager.preferenceDataStore = (activity as MainActivity).dataStore
+        preferenceManager.preferenceDataStore = mainActivity.dataStore
 
         findPreference<SimpleMenuPreference>(resources.getString(R.string.adv_route_Key))!!.also {
             it.value = profile.route
@@ -65,8 +62,8 @@ class RuleFragment : PreferenceFragmentCompat() {
 
                 GlobalScope.launch(Dispatchers.IO) {
                     val message: String = try {
-                        if (activity is MainActivity && (activity as MainActivity).mBinder != null)
-                            (activity as MainActivity).mBinder?.saveNewBypass(
+                        if (mainActivity.mBinder != null)
+                            mainActivity.mBinder?.saveNewBypass(
                                 newValue
                             ).let {
                                 if (it?.isNotEmpty() == true) throw Exception(it)
@@ -81,11 +78,7 @@ class RuleFragment : PreferenceFragmentCompat() {
                     }
 
                     updating = false
-                    Snackbar.make(
-                        requireActivity().findViewById(android.R.id.content),
-                        message,
-                        Snackbar.LENGTH_LONG
-                    ).setAnchorView(R.id.floatingActionButton).show()
+                    mainActivity.showSnackBar(message)
                 }
             }
         }
@@ -144,7 +137,6 @@ class RuleFragment : PreferenceFragmentCompat() {
             Bypass.Type.Direct -> resources.getString(R.string.bypass_direct)
             Bypass.Type.Block -> resources.getString(R.string.bypass_block)
             Bypass.Type.Proxy -> resources.getString(R.string.bypass_proxy)
-            else -> resources.getString(R.string.bypass_bypass)
         }
     }
 }
