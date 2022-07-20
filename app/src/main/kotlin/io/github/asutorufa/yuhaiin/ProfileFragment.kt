@@ -1,8 +1,6 @@
 package io.github.asutorufa.yuhaiin
 
 import android.Manifest
-import android.annotation.SuppressLint
-import android.content.DialogInterface
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -14,96 +12,79 @@ import android.view.MenuItem
 import android.view.View
 import android.widget.EditText
 import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.view.menu.MenuBuilder
 import androidx.appcompat.widget.AppCompatEditText
 import androidx.browser.customtabs.CustomTabsIntent
+import androidx.core.view.MenuProvider
+import androidx.lifecycle.Lifecycle
 import androidx.navigation.fragment.findNavController
 import androidx.preference.*
 import com.github.logviewer.LogcatActivity
-import com.google.android.material.snackbar.Snackbar
 import io.github.asutorufa.yuhaiin.database.Manager
+import io.github.asutorufa.yuhaiin.database.Manager.profile
 import io.github.asutorufa.yuhaiin.database.Manager.setOnPreferenceChangeListener
-import io.github.asutorufa.yuhaiin.database.Profile
 
 class ProfileFragment : PreferenceFragmentCompat() {
     private val refreshPreferences = ArrayList<() -> Unit>()
-    private val profile: Profile
-        get() = (activity as MainActivity).profile
+    private val mainActivity by lazy { requireActivity() as MainActivity }
     
-    override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
+    override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) =
         setPreferencesFromResource(R.xml.settings, rootKey)
-        setHasOptionsMenu(true)
-    }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        preferenceManager.preferenceDataStore = (activity as MainActivity).dataStore
+        mainActivity.addMenuProvider(menuProvider, viewLifecycleOwner, Lifecycle.State.RESUMED)
+        preferenceManager.preferenceDataStore = mainActivity.dataStore
         initPreferences()
         reload()
     }
 
-    @SuppressLint("RestrictedApi")
-    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
-        super.onCreateOptionsMenu(menu, inflater)
-        if (menu is MenuBuilder) menu.setOptionalIconsVisible(true)
-        inflater.inflate(R.menu.main, menu)
-    }
+    private val menuProvider = object : MenuProvider {
+        override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) =
+            menuInflater.inflate(R.menu.main, menu)
 
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        return when (item.itemId) {
-            R.id.prof_add -> {
-                val e = AppCompatEditText(requireContext()).apply { isSingleLine = true }
+        fun showAlertDialog(title: Int, view: View?, message: String?, PositiveFun: () -> Unit) =
+            AlertDialog.Builder(requireContext()).apply {
+                setTitle(title)
+                view?.let { setView(it) }
+                message?.let { setMessage(it) }
+                setPositiveButton(android.R.string.ok) { _, _ -> PositiveFun() }
+                setNegativeButton(android.R.string.cancel) { _, _ -> }
+                show()
+            }
 
-                AlertDialog.Builder(requireActivity())
-                    .setTitle(R.string.prof_add)
-                    .setView(e)
-                    .setPositiveButton(android.R.string.ok) { _: DialogInterface?, _: Int ->
-                        val name = e.text.toString().trim()
-                        if (name.isEmpty()) {
-                            return@setPositiveButton
-                        }
-
+        override fun onMenuItemSelected(menuItem: MenuItem): Boolean =
+            when (menuItem.itemId) {
+                R.id.prof_add -> {
+                    val e = AppCompatEditText(requireContext()).apply { isSingleLine = true }
+                    showAlertDialog(R.string.prof_add, e, null) {
+                        val name = e.text.toString()
+                        if (name.isEmpty()) return@showAlertDialog
                         try {
                             Manager.addProfile(name)
                         } catch (e: Exception) {
-                            e.message?.let {
-                                Snackbar.make(
-                                    requireActivity().findViewById(android.R.id.content),
-                                    it,
-                                    Snackbar.LENGTH_SHORT
-                                ).setAnchorView(R.id.floatingActionButton).show()
-                            }
+                            e.message?.let { mainActivity.showSnackBar(it) }
                         }
                         reload()
                     }
-                    .setNegativeButton(android.R.string.cancel) { _: DialogInterface?, _: Int -> }
-                    .create()
-                    .show()
-                true
-            }
-            R.id.prof_del -> {
-                AlertDialog.Builder(requireActivity())
-                    .setTitle(R.string.prof_del)
-                    .setMessage(String.format(getString(R.string.prof_del_confirm), profile.name))
-                    .setPositiveButton(android.R.string.ok) { _: DialogInterface?, _: Int ->
+                    true
+                }
+                R.id.prof_del -> {
+                    showAlertDialog(
+                        R.string.prof_del,
+                        null,
+                        String.format(getString(R.string.prof_del_confirm), profile.name)
+                    ) {
                         try {
                             Manager.deleteProfile()
                             reload()
                         } catch (e: Exception) {
-                            Snackbar.make(
-                                requireActivity().findViewById(android.R.id.content),
-                                e.message ?: "",
-                                Snackbar.LENGTH_SHORT
-                            ).setAnchorView(R.id.floatingActionButton).show()
+                            e.message?.let { mainActivity.showSnackBar(it) }
                         }
                     }
-                    .setNegativeButton(android.R.string.cancel) { _: DialogInterface?, _: Int -> }
-                    .create()
-                    .show()
-                true
+                    true
+                }
+                else -> false
             }
-            else -> super.onOptionsItemSelected(item)
-        }
     }
 
     private fun initPreferences() {
@@ -276,12 +257,8 @@ class ProfileFragment : PreferenceFragmentCompat() {
 
         findPreference<Preference>(resources.getString(R.string.open_yuhaiin_page))?.apply {
             setOnPreferenceClickListener {
-                if ((activity as MainActivity).mBinder?.isRunning() == false) {
-                    Snackbar.make(
-                        requireActivity().findViewById(android.R.id.content),
-                        "yuhaiin is not running",
-                        Snackbar.LENGTH_SHORT
-                    ).setAnchorView(R.id.floatingActionButton).show()
+                if (mainActivity.mBinder?.isRunning == false) {
+                    mainActivity.showSnackBar("yuhaiin is not running")
                     return@setOnPreferenceClickListener true
                 }
 
@@ -306,23 +283,21 @@ class ProfileFragment : PreferenceFragmentCompat() {
         }
     }
 
-    private fun reload() {
-        for (refresh in refreshPreferences) refresh()
-    }
+    private fun reload() = refreshPreferences.forEach { it() }
 
     private fun updateAppList(mPrefAppList: MultiSelectListPreference) {
         val titles = mutableListOf<String>()
         val packageNames = mutableListOf<String>()
         var index = 0
 
-        for ((key, value) in packages.toList().sortedBy { it.second }.toMap()) {
-            if (profile.appList.contains(key)) {
-                packageNames.add(index, key)
-                titles.add(index, value)
+        packages.toList().sortedBy { it.second }.forEach {
+            if (profile.appList.contains(it.first)) {
+                packageNames.add(index, it.first)
+                titles.add(index, it.second)
                 index++
             } else {
-                packageNames.add(key)
-                titles.add(value)
+                packageNames.add(it.first)
+                titles.add(it.second)
             }
         }
 
@@ -343,16 +318,16 @@ class ProfileFragment : PreferenceFragmentCompat() {
             val packages = packageManager.getInstalledPackages(PackageManager.GET_PERMISSIONS)
             val apps = HashMap<String, String>()
 
-            for (pkg in packages) {
-                if (!pkg.hasInternetPermission && pkg.packageName != "android") continue
+            packages.forEach {
+                if (!it.hasInternetPermission && it.packageName != "android") return@forEach
 
-                val applicationInfo = pkg.applicationInfo
+                val applicationInfo = it.applicationInfo
 
                 val appName = applicationInfo.loadLabel(packageManager).toString()
                 // val appIcon = applicationInfo.loadIcon(packageManager)
                 // val isSystemApp = (applicationInfo.flags and ApplicationInfo.FLAG_SYSTEM) > 0
 
-                apps[pkg.packageName] = "$appName\n${pkg.packageName}"
+                apps[it.packageName] = "$appName\n${it.packageName}"
             }
 
             return apps

@@ -1,0 +1,22 @@
+apply plugin: 'com.android.library'
+
+android {
+    compileSdkVersion 32
+
+    defaultConfig {
+        minSdkVersion 16
+        targetSdkVersion 32
+        vectorDrawables.useSupportLibrary = true
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            consumerProguardFiles 'proguard-rules.pro'
+        }
+    }
+}
+
+dependencies {
+    api "androidx.preference:preference:1.2.0"
+}

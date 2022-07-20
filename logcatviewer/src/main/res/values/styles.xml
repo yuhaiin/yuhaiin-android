@@ -11,6 +11,5 @@
         <item name="android:navigationBarColor">?attr/colorSurfaceVariant</item>
         <item name="android:statusBarColor">?attr/colorSurfaceVariant</item>
         <item name="toolbarStyle">@style/Widget.Material3.Toolbar</item>
-        <!--        <item name="switchStyle">@style/Widget.Material3.CompoundButton.MaterialSwitch</item>-->
     </style>
 </resources>

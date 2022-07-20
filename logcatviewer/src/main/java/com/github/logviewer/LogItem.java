@@ -72,7 +72,7 @@ public class LogItem implements Parcelable {
         String contentText = matcher.group(6);
 
         assert timeText != null;
-        time = new SimpleDateFormat("MM-dd hh:mm:ss.SSS", Locale.getDefault()).parse(timeText);
+        time = new SimpleDateFormat("MM-dd HH:mm:ss.SSS", Locale.getDefault()).parse(timeText);
         assert pidText != null;
         processId = Integer.parseInt(pidText);
         assert tidText != null;
