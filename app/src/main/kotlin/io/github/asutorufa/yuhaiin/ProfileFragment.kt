@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.text.InputType
 import android.view.Menu
@@ -14,6 +15,7 @@ import android.widget.EditText
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.AppCompatEditText
 import androidx.browser.customtabs.CustomTabsIntent
+import androidx.core.view.MenuHost
 import androidx.core.view.MenuProvider
 import androidx.lifecycle.Lifecycle
 import androidx.navigation.fragment.findNavController
@@ -26,13 +28,16 @@ import io.github.asutorufa.yuhaiin.database.Manager.setOnPreferenceChangeListene
 class ProfileFragment : PreferenceFragmentCompat() {
     private val refreshPreferences = ArrayList<() -> Unit>()
     private val mainActivity by lazy { requireActivity() as MainActivity }
-    
+
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) =
         setPreferencesFromResource(R.xml.settings, rootKey)
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        mainActivity.addMenuProvider(menuProvider, viewLifecycleOwner, Lifecycle.State.RESUMED)
+        @Suppress("CAST_NEVER_SUCCEEDS")
+        (mainActivity as MenuHost).addMenuProvider(
+            menuProvider, viewLifecycleOwner, Lifecycle.State.RESUMED
+        )
         preferenceManager.preferenceDataStore = mainActivity.dataStore
         initPreferences()
         reload()
@@ -187,7 +192,7 @@ class ProfileFragment : PreferenceFragmentCompat() {
             }
             refreshPreferences.add { it.isChecked = profile.isPerApp }
         }
-        
+
         findPreference<SwitchPreferenceCompat>(resources.getString(R.string.adv_app_bypass_key))!!.also {
             setOnPreferenceChangeListener(it) { _, newValue ->
                 profile.isBypassApp = newValue as Boolean
@@ -199,7 +204,6 @@ class ProfileFragment : PreferenceFragmentCompat() {
                 updateAppList(it)
                 false
             }
-
 
             @Suppress("Unchecked_Cast")
             setOnPreferenceChangeListener(it) { _, newValue ->
@@ -315,7 +319,16 @@ class ProfileFragment : PreferenceFragmentCompat() {
     private val packages: Map<String, String>
         get() {
             val packageManager = requireContext().packageManager
-            val packages = packageManager.getInstalledPackages(PackageManager.GET_PERMISSIONS)
+            val packages =
+                if (BuildConfig.VERSION_CODE >= Build.VERSION_CODES.TIRAMISU)
+                    packageManager.getInstalledPackages(
+                        PackageManager.PackageInfoFlags.of(
+                            PackageManager.GET_PERMISSIONS.toLong()
+                        )
+                    )
+                else
+                    packageManager.getInstalledPackages(PackageManager.GET_PERMISSIONS)
+
             val apps = HashMap<String, String>()
 
             packages.forEach {
