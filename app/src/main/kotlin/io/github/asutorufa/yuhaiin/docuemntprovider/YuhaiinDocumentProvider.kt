@@ -2,7 +2,6 @@ package io.github.asutorufa.yuhaiin.docuemntprovider
 
 import android.database.Cursor
 import android.database.MatrixCursor
-import android.os.Build
 import android.os.CancellationSignal
 import android.os.ParcelFileDescriptor
 import android.provider.DocumentsContract
@@ -10,7 +9,6 @@ import android.provider.DocumentsContract.Root
 import android.provider.DocumentsProvider
 import android.util.Log
 import android.webkit.MimeTypeMap
-import androidx.annotation.RequiresApi
 import io.github.asutorufa.yuhaiin.R
 import java.io.File
 import java.io.FileNotFoundException
@@ -18,7 +16,6 @@ import java.io.IOException
 import java.util.*
 
 
-@RequiresApi(Build.VERSION_CODES.N)
 class YuhaiinDocumentProvider : DocumentsProvider() {
     companion object {
         private const val ALL_MIME_TYPES = "*/*"

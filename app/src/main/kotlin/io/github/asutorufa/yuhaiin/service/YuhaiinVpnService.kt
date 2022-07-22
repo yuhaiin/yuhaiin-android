@@ -3,6 +3,7 @@ package io.github.asutorufa.yuhaiin.service
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
+import android.app.Service
 import android.content.Intent
 import android.net.*
 import android.os.Build
@@ -119,9 +120,8 @@ class YuhaiinVpnService : VpnService() {
         setState(State.DISCONNECTING)
 
         try {
-            stopForeground(true)
+            stopForeground(Service.STOP_FOREGROUND_REMOVE)
             mInterface?.close()
-
             app.stop()
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                 connectivity.unregisterNetworkCallback(defaultNetworkCallback)
@@ -130,7 +130,6 @@ class YuhaiinVpnService : VpnService() {
         } catch (e: Exception) {
             e.printStackTrace()
         }
-
     }
 
     override fun onRevoke() {
@@ -247,7 +246,6 @@ class YuhaiinVpnService : VpnService() {
     }
 
     private fun start(profile: Profile) {
-        Log.d(tag, "start yuhaiin: $profile")
         if (profile.yuhaiinPort <= 0) throw Exception("Invalid yuhaiin port: ${profile.yuhaiinPort}")
 
         var address = "127.0.0.1"
@@ -302,14 +300,15 @@ class YuhaiinVpnService : VpnService() {
     
     private fun startNotification(name: String) {
         // Notifications on Oreo and above need a channel
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                packageName,
-                getString(R.string.channel_name),
-                NotificationManager.IMPORTANCE_MIN
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+            notification.createNotificationChannel(
+                NotificationChannel(
+                    packageName,
+                    getString(R.string.channel_name),
+                    NotificationManager.IMPORTANCE_MIN
+                )
             )
-            notification.createNotificationChannel(channel)
-        }
+
 
         startForeground(
             1,
@@ -348,137 +347,3 @@ class YuhaiinVpnService : VpnService() {
         }
     }
 }
-
-
-/*
-//    private fun getPid(p: Process): Int =
-//        p.javaClass.getDeclaredField("pid").apply { isAccessible = true }.getInt(p)
-
-@OptIn(DelicateCoroutinesApi::class)
-private fun start(profile: Profile) {
-    Log.d(tag, "start yuhaiin: $profile")
-    if (profile.yuhaiinPort <= 0) throw Exception("Invalid yuhaiin port: ${profile.yuhaiinPort}")
-
-
-    val opts = JsonObject().apply {
-        var address = "127.0.0.1"
-        if (profile.allowLan) address = "0.0.0.0"
-        addProperty("host", getAddress(address, profile.yuhaiinPort))
-        addProperty("savepath", getExternalFilesDir("yuhaiin")!!.absolutePath)
-        addProperty("socks5", getAddress(address, profile.socks5ServerPort))
-        addProperty("http", getAddress(address, profile.httpServerPort))
-        addProperty("save_logcat", profile.saveLogcat)
-        addProperty("block", profile.ruleBlock)
-        add("dns", JsonObject().apply {
-            addProperty("server", getAddress(address, profile.dnsPort))
-            addProperty("fakedns", profile.fakeDnsCidr.isNotEmpty())
-            addProperty("fakedns_ip_range", profile.fakeDnsCidr)
-            add("remote", JsonObject().apply {
-                addProperty("host", profile.remoteDns.host)
-                addProperty("type", profile.remoteDns.type)
-                addProperty("subnet", profile.remoteDns.subnet)
-                addProperty("proxy", profile.remoteDns.proxy)
-                addProperty("tls_servername", profile.remoteDns.tlsServerName)
-            })
-            add("local", JsonObject().apply {
-                addProperty("host", profile.localDns.host)
-                addProperty("type", profile.localDns.type)
-                addProperty("subnet", profile.localDns.subnet)
-                addProperty("proxy", profile.localDns.proxy)
-                addProperty("tls_servername", profile.localDns.tlsServerName)
-            })
-            add("bootstrap", JsonObject().apply {
-                addProperty("host", profile.bootstrapDns.host)
-                addProperty("type", profile.bootstrapDns.type)
-                addProperty("subnet", profile.bootstrapDns.subnet)
-                addProperty("proxy", profile.bootstrapDns.proxy)
-                addProperty("tls_servername", profile.bootstrapDns.tlsServerName)
-            })
-        })
-        add("tun", JsonObject().apply {
-            addProperty("fd", 0)
-            addProperty("mtu", VPN_MTU)
-            addProperty("gateway", PRIVATE_VLAN4_ROUTER)
-            addProperty("dns_hijacking", profile.dnsHijacking)
-        })
-    }
-
-    val socksPath = File(applicationInfo.dataDir + "/sock_path").absolutePath
-
-    GlobalScope.launch(Dispatchers.IO) {
-        try {
-//                val optBase64 = Base64.encodeToString(opts.toString().toByteArray(), Base64.NO_WRAP)
-//                Log.d(tag, "start: $optBase64")
-
-            val command = buildList<String> {
-                add("${applicationInfo.nativeLibraryDir}/libyuhaiin.so")
-                add(opts.toString())
-                add(socksPath)
-            }
-
-            Log.d(tag, "start: $command")
-
-            yuhaiin = ProcessBuilder(command).start()
-
-            launch {
-                Scanner(yuhaiin!!.errorStream).apply {
-                    while (hasNextLine()) {
-                        println(nextLine())
-                    }
-                    close()
-                }
-            }
-//                launch {
-            Scanner(yuhaiin!!.inputStream).apply {
-                while (hasNextLine()) println(nextLine())
-                close()
-            }
-//                }
-
-            yuhaiin!!.waitFor()
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-
-        yuhaiin = null
-        onRevoke()
-        setState(State.DISCONNECTED)
-    }
-    sendFd(socksPath)
-}
-
-
-private fun getAddress(hostname: String, port: Int): String {
-    if (port <= 0) {
-        return ""
-    }
-
-    return "${hostname}:${port}"
-}
-
-private fun sendFd(path: String) {
-    val fd = mInterface!!.fileDescriptor
-
-    var tries = 0
-    while (true) try {
-        Thread.sleep(50L shl tries)
-        Log.d(packageName, "sendFd tries: $tries, $path")
-        LocalSocket().use { localSocket ->
-            localSocket.connect(
-                LocalSocketAddress(
-                    path,
-                    LocalSocketAddress.Namespace.FILESYSTEM
-                )
-            )
-            localSocket.setFileDescriptorsForSend(arrayOf(fd))
-            localSocket.outputStream.write(42)
-        }
-        break
-    } catch (e: Exception) {
-        Log.d(packageName, e.toString())
-        if (tries > 5) throw e
-        tries += 1
-    }
-}
-
-*/

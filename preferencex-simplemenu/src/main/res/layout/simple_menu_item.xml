@@ -17,12 +17,10 @@
 ** limitations under the License.
 */
 -->
-<CheckedTextView
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.appcompat.widget.AppCompatCheckedTextView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@android:id/text1"
     android:background="@drawable/simple_menu_item_background"
-    android:foreground="?android:selectableItemBackground"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:minHeight="48dp"

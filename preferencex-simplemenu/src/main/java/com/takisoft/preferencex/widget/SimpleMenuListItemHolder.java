@@ -1,18 +1,19 @@
 package com.takisoft.preferencex.widget;
 
-import android.os.Build;
-import androidx.annotation.RequiresApi;
-import androidx.recyclerview.widget.RecyclerView;
-import android.view.View;
-import android.widget.CheckedTextView;
-
 import static com.takisoft.preferencex.widget.SimpleMenuPopupWindow.DIALOG;
 import static com.takisoft.preferencex.widget.SimpleMenuPopupWindow.HORIZONTAL;
+
+import android.os.Build;
+import android.view.View;
+
+import androidx.annotation.RequiresApi;
+import androidx.appcompat.widget.AppCompatCheckedTextView;
+import androidx.recyclerview.widget.RecyclerView;
 
 @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
 public class SimpleMenuListItemHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
 
-    public CheckedTextView mCheckedTextView;
+    public AppCompatCheckedTextView mCheckedTextView;
 
     private SimpleMenuPopupWindow mWindow;
 

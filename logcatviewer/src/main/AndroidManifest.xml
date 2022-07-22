@@ -14,20 +14,10 @@
             android:launchMode="singleTask"
             android:theme="@style/AppTheme" />
 
-        <activity
-            android:name="com.github.logviewer.LogcatDetailActivity"
-            android:launchMode="singleTask"
-            android:label="Log detail"
-            android:theme="@style/AppTheme">
-            <meta-data
-                android:name="android.support.PARENT_ACTIVITY"
-                android:value="com.github.logviewer.LogcatActivity" />
-        </activity>
-
-        <service android:name="com.github.logviewer.FloatingLogcatService"/>
+        <service android:name="com.github.logviewer.FloatingLogcatService" />
 
         <provider
-            android:name="com.github.logviewer.LogcatFileProvider"
+            android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.logcat_fileprovider"
             android:grantUriPermissions="true"
             android:exported="false">
@@ -35,7 +25,5 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/logcat_filepaths" />
         </provider>
-
     </application>
-
 </manifest>
