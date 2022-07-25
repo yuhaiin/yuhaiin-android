@@ -36,8 +36,9 @@ class FloatingLogcatService : Service() {
         mBinding = LogcatViewerActivityLogcatBinding.inflate(inflater)
         LogcatActivity.initBinding(mBinding)
         readLogcat = ReadLogcat(
+            context,
             mBinding,
-            intent.getStringArrayListExtra(LogcatActivity.INTENT_EXCLUDE_LIST)!!, true
+            intent.getStringArrayListExtra(LogcatActivity.INTENT_EXCLUDE_LIST)!!,
         ).apply { start() }
 
         val typedValue = TypedValue()
@@ -95,7 +96,7 @@ class FloatingLogcatService : Service() {
         mBinding.toolbar.apply {
             layoutParams.height = resources.getDimensionPixelSize(R.dimen.floating_toolbar_height)
             setNavigationOnClickListener { stopSelf() }
-            setOnMenuItemClickListener(MenuClickListener(context, readLogcat!!))
+            setOnMenuItemClickListener(readLogcat)
             setOnTouchListener(object : OnTouchListener {
                 var mIntercepted = false
                 var mLastX = 0

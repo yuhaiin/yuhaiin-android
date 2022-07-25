@@ -18,7 +18,7 @@ import androidx.preference.PreferenceDataStore
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.snackbar.Snackbar
 import io.github.asutorufa.yuhaiin.service.YuhaiinVpnService
-import java.util.*
+import java.util.concurrent.ConcurrentHashMap
 
 
 class MainActivity : AppCompatActivity() {
@@ -168,9 +168,10 @@ class MainActivity : AppCompatActivity() {
 
 
     inner class DataStore : PreferenceDataStore() {
-        private val store = Collections.synchronizedMap(HashMap<String, Any>())
+        private val store = ConcurrentHashMap<String, Any>()
         private fun put(key: String?, value: Any?) {
-            store[key] = value
+            if (key != null && value != null)
+                store[key] = value
         }
 
         override fun putString(key: String?, value: String?) = put(key, value)

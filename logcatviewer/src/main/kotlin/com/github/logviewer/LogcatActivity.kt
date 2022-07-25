@@ -24,21 +24,20 @@ class LogcatActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         LogcatViewerActivityLogcatBinding.inflate(layoutInflater).apply {
             setContentView(root)
-            readLogcat = ReadLogcat(this, excludeList)
+            readLogcat = ReadLogcat(this@LogcatActivity, this, excludeList) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M &&
+                    !Settings.canDrawOverlays(applicationContext)
+                ) overlayLauncher.launch(
+                    Intent(
+                        Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                        Uri.parse("package:$packageName")
+                    )
+                )
+                else startFloatService()
+            }
             initBinding(this)
             toolbar.setNavigationOnClickListener { onBackPressedDispatcher.onBackPressed() }
-            toolbar.setOnMenuItemClickListener(
-                MenuClickListener(this@LogcatActivity, readLogcat) {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M &&
-                        !Settings.canDrawOverlays(applicationContext)
-                    ) overlayLauncher.launch(
-                        Intent(
-                            Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                            Uri.parse("package:$packageName")
-                        )
-                    )
-                    else startFloatService()
-                })
+            toolbar.setOnMenuItemClickListener(readLogcat)
         }
 
         initTheme(applicationContext, window)
