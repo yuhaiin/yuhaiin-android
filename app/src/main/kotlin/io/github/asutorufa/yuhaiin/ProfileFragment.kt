@@ -21,6 +21,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.navigation.fragment.findNavController
 import androidx.preference.*
 import com.github.logviewer.LogcatActivity
+import com.takisoft.preferencex.SimpleMenuPreference
 import io.github.asutorufa.yuhaiin.database.Manager
 import io.github.asutorufa.yuhaiin.database.Manager.profile
 import io.github.asutorufa.yuhaiin.database.Manager.setOnPreferenceChangeListener
@@ -247,6 +248,14 @@ class ProfileFragment : PreferenceFragmentCompat() {
             refreshPreferences.add { it.isChecked = profile.saveLogcat }
         }
 
+        findPreference<SimpleMenuPreference>(resources.getString(R.string.log_level))!!.also {
+            setOnPreferenceChangeListener(it) { _, newValue ->
+                profile.logLevel = strToLogLevel(newValue.toString())
+            }
+
+            refreshPreferences.add { it.value = logLevelToStr(profile.logLevel) }
+        }
+
         findPreference<Preference>(resources.getString(R.string.logcat))?.apply {
             setOnPreferenceClickListener {
                 val logcatExcludeRules = arrayListOf(
@@ -345,4 +354,29 @@ class ProfileFragment : PreferenceFragmentCompat() {
 
             return apps
         }
+
+
+    private fun strToLogLevel(str: String): Int {
+        return when (str) {
+            resources.getString(R.string.log_level_verbose) -> 0
+            resources.getString(R.string.log_level_debug) -> 1
+            resources.getString(R.string.log_level_info) -> 2
+            resources.getString(R.string.log_level_warning) -> 3
+            resources.getString(R.string.log_level_error) -> 4
+            resources.getString(R.string.log_level_fatal) -> 5
+            else -> 2
+        }
+    }
+
+    private fun logLevelToStr(type: Int): String {
+        return when (type) {
+            0 -> resources.getString(R.string.log_level_verbose)
+            1 -> resources.getString(R.string.log_level_debug)
+            2 -> resources.getString(R.string.log_level_info)
+            3 -> resources.getString(R.string.log_level_warning)
+            4 -> resources.getString(R.string.log_level_error)
+            5 -> resources.getString(R.string.log_level_fatal)
+            else -> resources.getString(R.string.log_level_info)
+        }
+    }
 }

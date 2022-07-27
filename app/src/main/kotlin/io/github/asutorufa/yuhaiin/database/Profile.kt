@@ -35,6 +35,7 @@ data class Profile(
     @ColumnInfo(name = "ipv6", defaultValue = "false") var hasIPv6: Boolean = false,
     @ColumnInfo(name = "auto_connect", defaultValue = "false") var autoConnect: Boolean = false,
     @ColumnInfo(name = "save_logcat", defaultValue = "false") var saveLogcat: Boolean = false,
+    @ColumnInfo(name = "log_level", defaultValue = "2") var logLevel: Int = 2,
     @ColumnInfo(name = "allow_lan", defaultValue = "false") var allowLan: Boolean = false,
     @ColumnInfo(
         name = "rule_update_bypass_url",

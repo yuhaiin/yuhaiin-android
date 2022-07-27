@@ -140,5 +140,20 @@
     <string name="save_logcat_summary">Save logcat to
         Android/data/io.github.asutorufa.yuhaiin/files/yuhaiin/log.
     </string>
-
+    
+    <string name="log_level">Log Level</string>
+    <string name="log_level_verbose">Verbose</string>
+    <string name="log_level_debug">Debug</string>
+    <string name="log_level_info">Info</string>
+    <string name="log_level_warning">Warning</string>
+    <string name="log_level_error">Error</string>
+    <string name="log_level_fatal">Fatal</string>
+    <string-array name="log_levels">
+        <item>@string/log_level_verbose</item>
+        <item>@string/log_level_debug</item>
+        <item>@string/log_level_info</item>
+        <item>@string/log_level_warning</item>
+        <item>@string/log_level_error</item>
+        <item>@string/log_level_fatal</item>
+    </string-array>
 </resources>
