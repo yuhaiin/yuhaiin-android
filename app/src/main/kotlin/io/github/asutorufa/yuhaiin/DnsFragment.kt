@@ -133,6 +133,7 @@ class DnsFragment : PreferenceFragmentCompat() {
         }
     }
 
+    
     private fun strToDNSType(str: String): DNS.Type {
         return when (str) {
             resources.getString(R.string.dns_type_doudp) -> DNS.Type.UDP

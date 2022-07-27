@@ -261,8 +261,11 @@ class YuhaiinVpnService : VpnService() {
             if (profile.socks5ServerPort > 0) socks5 = "${address}:${profile.socks5ServerPort}"
             if (profile.httpServerPort > 0) http = "${address}:${profile.httpServerPort}"
 
-            saveLogcat = profile.saveLogcat
-
+            log = Log().apply {
+                saveLogcat = profile.saveLogcat
+                logLevel = profile.logLevel
+            }
+            
             bypass = Bypass().apply {
                 block = profile.ruleBlock
                 proxy = profile.ruleProxy
