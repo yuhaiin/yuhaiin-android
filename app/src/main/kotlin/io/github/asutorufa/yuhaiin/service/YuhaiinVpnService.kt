@@ -9,6 +9,7 @@ import android.net.*
 import android.os.Build
 import android.os.ParcelFileDescriptor
 import android.util.Log
+import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import androidx.core.content.getSystemService
 import io.github.asutorufa.yuhaiin.BuildConfig
@@ -24,18 +25,12 @@ import io.github.asutorufa.yuhaiin.database.DNS as dDNS
 
 class YuhaiinVpnService : VpnService() {
     companion object {
-        private const val INTENT_PREFIX = "YUHAIIN"
-        const val INTENT_DISCONNECTED = INTENT_PREFIX + "DISCONNECTED"
-        const val INTENT_CONNECTED = INTENT_PREFIX + "CONNECTED"
-        const val INTENT_CONNECTING = INTENT_PREFIX + "CONNECTING"
-        const val INTENT_DISCONNECTING = INTENT_PREFIX + "DISCONNECTING"
-        const val INTENT_ERROR = INTENT_PREFIX + "ERROR"
-
         enum class State {
             CONNECTED,
             CONNECTING,
             DISCONNECTING,
             DISCONNECTED,
+            ERROR
         }
 
         private const val VPN_MTU = 1500
@@ -45,9 +40,15 @@ class YuhaiinVpnService : VpnService() {
         private const val PRIVATE_VLAN6_CLIENT = "fdfe:dcba:9876::1"
     }
 
+
     private val mBinder = VpnBinder()
     private val tag = this.javaClass.simpleName
     private var state = State.DISCONNECTED
+        set(value) {
+            field = value
+            applicationContext.sendBroadcast(Intent(value.toString()))
+        }
+
     private var mInterface: ParcelFileDescriptor? = null
     private val connectivity by lazy { application.getSystemService<ConnectivityManager>()!! }
     private val notification by lazy { application.getSystemService<NotificationManager>()!! }
@@ -72,6 +73,7 @@ class YuhaiinVpnService : VpnService() {
     }
 
     inner class UidDumper : yuhaiin.UidDumper {
+        @RequiresApi(Build.VERSION_CODES.Q)
         override fun dumpUid(
             p0: Int,
             srcIp: String?,
@@ -94,6 +96,8 @@ class YuhaiinVpnService : VpnService() {
             .addCapability(NetworkCapabilities.NET_CAPABILITY_NOT_RESTRICTED)
             .build()
     }
+
+    @RequiresApi(Build.VERSION_CODES.LOLLIPOP_MR1)
     private val defaultNetworkCallback: ConnectivityManager.NetworkCallback =
         object : ConnectivityManager.NetworkCallback() {
             override fun onAvailable(network: Network) {
@@ -117,7 +121,7 @@ class YuhaiinVpnService : VpnService() {
 
     private fun stop() {
         if (state != State.CONNECTED) return
-        setState(State.DISCONNECTING)
+        state = State.DISCONNECTING
 
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) stopForeground(Service.STOP_FOREGROUND_REMOVE)
@@ -128,7 +132,7 @@ class YuhaiinVpnService : VpnService() {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                 connectivity.unregisterNetworkCallback(defaultNetworkCallback)
             }
-            setState(State.DISCONNECTED)
+            state = State.DISCONNECTED
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -147,7 +151,7 @@ class YuhaiinVpnService : VpnService() {
             return START_STICKY
         }
 
-        setState(State.CONNECTING)
+        state = State.CONNECTING
 
         try {
             val profile = Manager.db.getProfileByName(Manager.db.getLastProfile() ?: "Default")
@@ -156,12 +160,12 @@ class YuhaiinVpnService : VpnService() {
             start(profile)
             startNotification(profile.name)
 
-            setState(State.CONNECTED)
+            state = State.CONNECTED
 
         } catch (e: Exception) {
             e.printStackTrace()
-            setState(State.DISCONNECTED)
-            applicationContext.sendBroadcast(Intent(INTENT_ERROR).also {
+            state = State.DISCONNECTED
+            applicationContext.sendBroadcast(Intent(State.ERROR.toString()).also {
                 it.putExtra(
                     "message",
                     e.toString()
@@ -173,11 +177,11 @@ class YuhaiinVpnService : VpnService() {
         return START_STICKY
     }
 
-    private fun addRoute(builder: VpnService.Builder, cidr: String) {
+    private fun VpnService.Builder.addRoute(cidr: String) {
         try {
             Yuhaiin.parseCIDR(cidr).apply {
                 // Cannot handle 127.0.0.0/8
-                if (!ip.startsWith("127")) builder.addRoute(ip, mask)
+                if (!ip.startsWith("127")) addRoute(ip, mask)
             }
         } catch (e: Exception) {
             Log.e("addRoute", "addRoute " + cidr + " failed: " + e.message)
@@ -197,18 +201,18 @@ class YuhaiinVpnService : VpnService() {
 
             when (profile.route) {
                 resources.getString(R.string.adv_route_non_chn) ->
-                    resources.getStringArray(R.array.simple_route).forEach { addRoute(this, it) }
+                    resources.getStringArray(R.array.simple_route).forEach { addRoute(it) }
                 resources.getString(R.string.adv_route_non_local) ->
                     resources.getStringArray(R.array.all_routes_except_local)
-                        .forEach { addRoute(this, it) }
+                        .forEach { addRoute(it) }
                 else -> {
-                    addRoute(this, "0.0.0.0/0")
-                    if (profile.hasIPv6) addRoute(this, "::/0")
+                    addRoute("0.0.0.0/0")
+                    if (profile.hasIPv6) addRoute("[::]/0")
                 }
             }
 
             addDnsServer(PRIVATE_VLAN4_ROUTER)
-            addRoute(this, profile.fakeDnsCidr)
+            addRoute(profile.fakeDnsCidr)
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                 connectivity.requestNetwork(defaultNetworkRequest, defaultNetworkCallback)
@@ -265,7 +269,7 @@ class YuhaiinVpnService : VpnService() {
                 saveLogcat = profile.saveLogcat
                 logLevel = profile.logLevel
             }
-            
+
             bypass = Bypass().apply {
                 block = profile.ruleBlock
                 proxy = profile.ruleProxy
@@ -333,24 +337,5 @@ class YuhaiinVpnService : VpnService() {
                 )
                 .build()
         )
-    }
-
-    private fun setState(state: State) {
-        this.state = state
-
-        when (state) {
-            State.CONNECTED -> {
-                applicationContext.sendBroadcast(Intent(INTENT_CONNECTED))
-            }
-            State.DISCONNECTED -> {
-                applicationContext.sendBroadcast(Intent(INTENT_DISCONNECTED))
-            }
-            State.DISCONNECTING -> {
-                applicationContext.sendBroadcast(Intent(INTENT_DISCONNECTING))
-            }
-            State.CONNECTING -> {
-                applicationContext.sendBroadcast(Intent(INTENT_CONNECTING))
-            }
-        }
     }
 }
