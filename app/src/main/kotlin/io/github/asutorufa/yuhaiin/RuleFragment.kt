@@ -51,7 +51,7 @@ class RuleFragment : PreferenceFragmentCompat() {
 
                 updating = true
                 Snackbar
-                    .make(view!!, "bypass file updating", Snackbar.LENGTH_LONG)
+                    .make(requireView(), "bypass file updating", Snackbar.LENGTH_LONG)
                     .setAnchorView(R.id.floatingActionButton)
                     .apply {
                         (view.findViewById<View>(com.google.android.material.R.id.snackbar_text).parent as ViewGroup).addView(

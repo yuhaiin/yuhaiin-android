@@ -18,6 +18,7 @@ import androidx.preference.PreferenceDataStore
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.snackbar.Snackbar
 import io.github.asutorufa.yuhaiin.service.YuhaiinVpnService
+import io.github.asutorufa.yuhaiin.service.YuhaiinVpnService.Companion.State
 import java.util.concurrent.ConcurrentHashMap
 
 
@@ -60,7 +61,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-
     // floating action button
     var mBinder: IYuhaiinVpnBinder? = null
 
@@ -84,11 +84,11 @@ class MainActivity : AppCompatActivity() {
         )
 
         registerReceiver(bReceiver, IntentFilter().apply {
-            addAction(YuhaiinVpnService.INTENT_DISCONNECTED)
-            addAction(YuhaiinVpnService.INTENT_CONNECTED)
-            addAction(YuhaiinVpnService.INTENT_CONNECTING)
-            addAction(YuhaiinVpnService.INTENT_DISCONNECTING)
-            addAction(YuhaiinVpnService.INTENT_ERROR)
+            addAction(State.CONNECTING.toString())
+            addAction(State.CONNECTED.toString())
+            addAction(State.DISCONNECTING.toString())
+            addAction(State.DISCONNECTED.toString())
+            addAction(State.ERROR.toString())
         })
     }
 
@@ -120,9 +120,9 @@ class MainActivity : AppCompatActivity() {
             Log.d(tag, "onReceive: ${intent.action}")
 
             when (intent.action) {
-                YuhaiinVpnService.INTENT_DISCONNECTED, YuhaiinVpnService.INTENT_CONNECTED -> {
+                State.DISCONNECTED.toString(), State.CONNECTED.toString() -> {
                     mFab.isEnabled = true
-                    if (intent.action == YuhaiinVpnService.INTENT_CONNECTED) {
+                    if (intent.action == State.CONNECTED.toString()) {
                         mFab.setImageResource(R.drawable.stop)
                         showSnackBar("yuhaiin connected")
                     } else {
@@ -131,11 +131,11 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
 
-                YuhaiinVpnService.INTENT_CONNECTING, YuhaiinVpnService.INTENT_DISCONNECTING -> {
+                State.CONNECTING.toString(), State.DISCONNECTING.toString() -> {
                     mFab.isEnabled = false
                 }
 
-                YuhaiinVpnService.INTENT_ERROR -> {
+                State.ERROR.toString() -> {
                     intent.getStringExtra("message")?.let { showSnackBar(it) }
                 }
             }
