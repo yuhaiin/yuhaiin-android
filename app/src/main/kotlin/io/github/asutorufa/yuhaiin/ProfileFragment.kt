@@ -15,7 +15,6 @@ import android.widget.EditText
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.AppCompatEditText
 import androidx.browser.customtabs.CustomTabsIntent
-import androidx.core.view.MenuHost
 import androidx.core.view.MenuProvider
 import androidx.lifecycle.Lifecycle
 import androidx.navigation.fragment.findNavController
@@ -35,10 +34,7 @@ class ProfileFragment : PreferenceFragmentCompat() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        @Suppress("CAST_NEVER_SUCCEEDS")
-        (mainActivity as MenuHost).addMenuProvider(
-            menuProvider, viewLifecycleOwner, Lifecycle.State.RESUMED
-        )
+        mainActivity.addMenuProvider(menuProvider, viewLifecycleOwner, Lifecycle.State.RESUMED)
         preferenceManager.preferenceDataStore = mainActivity.dataStore
         initPreferences()
         reload()

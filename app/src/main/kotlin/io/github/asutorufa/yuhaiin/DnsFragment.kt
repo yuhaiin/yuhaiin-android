@@ -89,6 +89,13 @@ class DnsFragment : PreferenceFragmentCompat() {
             }
         }
 
+        findPreference<SwitchPreferenceCompat>(resources.getString(R.string.local_dns_proxy_key))!!.apply {
+            isChecked = profile.localDns.proxy
+            setOnPreferenceChangeListener(this) { _, newValue ->
+                profile.localDns.proxy = newValue as Boolean
+            }
+        }
+        
         findPreference<EditTextPreference>(resources.getString(R.string.local_dns_subnet_key))!!.apply {
             text = profile.localDns.subnet
             setOnPreferenceChangeListener(this) { _, newValue ->
@@ -133,7 +140,7 @@ class DnsFragment : PreferenceFragmentCompat() {
         }
     }
 
-    
+
     private fun strToDNSType(str: String): DNS.Type {
         return when (str) {
             resources.getString(R.string.dns_type_doudp) -> DNS.Type.UDP

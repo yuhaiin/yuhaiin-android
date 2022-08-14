@@ -64,6 +64,9 @@
             app:useSimpleSummaryProvider="true"
             android:key="@string/local_dns_type_key"
             android:entryValues="@array/dns_types" />
+        <SwitchPreferenceCompat
+            android:title="Proxy"
+            android:key="@string/local_dns_proxy_key" />
         <EditTextPreference
             android:title="Subnet"
             android:singleLine="true"
