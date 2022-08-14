@@ -82,6 +82,7 @@
     <string name="local_dns_type_key">local_dns_type</string>
     <string name="local_dns_subnet_key">local_dns_subnet</string>
     <string name="local_dns_tls_server_name_key">local_dns_tls_server_name</string>
+    <string name="local_dns_proxy_key">local_dns_proxy</string>
 
     <string name="bootstrap_dns_host_key">bootstrap_dns_host</string>
     <string name="bootstrap_dns_type_key">bootstrap_dns_type</string>
@@ -140,7 +141,7 @@
     <string name="save_logcat_summary">Save logcat to
         Android/data/io.github.asutorufa.yuhaiin/files/yuhaiin/log.
     </string>
-    
+
     <string name="log_level">Log Level</string>
     <string name="log_level_verbose">Verbose</string>
     <string name="log_level_debug">Debug</string>

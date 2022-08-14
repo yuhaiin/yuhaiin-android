@@ -32,16 +32,10 @@ class LogcatAdapter internal constructor() : BaseAdapter(), Filterable {
         }
     }
 
-    val data: Array<LogItem>
-        get() {
-            synchronized(LogcatAdapter::class.java) { return mData.toTypedArray() }
-        }
-
     override fun getCount(): Int = mFilteredData?.size ?: mData.size
     override fun getItem(position: Int): LogItem = mFilteredData?.get(position) ?: mData[position]
     override fun getItemId(position: Int): Long = position.toLong()
-
-
+    
     override fun getView(position: Int, cv: View?, parent: ViewGroup): View {
         cv?.let {
             (it.tag as Holder).parse(getItem(position))
