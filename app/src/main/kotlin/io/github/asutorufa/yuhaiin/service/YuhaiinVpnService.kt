@@ -214,9 +214,8 @@ class YuhaiinVpnService : VpnService() {
             addDnsServer(PRIVATE_VLAN4_ROUTER)
             addRoute(profile.fakeDnsCidr)
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P)
                 connectivity.requestNetwork(defaultNetworkRequest, defaultNetworkCallback)
-            }
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 setMetered(false)

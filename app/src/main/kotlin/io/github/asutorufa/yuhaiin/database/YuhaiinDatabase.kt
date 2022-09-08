@@ -28,9 +28,9 @@ abstract class YuhaiinDatabase : RoomDatabase() {
                             if (name == null)
                                 it.ProfileDao().setLastProfile(LastProfile(name = "Default"))
                         }
-                        if (!it.ProfileDao().isProfileExists("Default")) {
+
+                        if (!it.ProfileDao().isProfileExists("Default"))
                             it.ProfileDao().addProfile(Profile(name = "Default"))
-                        }
                     } catch (e: Exception) {
                         e.printStackTrace()
                     }

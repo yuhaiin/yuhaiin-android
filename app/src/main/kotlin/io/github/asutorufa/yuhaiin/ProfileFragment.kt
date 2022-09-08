@@ -257,7 +257,14 @@ class ProfileFragment : PreferenceFragmentCompat() {
                 val logcatExcludeRules = arrayListOf(
                     ".*]: processMotionEvent MotionEvent \\{ action=ACTION_.*",
                     ".*]: dispatchPointerEvent handled=true, event=MotionEvent \\{ action=ACTION_.*",
-                    ".*Davey! duration=.*"
+                    ".*Davey! duration=.*",
+                    // android popup window select text debug log
+                    ".*Attempted to finish an input event but the input event receiver has already been disposed.*",
+                    ".*endAllActiveAnimators on .* with handle.*",
+                    ".*Initializing SystemTextClassifier,.*",
+                    ".*TextClassifier called on main thread.*",
+                    ".*android added item .*",
+                    ".*No package ID .* found for ID.*"
                 )
                 LogcatActivity.start(context, logcatExcludeRules)
                 true

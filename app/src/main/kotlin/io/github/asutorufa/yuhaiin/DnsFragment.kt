@@ -11,9 +11,8 @@ import io.github.asutorufa.yuhaiin.database.Manager.setOnPreferenceChangeListene
 
 
 class DnsFragment : PreferenceFragmentCompat() {
-    override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
+    override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) =
         setPreferencesFromResource(R.xml.dns, rootKey)
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -95,7 +94,7 @@ class DnsFragment : PreferenceFragmentCompat() {
                 profile.localDns.proxy = newValue as Boolean
             }
         }
-        
+
         findPreference<EditTextPreference>(resources.getString(R.string.local_dns_subnet_key))!!.apply {
             text = profile.localDns.subnet
             setOnPreferenceChangeListener(this) { _, newValue ->
@@ -164,5 +163,4 @@ class DnsFragment : PreferenceFragmentCompat() {
             else -> resources.getString(R.string.dns_type_doudp)
         }
     }
-
 }
