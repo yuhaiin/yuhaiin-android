@@ -19,12 +19,6 @@
         android:summary="@string/yuhaiin_host_summary"
         android:singleLine="true" />
 
-    <Preference
-        android:title="Open Yuhaiin Page"
-        android:key="@string/open_yuhaiin_page"
-        android:singleLine="true"
-        android:icon="@drawable/open_in_browser" />
-
     <PreferenceCategory android:title="@string/connection">
 
         <SwitchPreferenceCompat

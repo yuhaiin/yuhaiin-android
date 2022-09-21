@@ -3,7 +3,6 @@ package io.github.asutorufa.yuhaiin
 import android.Manifest
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.text.InputType
@@ -14,7 +13,6 @@ import android.view.View
 import android.widget.EditText
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.AppCompatEditText
-import androidx.browser.customtabs.CustomTabsIntent
 import androidx.core.view.MenuProvider
 import androidx.lifecycle.Lifecycle
 import androidx.navigation.fragment.findNavController
@@ -267,26 +265,6 @@ class ProfileFragment : PreferenceFragmentCompat() {
                     ".*No package ID .* found for ID.*"
                 )
                 LogcatActivity.start(context, logcatExcludeRules)
-                true
-            }
-        }
-
-        findPreference<Preference>(resources.getString(R.string.open_yuhaiin_page))?.apply {
-            setOnPreferenceClickListener {
-                if (mainActivity.mBinder?.isRunning == false) {
-                    mainActivity.showSnackBar("yuhaiin is not running")
-                    return@setOnPreferenceClickListener true
-                }
-
-                CustomTabsIntent.Builder()
-                    .apply {
-                        setColorScheme(CustomTabsIntent.COLOR_SCHEME_SYSTEM)
-                    }.build()
-                    .launchUrl(
-                        requireActivity(),
-                        Uri.parse("http://localhost:${profile.yuhaiinPort}")
-                    )
-//                findNavController().navigate(ProfileFragmentDirections.actionProfileFragmentToPageFragment())
                 true
             }
         }

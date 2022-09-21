@@ -3,20 +3,28 @@ package io.github.asutorufa.yuhaiin
 import android.app.Activity
 import android.content.*
 import android.content.res.Configuration
+import android.graphics.RenderEffect
+import android.graphics.Shader
+import android.net.Uri
 import android.net.VpnService
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
 import android.util.Log
+import android.view.View
 import android.view.WindowInsetsController
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.content.res.AppCompatResources
 import androidx.appcompat.widget.Toolbar
+import androidx.browser.customtabs.CustomTabsIntent
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.ui.setupWithNavController
 import androidx.preference.PreferenceDataStore
+import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.snackbar.Snackbar
+import io.github.asutorufa.yuhaiin.database.Manager
 import io.github.asutorufa.yuhaiin.service.YuhaiinVpnService
 import io.github.asutorufa.yuhaiin.service.YuhaiinVpnService.Companion.State
 import java.util.concurrent.ConcurrentHashMap
@@ -59,12 +67,56 @@ class MainActivity : AppCompatActivity() {
                     .findNavController()
             )
         }
+
+        mExtendedFloatingActionButton.shrink()
     }
 
     // floating action button
     var mBinder: IYuhaiinVpnBinder? = null
 
-    private val mFab: FloatingActionButton by lazy {
+    private var isFabVisible: Boolean = false
+        set(value) {
+            if (field == value) return
+
+            when (value) {
+                true -> {
+                    if (mBinder?.isRunning == true) mOpenBrowserFab.show()
+                    mControlFab.show()
+                    mExtendedFloatingActionButton.extend()
+                    mExtendedFloatingActionButton.icon =
+                        AppCompatResources.getDrawable(this, R.drawable.close)
+                    mExtendedFloatingActionButtonBackground.visibility = View.VISIBLE
+
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
+                        mMainView.setRenderEffect(
+                            RenderEffect.createBlurEffect(
+                                20f,
+                                20f,
+                                Shader.TileMode.CLAMP
+                            )
+                        )
+                }
+                
+                false -> {
+                    mOpenBrowserFab.hide()
+                    mControlFab.hide()
+                    mExtendedFloatingActionButton.shrink()
+                    mExtendedFloatingActionButton.icon =
+                        AppCompatResources.getDrawable(this, R.drawable.add_48)
+                    mExtendedFloatingActionButtonBackground.visibility = View.GONE
+
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
+                        mMainView.setRenderEffect(null)
+                }
+            }
+
+            field = value
+        }
+
+    private val mMainView: View by lazy {
+        findViewById(R.id.main_view)
+    }
+    private val mControlFab: FloatingActionButton by lazy {
         findViewById<FloatingActionButton>(R.id.floatingActionButton)!!
             .apply {
                 setOnClickListener {
@@ -72,6 +124,42 @@ class MainActivity : AppCompatActivity() {
                     else startService()
                 }
             }
+    }
+
+    private val mOpenBrowserFab: FloatingActionButton by lazy {
+        findViewById<FloatingActionButton>(R.id.floatingActionButtonOpen)!!.apply {
+            setOnClickListener {
+                CustomTabsIntent.Builder()
+                    .apply {
+                        setColorScheme(CustomTabsIntent.COLOR_SCHEME_SYSTEM)
+                    }.build()
+                    .launchUrl(
+                        this@MainActivity,
+                        Uri.parse("http://localhost:${Manager.profile.yuhaiinPort}")
+                    )
+            }
+        }
+    }
+
+    private val mExtendedFloatingActionButton: ExtendedFloatingActionButton by lazy {
+        findViewById<ExtendedFloatingActionButton>(R.id.extendedFloatingButton)!!.apply {
+            setOnClickListener {
+                isFabVisible = !isFabVisible
+            }
+        }
+    }
+
+    private val mExtendedFloatingActionButtonBackground: View by lazy {
+        findViewById<View>(R.id.floatingButtonBackground)!!.apply {
+            setOnClickListener {
+                isFabVisible = false
+            }
+
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+                setBackgroundColor(R.attr.backgroundColor)
+                alpha = 0.5f
+            }
+        }
     }
 
     override fun onStart() {
@@ -105,8 +193,7 @@ class MainActivity : AppCompatActivity() {
     private val mConnection: ServiceConnection = object : ServiceConnection {
         override fun onServiceConnected(p1: ComponentName, binder: IBinder) {
             mBinder = IYuhaiinVpnBinder.Stub.asInterface(binder).also {
-                if (it.isRunning) mFab.setImageResource(R.drawable.stop)
-                else mFab.setImageResource(R.drawable.play_arrow)
+                onYuhaiinStatusChanged(it.isRunning)
             }
         }
 
@@ -121,18 +208,13 @@ class MainActivity : AppCompatActivity() {
 
             when (intent.action) {
                 State.DISCONNECTED.toString(), State.CONNECTED.toString() -> {
-                    mFab.isEnabled = true
-                    if (intent.action == State.CONNECTED.toString()) {
-                        mFab.setImageResource(R.drawable.stop)
-                        showSnackBar("yuhaiin connected")
-                    } else {
-                        mFab.setImageResource(R.drawable.play_arrow)
-                        showSnackBar("yuhaiin disconnected")
-                    }
+                    mControlFab.isEnabled = true
+
+                    onYuhaiinStatusChanged(intent.action == State.CONNECTED.toString())
                 }
 
                 State.CONNECTING.toString(), State.DISCONNECTING.toString() -> {
-                    mFab.isEnabled = false
+                    mControlFab.isEnabled = false
                 }
 
                 State.ERROR.toString() -> {
@@ -142,12 +224,25 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    fun onYuhaiinStatusChanged(connected: Boolean) {
+        if (connected) {
+            mControlFab.setImageResource(R.drawable.stop)
+            if (isFabVisible) mOpenBrowserFab.show()
+        } else {
+            mControlFab.setImageResource(R.drawable.play_arrow)
+            if (isFabVisible) mOpenBrowserFab.hide()
+        }
+    }
+
     fun showSnackBar(message: String) {
         Snackbar.make(
             findViewById(android.R.id.content),
             message,
             Snackbar.LENGTH_SHORT
-        ).setAnchorView(mFab).show()
+        ).apply {
+            anchorView = if (isFabVisible) mOpenBrowserFab else mExtendedFloatingActionButton
+            show()
+        }
     }
 
     private val vpnPermissionDialogLauncher =
