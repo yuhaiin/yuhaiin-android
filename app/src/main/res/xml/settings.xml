@@ -10,45 +10,23 @@
         android:icon="@drawable/person" />
 
 
-    <EditTextPreference
-        android:icon="@drawable/vpn_lock"
-        android:key="@string/yuhaiin_port_key"
-        android:title="@string/yuhaiin_port_title"
-        android:digits="0123456789"
-        app:useSimpleSummaryProvider="true"
-        android:summary="@string/yuhaiin_host_summary"
-        android:singleLine="true" />
-
     <PreferenceCategory android:title="@string/connection">
 
-        <SwitchPreferenceCompat
-            android:icon="@drawable/lan"
-            android:key="@string/allow_lan_key"
-            android:title="@string/allow_lan_title"
-            android:layout_height="match_parent" />
-
-        <EditTextPreference
-            android:icon="@drawable/http"
-            android:key="@string/http_server_port_key"
-            android:title="@string/http_server_port_title"
-            android:inputType="number"
-            android:digits="0123456789"
-            app:useSimpleSummaryProvider="true"
-            android:singleLine="true" />
+        <Preference
+            android:icon="@drawable/vpn_lock"
+            android:title="@string/ports_title"
+            android:key="@string/ports_key" />
 
         <SwitchPreferenceCompat
             android:title="Append HTTP Proxy to VPN"
             android:summary="HTTP proxy will be used directly from without going through the virtual NIC device(Android 10+)"
             android:key="@string/append_http_proxy_to_vpn" />
 
-        <EditTextPreference
-            android:icon="@drawable/spoke"
-            android:key="@string/socks5_server_port_key"
-            android:title="@string/socks5_server_port_title"
-            android:inputType="numberDecimal"
-            android:digits="0123456789"
-            app:useSimpleSummaryProvider="true"
-            android:singleLine="true" />
+        <SwitchPreferenceCompat
+            android:icon="@drawable/lan"
+            android:key="@string/allow_lan_key"
+            android:title="@string/allow_lan_title"
+            android:layout_height="match_parent" />
 
         <SwitchPreferenceCompat
             android:icon="@drawable/hub"

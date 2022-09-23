@@ -6,10 +6,10 @@ import android.view.MenuItem
 import android.view.View
 import android.widget.AdapterView
 import android.widget.TextView
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.Toolbar
 import androidx.core.content.FileProvider
 import com.github.logviewer.databinding.LogcatViewerActivityLogcatBinding
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -45,7 +45,7 @@ class ReadLogcat(
                                 Locale.getDefault()
                             ).format(time), processId, threadId, priority, tag, content
                         )
-                        AlertDialog.Builder(context)
+                        MaterialAlertDialogBuilder(context)
                             .setMessage(text)
                             .setNegativeButton(android.R.string.cancel) { _, _ -> }
                             .show().apply {

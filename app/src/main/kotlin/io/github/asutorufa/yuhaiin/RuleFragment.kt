@@ -5,9 +5,9 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ProgressBar
 import android.widget.Toast
-import androidx.preference.EditTextPreference
-import androidx.preference.PreferenceFragmentCompat
+import androidx.preference.*
 import com.google.android.material.snackbar.Snackbar
+import com.google.android.material.transition.platform.MaterialSharedAxis
 import com.takisoft.preferencex.SimpleMenuPreference
 import io.github.asutorufa.yuhaiin.database.Bypass
 import io.github.asutorufa.yuhaiin.database.Manager.profile
@@ -26,9 +26,22 @@ class RuleFragment : PreferenceFragmentCompat() {
     private var updating = false
     private val mainActivity by lazy { requireActivity() as MainActivity }
 
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        view.transitionName = "transition_common"
+    }
+
     @OptIn(DelicateCoroutinesApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        enterTransition = MaterialSharedAxis(MaterialSharedAxis.Y, /* forward= */ true).apply {
+            duration = 500L
+        }
+        returnTransition = MaterialSharedAxis(MaterialSharedAxis.Y, /* forward= */ false).apply {
+            duration = 500L
+        }
+
         preferenceManager.preferenceDataStore = mainActivity.dataStore
 
         findPreference<SimpleMenuPreference>(resources.getString(R.string.adv_route_Key))!!.also {
@@ -120,6 +133,13 @@ class RuleFragment : PreferenceFragmentCompat() {
         }
     }
 
+    override fun onDisplayPreferenceDialog(preference: Preference) {
+        when (preference) {
+            is ListPreference, is EditTextPreference, is MultiSelectListPreference ->
+                showDialog(preference)
+            else -> super.onDisplayPreferenceDialog(preference)
+        }
+    }
 
     private fun strToBypassType(str: String): Bypass.Type {
         return when (str) {

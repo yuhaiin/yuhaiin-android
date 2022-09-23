@@ -11,13 +11,15 @@ import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.View
 import android.widget.EditText
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.AppCompatEditText
 import androidx.core.view.MenuProvider
 import androidx.lifecycle.Lifecycle
 import androidx.navigation.fragment.findNavController
 import androidx.preference.*
 import com.github.logviewer.LogcatActivity
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.textfield.TextInputEditText
+import com.google.android.material.transition.platform.MaterialSharedAxis
 import com.takisoft.preferencex.SimpleMenuPreference
 import io.github.asutorufa.yuhaiin.database.Manager
 import io.github.asutorufa.yuhaiin.database.Manager.profile
@@ -30,27 +32,50 @@ class ProfileFragment : PreferenceFragmentCompat() {
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) =
         setPreferencesFromResource(R.xml.settings, rootKey)
 
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        exitTransition = MaterialSharedAxis(MaterialSharedAxis.Y, /* forward= */ true)
+        reenterTransition = MaterialSharedAxis(MaterialSharedAxis.Y, /* forward= */ false)
+
+        initPreferences()
+    }
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        view.transitionName = "transition_common"
+
         mainActivity.addMenuProvider(menuProvider, viewLifecycleOwner, Lifecycle.State.RESUMED)
         preferenceManager.preferenceDataStore = mainActivity.dataStore
-        initPreferences()
         reload()
     }
+
+    override fun onDisplayPreferenceDialog(preference: Preference) {
+        when (preference) {
+            is ListPreference, is EditTextPreference, is MultiSelectListPreference ->
+                showDialog(preference)
+            else -> super.onDisplayPreferenceDialog(preference)
+        }
+    }
+
+    fun showAlertDialog(
+        title: Int,
+        view: View?,
+        message: String?,
+        PositiveFun: () -> Unit
+    ) =
+        MaterialAlertDialogBuilder(requireContext()).apply {
+            setTitle(title)
+            view?.let { setView(it) }
+            message?.let { setMessage(it) }
+            setPositiveButton(android.R.string.ok) { _, _ -> PositiveFun() }
+            setNegativeButton(android.R.string.cancel) { _, _ -> }
+            show()
+        }
 
     private val menuProvider = object : MenuProvider {
         override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) =
             menuInflater.inflate(R.menu.main, menu)
-
-        fun showAlertDialog(title: Int, view: View?, message: String?, PositiveFun: () -> Unit) =
-            AlertDialog.Builder(requireContext()).apply {
-                setTitle(title)
-                view?.let { setView(it) }
-                message?.let { setMessage(it) }
-                setPositiveButton(android.R.string.ok) { _, _ -> PositiveFun() }
-                setNegativeButton(android.R.string.cancel) { _, _ -> }
-                show()
-            }
 
         override fun onMenuItemSelected(menuItem: MenuItem): Boolean =
             when (menuItem.itemId) {
@@ -102,50 +127,11 @@ class ProfileFragment : PreferenceFragmentCompat() {
             }
         }
 
-        findPreference<EditTextPreference>(resources.getString(R.string.yuhaiin_port_key))!!.also {
-            it.setOnBindEditTextListener { editText: EditText ->
-                editText.inputType =
-                    InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
-            }
-
-            setOnPreferenceChangeListener(it) { _, newValue ->
-                profile.yuhaiinPort = newValue.toString().toInt()
-            }
-
-            refreshPreferences.add { it.text = profile.yuhaiinPort.toString() }
-        }
-
-        findPreference<EditTextPreference>(resources.getString(R.string.http_server_port_key))!!.also {
-            it.setOnBindEditTextListener { editText: EditText ->
-                editText.inputType =
-                    InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
-            }
-
-            setOnPreferenceChangeListener(it) { _, newValue ->
-                profile.httpServerPort = newValue.toString().toInt()
-            }
-
-            refreshPreferences.add { it.text = profile.httpServerPort.toString() }
-        }
-
         findPreference<SwitchPreferenceCompat>(resources.getString(R.string.append_http_proxy_to_vpn))!!.also {
             setOnPreferenceChangeListener(it) { _, newValue ->
                 profile.appendHttpProxyToSystem = newValue as Boolean
             }
             refreshPreferences.add { it.isChecked = profile.appendHttpProxyToSystem }
-        }
-
-        findPreference<EditTextPreference>(resources.getString(R.string.socks5_server_port_key))!!.also {
-            it.setOnBindEditTextListener { editText: EditText ->
-                editText.inputType =
-                    InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
-            }
-
-            setOnPreferenceChangeListener(it) { _, newValue ->
-                profile.socks5ServerPort = newValue.toString().toInt()
-            }
-
-            refreshPreferences.add { it.text = profile.socks5ServerPort.toString() }
         }
 
         findPreference<SwitchPreferenceCompat>(resources.getString(R.string.auth_userpw_key))!!.also {
@@ -248,6 +234,7 @@ class ProfileFragment : PreferenceFragmentCompat() {
             }
 
             refreshPreferences.add { it.value = logLevelToStr(profile.logLevel) }
+
         }
 
         findPreference<Preference>(resources.getString(R.string.logcat))?.apply {
@@ -262,16 +249,51 @@ class ProfileFragment : PreferenceFragmentCompat() {
                     ".*Initializing SystemTextClassifier,.*",
                     ".*TextClassifier called on main thread.*",
                     ".*android added item .*",
-                    ".*No package ID .* found for ID.*"
+                    ".*No package ID .* found for ID.*",
+                    ".*eglMakeCurrent:.*"
                 )
-                LogcatActivity.start(context, logcatExcludeRules)
+
+                startActivity(LogcatActivity.intent(logcatExcludeRules, requireActivity()))
                 true
             }
         }
 
-        findPreference<Preference>(resources.getString(R.string.adv_dns_Key))?.let {
+        findPreference<Preference>(resources.getString(R.string.adv_dns_Key))?.let { it ->
             it.setOnPreferenceClickListener {
                 findNavController().navigate(ProfileFragmentDirections.actionProfileFragmentToDnsFragment())
+//                    val extras = FragmentNavigatorExtras(e.itemView to "shared_element_dns")
+//                    findNavController().navigate(
+//                        R.id.action_profileFragment_to_dnsFragment,
+//                        null,
+//                        null,
+//                        extras
+//                    )
+                true
+            }
+        }
+
+
+        findPreference<Preference>(resources.getString(R.string.ports_key))?.let {
+            it.setOnPreferenceClickListener {
+                val view =
+                    requireActivity().layoutInflater.inflate(R.layout.ports_dialog, null, false)
+                val socks5 = view.findViewById<TextInputEditText>(R.id.socks5)
+                val http = view.findViewById<TextInputEditText>(R.id.http)
+                val yuhaiin = view.findViewById<TextInputEditText>(R.id.yuhaiin)
+
+                socks5.setText(profile.socks5ServerPort.toString())
+                http.setText(profile.httpServerPort.toString())
+                yuhaiin.setText(profile.yuhaiinPort.toString())
+                showAlertDialog(
+                    R.string.ports_title,
+                    view,
+                    null
+                ) {
+                    profile.socks5ServerPort = socks5.text.toString().toInt()
+                    profile.httpServerPort = http.text.toString().toInt()
+                    profile.yuhaiinPort = yuhaiin.text.toString().toInt()
+                    Manager.db.updateProfile(profile)
+                }
                 true
             }
         }
