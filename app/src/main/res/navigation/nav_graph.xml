@@ -7,21 +7,22 @@
     <fragment
         android:id="@+id/profileFragment"
         android:name="io.github.asutorufa.yuhaiin.ProfileFragment"
+        android:transitionName="transtion_name_example"
         android:label="Yuhaiin">
         <action
             android:id="@+id/action_profileFragment_to_dnsFragment"
-            app:destination="@id/dnsFragment"
-            app:enterAnim="@anim/nav_dynamic_enter_anim"
-            app:exitAnim="@anim/nav_dynamic_exit_anim"
-            app:popEnterAnim="@anim/nav_dynamic_pop_enter_anim"
-            app:popExitAnim="@anim/nav_dynamic_pop_exit_anim" />
+            app:destination="@id/dnsFragment" />
+        <!--            app:enterAnim="@anim/nav_dynamic_enter_anim"-->
+        <!--            app:exitAnim="@anim/nav_dynamic_exit_anim"-->
+        <!--            app:popEnterAnim="@anim/nav_dynamic_pop_enter_anim"-->
+        <!--            app:popExitAnim="@anim/nav_dynamic_pop_exit_anim" />-->
         <action
             android:id="@+id/action_profileFragment_to_ruleFragment"
-            app:destination="@id/ruleFragment"
-            app:enterAnim="@anim/nav_dynamic_enter_anim"
-            app:exitAnim="@anim/nav_dynamic_exit_anim"
-            app:popEnterAnim="@anim/nav_dynamic_pop_enter_anim"
-            app:popExitAnim="@anim/nav_dynamic_pop_exit_anim" />
+            app:destination="@id/ruleFragment" />
+        <!--            app:enterAnim="@anim/nav_dynamic_enter_anim"-->
+        <!--            app:exitAnim="@anim/nav_dynamic_exit_anim"-->
+        <!--            app:popEnterAnim="@anim/nav_dynamic_pop_enter_anim"-->
+        <!--            app:popExitAnim="@anim/nav_dynamic_pop_exit_anim" />-->
     </fragment>
 
     <fragment

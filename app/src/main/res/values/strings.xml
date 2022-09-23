@@ -14,6 +14,8 @@
     <string name="open_yuhaiin_page">open_yuhaiin_page</string>
 
     <string name="connection">Connection</string>
+    <string name="ports_key">ports_key</string>
+    <string name="ports_title">Ports</string>
     <string name="http_server_port_key">http_server_port</string>
     <string name="http_server_port_title">HTTP Port</string>
     <string name="append_http_proxy_to_vpn">Append HTTP Proxy to VPN</string>
@@ -71,6 +73,8 @@
 
     <string name="dns_hijacking">dns_hijacking</string>
 
+
+    <string name="remote_dns_category_key">remote_dns_category</string>
     <string name="remote_dns_host_key">remote_dns_host</string>
     <string name="remote_dns_type_key">remote_dns_type</string>
     <string name="remote_dns_subnet_key">remote_dns_subnet</string>

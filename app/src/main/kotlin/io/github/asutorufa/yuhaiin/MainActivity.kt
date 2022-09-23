@@ -10,8 +10,10 @@ import android.net.VpnService
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
+import android.transition.TransitionManager
 import android.util.Log
 import android.view.View
+import android.view.ViewGroup
 import android.view.WindowInsetsController
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
@@ -24,6 +26,7 @@ import androidx.preference.PreferenceDataStore
 import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.snackbar.Snackbar
+import com.google.android.material.transition.platform.MaterialFade
 import io.github.asutorufa.yuhaiin.database.Manager
 import io.github.asutorufa.yuhaiin.service.YuhaiinVpnService
 import io.github.asutorufa.yuhaiin.service.YuhaiinVpnService.Companion.State
@@ -74,9 +77,18 @@ class MainActivity : AppCompatActivity() {
     // floating action button
     var mBinder: IYuhaiinVpnBinder? = null
 
+
     private var isFabVisible: Boolean = false
         set(value) {
             if (field == value) return
+
+            val materialFade = MaterialFade().apply {
+                duration = if (value) 150L else 84L
+            }
+            TransitionManager.beginDelayedTransition(
+                mExtendedFloatingActionButtonBackground.parent as ViewGroup,
+                materialFade
+            )
 
             when (value) {
                 true -> {
@@ -96,7 +108,7 @@ class MainActivity : AppCompatActivity() {
                             )
                         )
                 }
-                
+
                 false -> {
                     mOpenBrowserFab.hide()
                     mControlFab.hide()
@@ -113,9 +125,8 @@ class MainActivity : AppCompatActivity() {
             field = value
         }
 
-    private val mMainView: View by lazy {
-        findViewById(R.id.main_view)
-    }
+    private val mMainView: View by lazy { findViewById(R.id.main_view) }
+
     private val mControlFab: FloatingActionButton by lazy {
         findViewById<FloatingActionButton>(R.id.floatingActionButton)!!
             .apply {
@@ -129,14 +140,14 @@ class MainActivity : AppCompatActivity() {
     private val mOpenBrowserFab: FloatingActionButton by lazy {
         findViewById<FloatingActionButton>(R.id.floatingActionButtonOpen)!!.apply {
             setOnClickListener {
+
                 CustomTabsIntent.Builder()
                     .apply {
                         setColorScheme(CustomTabsIntent.COLOR_SCHEME_SYSTEM)
-                    }.build()
-                    .launchUrl(
-                        this@MainActivity,
-                        Uri.parse("http://localhost:${Manager.profile.yuhaiinPort}")
-                    )
+                    }.build().apply {
+                        intent.setData(Uri.parse("http://localhost:${Manager.profile.yuhaiinPort}"))
+                        this@MainActivity.startActivity(intent)
+                    }
             }
         }
     }

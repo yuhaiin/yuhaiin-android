@@ -1,5 +1,6 @@
 package com.github.logviewer
 
+import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
@@ -69,11 +70,16 @@ class LogcatActivity : AppCompatActivity() {
 
     companion object {
         const val INTENT_EXCLUDE_LIST = "exclude_list"
-        fun start(context: Context, excludeList: ArrayList<String>) {
-            val starter = Intent(context, LogcatActivity::class.java)
+        fun start(excludeList: ArrayList<String>, activity: Activity) {
+            val starter = Intent(activity, LogcatActivity::class.java)
                 .putStringArrayListExtra(INTENT_EXCLUDE_LIST, excludeList)
-            context.startActivity(starter)
+            activity.startActivity(starter)
         }
+
+        fun intent(excludeList: ArrayList<String>, activity: Activity) =
+            Intent(activity, LogcatActivity::class.java)
+                .putStringArrayListExtra(INTENT_EXCLUDE_LIST, excludeList)
+
 
         fun initTheme(context: Context, window: Window) {
             when (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) {

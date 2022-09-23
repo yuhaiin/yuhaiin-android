@@ -1,9 +1,9 @@
 package io.github.asutorufa.yuhaiin
 
 import android.os.Bundle
-import androidx.preference.EditTextPreference
-import androidx.preference.PreferenceFragmentCompat
-import androidx.preference.SwitchPreferenceCompat
+import android.view.View
+import androidx.preference.*
+import com.google.android.material.transition.platform.MaterialSharedAxis
 import com.takisoft.preferencex.SimpleMenuPreference
 import io.github.asutorufa.yuhaiin.database.DNS
 import io.github.asutorufa.yuhaiin.database.Manager.profile
@@ -14,8 +14,22 @@ class DnsFragment : PreferenceFragmentCompat() {
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) =
         setPreferencesFromResource(R.xml.dns, rootKey)
 
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        view.transitionName = "transition_common"
+        super.onViewCreated(view, savedInstanceState)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        enterTransition = MaterialSharedAxis(MaterialSharedAxis.Y, /* forward= */ true).apply {
+            duration = 500L
+        }
+        returnTransition = MaterialSharedAxis(MaterialSharedAxis.Y, /* forward= */ false).apply {
+            duration = 500L
+        }
+
         preferenceManager.preferenceDataStore = (activity as MainActivity).dataStore
 
         findPreference<EditTextPreference>(resources.getString(R.string.adv_dns_port_key))!!.apply {
@@ -137,8 +151,16 @@ class DnsFragment : PreferenceFragmentCompat() {
                 profile.bootstrapDns.tlsServerName = newValue as String
             }
         }
-    }
 
+    }
+    
+    override fun onDisplayPreferenceDialog(preference: Preference) {
+        when (preference) {
+            is ListPreference, is EditTextPreference, is MultiSelectListPreference ->
+                showDialog(preference)
+            else -> super.onDisplayPreferenceDialog(preference)
+        }
+    }
 
     private fun strToDNSType(str: String): DNS.Type {
         return when (str) {

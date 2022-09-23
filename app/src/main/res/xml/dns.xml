@@ -23,6 +23,7 @@
     <PreferenceCategory
         android:title="Remote"
         android:icon="@drawable/dns">
+
         <EditTextPreference
             android:title="Host"
             android:singleLine="true"

@@ -2,7 +2,12 @@
 <resources>
 
     <style name="AppTheme.AlertDialogTheme" parent="ThemeOverlay.Material3.MaterialAlertDialog">
-        <item name="dialogCornerRadius">13dp</item>
+        <item name="dialogCornerRadius">28dp</item>
+        <item name="android:colorBackground">?attr/colorSurface</item>
+    </style>
+
+    <style name="AppTheme.SwitchPreferenceCompat" parent="@style/Preference.SwitchPreferenceCompat.Material">
+        <item name="android:widgetLayout">@layout/view_preference_switch</item>
     </style>
 
     <style name="AppTheme" parent="Theme.Material3.DayNight.NoActionBar">
@@ -11,6 +16,6 @@
         <item name="android:navigationBarColor">?attr/colorSurfaceVariant</item>
         <item name="android:statusBarColor">?attr/colorSurfaceVariant</item>
         <item name="toolbarStyle">@style/Widget.Material3.Toolbar</item>
-        <!--        <item name="switchStyle">@style/Widget.Material3.CompoundButton.MaterialSwitch</item>-->
+        <item name="switchPreferenceCompatStyle">@style/AppTheme.SwitchPreferenceCompat</item>
     </style>
 </resources>
