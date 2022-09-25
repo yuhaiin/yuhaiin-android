@@ -19,6 +19,9 @@
         <action
             android:id="@+id/action_profileFragment_to_ruleFragment"
             app:destination="@id/ruleFragment" />
+        <action
+            android:id="@+id/action_profileFragment_to_appListFragment"
+            app:destination="@+id/appListFragment" />
         <!--            app:enterAnim="@anim/nav_dynamic_enter_anim"-->
         <!--            app:exitAnim="@anim/nav_dynamic_exit_anim"-->
         <!--            app:popEnterAnim="@anim/nav_dynamic_pop_enter_anim"-->
@@ -33,4 +36,8 @@
         android:id="@+id/ruleFragment"
         android:name="io.github.asutorufa.yuhaiin.RuleFragment"
         android:label="Rule" />
+    <fragment
+        android:id="@+id/appListFragment"
+        android:name="io.github.asutorufa.yuhaiin.AppListDialogFragment"
+        android:label="App List" />
 </navigation>

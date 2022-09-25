@@ -8,11 +8,14 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
+import android.util.AttributeSet
 import android.view.Window
 import android.view.WindowInsetsController
-import android.widget.ListView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import com.github.logviewer.ReadLogcat.Companion.ignore
 import com.github.logviewer.databinding.LogcatViewerActivityLogcatBinding
 import kotlinx.coroutines.DelicateCoroutinesApi
 
@@ -98,11 +101,39 @@ class LogcatActivity : AppCompatActivity() {
         }
 
         fun initBinding(mBinding: LogcatViewerActivityLogcatBinding) {
-            mBinding.list.apply {
-                transcriptMode = ListView.TRANSCRIPT_MODE_NORMAL
-                isStackFromBottom = true
+            mBinding.list.layoutManager = WrapLinearLayoutManager(mBinding.root.context).apply {
+                stackFromEnd = true
             }
             mBinding.toolbar.inflateMenu(R.menu.logcat)
+        }
+    }
+
+    class WrapLinearLayoutManager : LinearLayoutManager {
+        constructor(ctx: Context) : super(ctx)
+
+        constructor(
+            ctx: Context, orientation: Int,
+            reverseLayout: Boolean
+        ) : super(
+            ctx,
+            orientation,
+            reverseLayout
+        )
+
+        constructor(ctx: Context, attrs: AttributeSet, defStyleAttr: Int, defStyleRes: Int) : super(
+            ctx,
+            attrs,
+            defStyleAttr,
+            defStyleRes
+        )
+
+        override fun onLayoutChildren(
+            recycler: RecyclerView.Recycler?,
+            state: RecyclerView.State?
+        ) {
+            ignore {
+                super.onLayoutChildren(recycler, state)
+            }
         }
     }
 }

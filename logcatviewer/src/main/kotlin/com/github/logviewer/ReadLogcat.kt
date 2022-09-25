@@ -3,13 +3,9 @@ package com.github.logviewer
 import android.content.Context
 import android.content.Intent
 import android.view.MenuItem
-import android.view.View
-import android.widget.AdapterView
-import android.widget.TextView
 import androidx.appcompat.widget.Toolbar
 import androidx.core.content.FileProvider
 import com.github.logviewer.databinding.LogcatViewerActivityLogcatBinding
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -27,37 +23,13 @@ class ReadLogcat(
     private val floatingWindowLauncher: () -> Unit = emptyFunction(),
 ) : Toolbar.OnMenuItemClickListener {
     private val mExcludeList: MutableList<Pattern> = ArrayList()
-    private val adapter = LogcatAdapter()
+    private var adapter: LogcatAdapter =
+        LogcatAdapter(floatingWindowLauncher == emptyFunction(), mBinding)
     private var mReading = false
     private var time: Date? = null
 
     init {
-        mBinding.list.apply {
-            adapter = this@ReadLogcat.adapter
-            if (floatingWindowLauncher != emptyFunction()) onItemClickListener =
-                AdapterView.OnItemClickListener { _: AdapterView<*>?, _: View?, position: Int, _: Long ->
-                    this@ReadLogcat.adapter.getItem(position).apply {
-                        val text = String.format(
-                            Locale.getDefault(),
-                            CONTENT_TEMPLATE,
-                            SimpleDateFormat(
-                                "MM-dd hh:mm:ss.SSS",
-                                Locale.getDefault()
-                            ).format(time), processId, threadId, priority, tag, content
-                        )
-                        MaterialAlertDialogBuilder(context)
-                            .setMessage(text)
-                            .setNegativeButton(android.R.string.cancel) { _, _ -> }
-                            .show().apply {
-                                findViewById<View?>(android.R.id.message).let {
-                                    if (it is TextView)
-                                        it.setTextIsSelectable(true)
-                                }
-                            }
-                    }
-                }
-        }
-
+        mBinding.list.adapter = this@ReadLogcat.adapter
         mExcludeList.clear()
         excludeList.forEach {
             ignore {
@@ -86,7 +58,7 @@ class ReadLogcat(
                         ignore {
                             LogItem(line).let { item ->
                                 time = item.time
-                                mBinding.list.post { adapter.append(item) }
+                                adapter.append(item)
                             }
                         }
                     } ?: break
@@ -115,7 +87,7 @@ class ReadLogcat(
             R.id.export -> exportLogFile()
             R.id.floating -> floatingWindowLauncher()
             R.id.Verbose, R.id.Debug, R.id.Info, R.id.Warning, R.id.Error, R.id.Fatal ->
-                adapter.filter.filter(item.title)
+                adapter.setFilter(item.title?.get(0).toString())
             else -> return false
         }
         return true
@@ -149,7 +121,7 @@ class ReadLogcat(
     }
 
     companion object {
-        private const val CONTENT_TEMPLATE =
+        const val CONTENT_TEMPLATE =
             "Time: %s\nPid: %d Tid: %d Priority: %s Tag: %s\n\nContent: \n%s"
         const val DATE_FORMAT = "MM-dd HH:mm:ss.SSS"
 

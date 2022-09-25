@@ -2,11 +2,8 @@ package io.github.asutorufa.yuhaiin
 
 import android.os.Bundle
 import android.view.View
-import android.view.ViewGroup
-import android.widget.ProgressBar
-import android.widget.Toast
 import androidx.preference.*
-import com.google.android.material.snackbar.Snackbar
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.transition.platform.MaterialSharedAxis
 import com.takisoft.preferencex.SimpleMenuPreference
 import io.github.asutorufa.yuhaiin.database.Bypass
@@ -23,7 +20,6 @@ class RuleFragment : PreferenceFragmentCompat() {
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) =
         setPreferencesFromResource(R.xml.rule, rootKey)
 
-    private var updating = false
     private val mainActivity by lazy { requireActivity() as MainActivity }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -54,24 +50,13 @@ class RuleFragment : PreferenceFragmentCompat() {
         findPreference<EditTextPreference>(resources.getString(R.string.rule_update_bypass_file))?.apply {
             text = profile.ruleUpdateBypassUrl
             setOnPreferenceChangeListener(this) { _, newValue ->
-                if (updating) {
-                    Toast.makeText(context, "bypass file already in updating", Toast.LENGTH_SHORT)
-                        .show()
-                    throw Exception("Updating")
-                }
 
                 profile.ruleUpdateBypassUrl = newValue as String
 
-                updating = true
-                Snackbar
-                    .make(requireView(), "bypass file updating", Snackbar.LENGTH_LONG)
-                    .setAnchorView(R.id.floatingActionButton)
-                    .apply {
-                        (view.findViewById<View>(com.google.android.material.R.id.snackbar_text).parent as ViewGroup).addView(
-                            ProgressBar(context)
-                        )
-                        show()
-                    }
+                val dialog = MaterialAlertDialogBuilder(context).setMessage("Updating...").create()
+                dialog.setCancelable(false)
+                dialog.setCanceledOnTouchOutside(false)
+                dialog.show()
 
                 GlobalScope.launch(Dispatchers.IO) {
                     val message: String = try {
@@ -90,8 +75,11 @@ class RuleFragment : PreferenceFragmentCompat() {
                         "Update Bypass File Failed: ${e.message}"
                     }
 
-                    updating = false
-                    mainActivity.showSnackBar(message)
+                    dialog.dismiss()
+                    requireActivity().runOnUiThread {
+                        MaterialAlertDialogBuilder(context).setMessage(message)
+                            .setNegativeButton(android.R.string.cancel) { _, _ -> }.show()
+                    }
                 }
             }
         }
