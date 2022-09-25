@@ -1,9 +1,5 @@
 package io.github.asutorufa.yuhaiin
 
-import android.Manifest
-import android.content.pm.PackageInfo
-import android.content.pm.PackageManager
-import android.os.Build
 import android.os.Bundle
 import android.text.InputType
 import android.view.Menu
@@ -18,12 +14,12 @@ import androidx.navigation.fragment.findNavController
 import androidx.preference.*
 import com.github.logviewer.LogcatActivity
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.transition.platform.MaterialSharedAxis
 import com.takisoft.preferencex.SimpleMenuPreference
 import io.github.asutorufa.yuhaiin.database.Manager
 import io.github.asutorufa.yuhaiin.database.Manager.profile
 import io.github.asutorufa.yuhaiin.database.Manager.setOnPreferenceChangeListener
+import io.github.asutorufa.yuhaiin.databinding.PortsDialogBinding
 
 class ProfileFragment : PreferenceFragmentCompat() {
     private val refreshPreferences = ArrayList<() -> Unit>()
@@ -180,19 +176,6 @@ class ProfileFragment : PreferenceFragmentCompat() {
             }
             refreshPreferences.add { it.isChecked = profile.isBypassApp }
         }
-        findPreference<MultiSelectListPreference>(resources.getString(R.string.adv_app_list_key))!!.also {
-            it.setOnPreferenceClickListener { _ ->
-                updateAppList(it)
-                false
-            }
-
-            @Suppress("Unchecked_Cast")
-            setOnPreferenceChangeListener(it) { _, newValue ->
-                profile.appList = newValue as Set<String>
-            }
-
-            refreshPreferences.add { it.values = profile.appList }
-        }
 
         findPreference<SwitchPreferenceCompat>(resources.getString(R.string.ipv6_proxy_key))!!.also {
             setOnPreferenceChangeListener(it) { _, newValue ->
@@ -234,7 +217,6 @@ class ProfileFragment : PreferenceFragmentCompat() {
             }
 
             refreshPreferences.add { it.value = logLevelToStr(profile.logLevel) }
-
         }
 
         findPreference<Preference>(resources.getString(R.string.logcat))?.apply {
@@ -275,88 +257,36 @@ class ProfileFragment : PreferenceFragmentCompat() {
 
         findPreference<Preference>(resources.getString(R.string.ports_key))?.let {
             it.setOnPreferenceClickListener {
-                val view =
-                    requireActivity().layoutInflater.inflate(R.layout.ports_dialog, null, false)
-                val socks5 = view.findViewById<TextInputEditText>(R.id.socks5)
-                val http = view.findViewById<TextInputEditText>(R.id.http)
-                val yuhaiin = view.findViewById<TextInputEditText>(R.id.yuhaiin)
 
-                socks5.setText(profile.socks5ServerPort.toString())
-                http.setText(profile.httpServerPort.toString())
-                yuhaiin.setText(profile.yuhaiinPort.toString())
+                val bind = PortsDialogBinding.inflate(requireActivity().layoutInflater, null, false)
+
+                bind.socks5.setText(profile.socks5ServerPort.toString())
+                bind.http.setText(profile.httpServerPort.toString())
+                bind.yuhaiin.setText(profile.yuhaiinPort.toString())
                 showAlertDialog(
                     R.string.ports_title,
-                    view,
+                    bind.root,
                     null
                 ) {
-                    profile.socks5ServerPort = socks5.text.toString().toInt()
-                    profile.httpServerPort = http.text.toString().toInt()
-                    profile.yuhaiinPort = yuhaiin.text.toString().toInt()
+                    profile.socks5ServerPort = bind.socks5.text.toString().toInt()
+                    profile.httpServerPort = bind.http.text.toString().toInt()
+                    profile.yuhaiinPort = bind.yuhaiin.text.toString().toInt()
                     Manager.db.updateProfile(profile)
                 }
+                true
+            }
+        }
+
+        findPreference<Preference>(resources.getString(R.string.adv_new_app_list_key))?.let {
+            it.setOnPreferenceClickListener {
+//                AppListDialogFragment().show(parentFragmentManager, "dialog")
+                findNavController().navigate(ProfileFragmentDirections.actionProfileFragmentToAppListFragment())
                 true
             }
         }
     }
 
     private fun reload() = refreshPreferences.forEach { it() }
-
-    private fun updateAppList(mPrefAppList: MultiSelectListPreference) {
-        val titles = mutableListOf<String>()
-        val packageNames = mutableListOf<String>()
-        var index = 0
-
-        packages.toList().sortedBy { it.second }.forEach {
-            if (profile.appList.contains(it.first)) {
-                packageNames.add(index, it.first)
-                titles.add(index, it.second)
-                index++
-            } else {
-                packageNames.add(it.first)
-                titles.add(it.second)
-            }
-        }
-
-        mPrefAppList.values = profile.appList
-        mPrefAppList.entries = titles.toTypedArray()
-        mPrefAppList.entryValues = packageNames.toTypedArray()
-    }
-
-    private val PackageInfo.hasInternetPermission: Boolean
-        get() {
-            val permissions = requestedPermissions
-            return permissions?.any { it == Manifest.permission.INTERNET } ?: false
-        }
-
-    private val packages: Map<String, String>
-        get() {
-            val packageManager = requireContext().packageManager
-            val packages =
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
-                    packageManager.getInstalledPackages(
-                        PackageManager.PackageInfoFlags.of(
-                            PackageManager.GET_PERMISSIONS.toLong()
-                        )
-                    )
-                else
-                    packageManager.getInstalledPackages(PackageManager.GET_PERMISSIONS)
-
-            val apps = HashMap<String, String>()
-
-            packages.forEach {
-                if (!it.hasInternetPermission && it.packageName != "android") return@forEach
-
-                val applicationInfo = it.applicationInfo
-
-                val appName = applicationInfo.loadLabel(packageManager).toString()
-                // val appIcon = applicationInfo.loadIcon(packageManager)
-                // val isSystemApp = (applicationInfo.flags and ApplicationInfo.FLAG_SYSTEM) > 0
-
-                apps[it.packageName] = "$appName\n${it.packageName}"
-            }
-
-            return apps
-        }
 
 
     private fun strToLogLevel(str: String): Int {

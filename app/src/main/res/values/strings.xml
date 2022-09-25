@@ -118,6 +118,7 @@
     <string name="adv_app_bypass_title">Bypass Mode</string>
     <string name="adv_app_bypass_sum">Enable this option to bypass selected apps instead of proxying them</string>
     <string name="adv_app_list_key">app_list</string>
+    <string name="adv_new_app_list_key">new_app_list</string>
     <string name="adv_app_list_title">App List</string>
     <string name="adv_app_list_sum">Select apps to apply or bypass the proxy</string>
 

@@ -39,7 +39,7 @@ class LogItem internal constructor(line: String) {
         private const val PRIORITY_ERROR = "E"
         private const val PRIORITY_FATAL = "F"
         private val sLogcatPattern = Pattern.compile(
-            "([0-9^-]+-[0-9^ ]+ [0-9^:]+:[0-9^:]+\\.[0-9]+) +([0-9]+) +([0-9]+) ([VDIWEF]) ((?!: ).)+: (.*)"
+            "([\\d^-]+-[\\d^ ]+ [\\d^:]+:[\\d^:]+\\.\\d+) +(\\d+) +(\\d+) ([VDIWEF]) ((?!: ).)+: (.*)"
         )
 
         private val LOGCAT_COLORS = mapOf(

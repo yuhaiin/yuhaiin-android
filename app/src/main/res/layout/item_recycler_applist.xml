@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.appcompat.widget.LinearLayoutCompat xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:gravity="center_vertical"
+    android:background="?attr/selectableItemBackground"
+    android:minHeight="?attr/minTouchTargetSize"
+    android:clickable="true"
+    android:focusable="true"
+    android:layout_marginTop="4dp"
+    android:layout_marginBottom="4dp"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <androidx.appcompat.widget.AppCompatImageView
+        android:id="@+id/app_list_item_icon"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        android:padding="8dp" />
+
+    <androidx.appcompat.widget.LinearLayoutCompat
+        android:id="@+id/package_text_info"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_weight="1.0"
+        android:gravity="center"
+        android:orientation="vertical">
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/name"
+            tools:text="yuhaiin"
+            android:ellipsize="marquee"
+            android:marqueeRepeatLimit="marquee_forever"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="?attr/colorOnSurface"
+            android:textAppearance="?attr/textAppearanceListItem"
+            android:singleLine="true" />
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/package_name"
+            tools:text="io.github.asutorufa.yuhaiin"
+            android:textAppearance="?attr/textAppearanceListItemSecondary"
+            android:ellipsize="marquee"
+            android:marqueeRepeatLimit="marquee_forever"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:singleLine="true" />
+    </androidx.appcompat.widget.LinearLayoutCompat>
+
+    <com.google.android.material.checkbox.MaterialCheckBox
+        android:clickable="false"
+        android:focusable="false"
+        android:id="@+id/checkbox"
+        android:paddingStart="2dp"
+        android:paddingEnd="20dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+
+</androidx.appcompat.widget.LinearLayoutCompat>

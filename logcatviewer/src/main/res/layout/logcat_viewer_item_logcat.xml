@@ -22,9 +22,9 @@
         android:layout_height="wrap_content"
         android:textSize="12sp"
         android:textColor="?android:attr/textColorSecondary"
-        android:layout_toRightOf="@id/tag"
+        android:layout_toEndOf="@id/tag"
         tools:text="10-21 16:01:46.539"
-        android:layout_marginLeft="4dp" />
+        android:layout_marginStart="4dp" />
 
     <androidx.appcompat.widget.AppCompatTextView
         android:id="@+id/content"
