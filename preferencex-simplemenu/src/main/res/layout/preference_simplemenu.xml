@@ -18,7 +18,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="?attr/selectableItemBackground"
+    android:background="?selectableItemBackground"
     android:clipToPadding="false"
     android:focusable="true"
     android:gravity="center_vertical"
@@ -67,6 +67,7 @@
                 android:maxLines="10"
                 android:textAppearance="?android:attr/textAppearanceSmall"
                 android:textColor="?android:attr/textColorSecondary"
+                style="@style/PreferenceSummaryTextStyle"
                 android:layout_alignStart="@android:id/title" />
 
         </RelativeLayout>

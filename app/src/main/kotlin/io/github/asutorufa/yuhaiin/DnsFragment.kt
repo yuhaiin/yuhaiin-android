@@ -2,7 +2,12 @@ package io.github.asutorufa.yuhaiin
 
 import android.os.Bundle
 import android.view.View
-import androidx.preference.*
+import androidx.preference.EditTextPreference
+import androidx.preference.ListPreference
+import androidx.preference.MultiSelectListPreference
+import androidx.preference.Preference
+import androidx.preference.PreferenceFragmentCompat
+import androidx.preference.SwitchPreferenceCompat
 import com.google.android.material.transition.platform.MaterialSharedAxis
 import com.takisoft.preferencex.SimpleMenuPreference
 import io.github.asutorufa.yuhaiin.database.DNS
@@ -67,13 +72,6 @@ class DnsFragment : PreferenceFragmentCompat() {
             }
         }
 
-        findPreference<SwitchPreferenceCompat>(resources.getString(R.string.remote_dns_proxy_key))!!.apply {
-            isChecked = profile.remoteDns.proxy
-            setOnPreferenceChangeListener(this) { _, newValue ->
-                profile.remoteDns.proxy = newValue as Boolean
-            }
-        }
-
         findPreference<EditTextPreference>(resources.getString(R.string.remote_dns_subnet_key))!!.apply {
             text = profile.remoteDns.subnet
             setOnPreferenceChangeListener(this) { _, newValue ->
@@ -99,13 +97,6 @@ class DnsFragment : PreferenceFragmentCompat() {
             value = dnsTypeToStr(DNS.Type.fromInt(profile.localDns.type))
             setOnPreferenceChangeListener(this) { _, newValue ->
                 profile.localDns.type = strToDNSType(newValue as String).value
-            }
-        }
-
-        findPreference<SwitchPreferenceCompat>(resources.getString(R.string.local_dns_proxy_key))!!.apply {
-            isChecked = profile.localDns.proxy
-            setOnPreferenceChangeListener(this) { _, newValue ->
-                profile.localDns.proxy = newValue as Boolean
             }
         }
 
@@ -153,11 +144,12 @@ class DnsFragment : PreferenceFragmentCompat() {
         }
 
     }
-    
+
     override fun onDisplayPreferenceDialog(preference: Preference) {
         when (preference) {
             is ListPreference, is EditTextPreference, is MultiSelectListPreference ->
                 showDialog(preference)
+
             else -> super.onDisplayPreferenceDialog(preference)
         }
     }
