@@ -13,12 +13,13 @@ import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileOutputStream
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Date
+import java.util.Locale
 import java.util.regex.Pattern
 
 class ReadLogcat(
     private val context: Context,
-    private val mBinding: LogcatViewerActivityLogcatBinding,
+    mBinding: LogcatViewerActivityLogcatBinding,
     excludeList: ArrayList<String>,
     private val floatingWindowLauncher: () -> Unit = emptyFunction(),
 ) : Toolbar.OnMenuItemClickListener {
@@ -88,6 +89,7 @@ class ReadLogcat(
             R.id.floating -> floatingWindowLauncher()
             R.id.Verbose, R.id.Debug, R.id.Info, R.id.Warning, R.id.Error, R.id.Fatal ->
                 adapter.setFilter(item.title?.get(0).toString())
+
             else -> return false
         }
         return true

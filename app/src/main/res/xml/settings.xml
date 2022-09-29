@@ -9,7 +9,6 @@
         app:useSimpleSummaryProvider="true"
         android:icon="@drawable/person" />
 
-
     <PreferenceCategory android:title="@string/connection">
 
         <Preference
@@ -51,6 +50,12 @@
             android:icon="@drawable/router"
             android:summary="Update Bypass File, Custom Direct, Proxy, Block."
             android:key="@string/rule" />
+
+        <!--        <Preference-->
+        <!--            android:title="Rule"-->
+        <!--            android:icon="@drawable/router"-->
+        <!--            android:summary="Update Bypass File, Custom Direct, Proxy, Block."-->
+        <!--            android:key="@string/new_rule" />-->
 
         <SwitchPreferenceCompat
             android:icon="@drawable/auto_mode"

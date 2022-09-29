@@ -202,9 +202,11 @@ class YuhaiinVpnService : VpnService() {
             when (profile.route) {
                 resources.getString(R.string.adv_route_non_chn) ->
                     resources.getStringArray(R.array.simple_route).forEach { addRoute(it) }
+
                 resources.getString(R.string.adv_route_non_local) ->
                     resources.getStringArray(R.array.all_routes_except_local)
                         .forEach { addRoute(it) }
+
                 else -> {
                     addRoute("0.0.0.0/0")
                     if (profile.hasIPv6) addRoute("[::]/0")
@@ -293,7 +295,6 @@ class YuhaiinVpnService : VpnService() {
                 subnet = o.subnet
                 type = o.type
                 tlsServername = o.tlsServerName
-                proxy = o.proxy
             }
 
             dns = DNSSetting().apply {

@@ -11,7 +11,12 @@ import androidx.appcompat.widget.AppCompatEditText
 import androidx.core.view.MenuProvider
 import androidx.lifecycle.Lifecycle
 import androidx.navigation.fragment.findNavController
-import androidx.preference.*
+import androidx.preference.EditTextPreference
+import androidx.preference.ListPreference
+import androidx.preference.MultiSelectListPreference
+import androidx.preference.Preference
+import androidx.preference.PreferenceFragmentCompat
+import androidx.preference.SwitchPreferenceCompat
 import com.github.logviewer.LogcatActivity
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.transition.platform.MaterialSharedAxis
@@ -50,6 +55,7 @@ class ProfileFragment : PreferenceFragmentCompat() {
         when (preference) {
             is ListPreference, is EditTextPreference, is MultiSelectListPreference ->
                 showDialog(preference)
+
             else -> super.onDisplayPreferenceDialog(preference)
         }
     }
@@ -89,6 +95,7 @@ class ProfileFragment : PreferenceFragmentCompat() {
                     }
                     true
                 }
+
                 R.id.prof_del -> {
                     showAlertDialog(
                         R.string.prof_del,
@@ -104,6 +111,7 @@ class ProfileFragment : PreferenceFragmentCompat() {
                     }
                     true
                 }
+
                 else -> false
             }
     }
@@ -253,6 +261,13 @@ class ProfileFragment : PreferenceFragmentCompat() {
                 true
             }
         }
+
+//        findPreference<Preference>(resources.getString(R.string.new_rule))?.let {
+//            it.setOnPreferenceClickListener {
+//                findNavController().navigate(ProfileFragmentDirections.actionProfileFragmentToNewRuleFragment())
+//                true
+//            }
+//        }
 
 
         findPreference<Preference>(resources.getString(R.string.ports_key))?.let {
