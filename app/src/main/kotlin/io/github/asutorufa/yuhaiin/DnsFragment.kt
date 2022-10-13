@@ -58,6 +58,7 @@ class DnsFragment : PreferenceFragmentCompat() {
             }
         }
 
+        // remote dns
         findPreference<EditTextPreference>(resources.getString(R.string.remote_dns_host_key))!!.apply {
             text = profile.remoteDns.host
             setOnPreferenceChangeListener(this) { _, newValue ->
@@ -83,6 +84,13 @@ class DnsFragment : PreferenceFragmentCompat() {
             text = profile.remoteDns.tlsServerName
             setOnPreferenceChangeListener(this) { _, newValue ->
                 profile.remoteDns.tlsServerName = newValue as String
+            }
+        }
+
+        findPreference<SwitchPreferenceCompat>(resources.getString(R.string.remote_dns_resolve_domain_key))!!.apply {
+            isChecked = profile.resolveRemoteDomain
+            setOnPreferenceChangeListener(this) { _, newValue ->
+                profile.resolveRemoteDomain = newValue as Boolean
             }
         }
 

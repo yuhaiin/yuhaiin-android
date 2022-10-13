@@ -5,7 +5,13 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
-import android.net.*
+import android.net.ConnectivityManager
+import android.net.Network
+import android.net.NetworkCapabilities
+import android.net.NetworkRequest
+import android.net.ProxyInfo
+import android.net.Uri
+import android.net.VpnService
 import android.os.Build
 import android.os.ParcelFileDescriptor
 import android.util.Log
@@ -285,7 +291,7 @@ class YuhaiinVpnService : VpnService() {
                 gateway = PRIVATE_VLAN4_ROUTER
                 dnsHijacking = profile.dnsHijacking
                 // 0: fdbased, 1: channel
-                driver = 0
+                driver = profile.tunDriver
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
                     uidDumper = this@YuhaiinVpnService.uidDumper
             }
@@ -301,6 +307,7 @@ class YuhaiinVpnService : VpnService() {
                 if (profile.dnsPort > 0) server = "${address}:${profile.dnsPort}"
                 fakedns = profile.fakeDnsCidr.isNotEmpty()
                 fakednsIpRange = profile.fakeDnsCidr
+                resolveRemoteDomain = profile.resolveRemoteDomain
                 remote = convertDNS(profile.remoteDns)
                 local = convertDNS(profile.localDns)
                 bootstrap = convertDNS(profile.bootstrapDns)

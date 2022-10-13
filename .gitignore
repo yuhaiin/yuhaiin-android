@@ -14,3 +14,4 @@ yuhaiin/build.sh
 yuhaiin/build/
 app/release/
 ./build_release
+/build_release
