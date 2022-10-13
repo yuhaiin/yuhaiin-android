@@ -58,6 +58,10 @@ data class Profile(
     ) var bootstrapDns: DNS = DNS.DefaultBootstrap,
     @ColumnInfo(name = "dns_hijacking", defaultValue = "0")
     var dnsHijacking: Boolean = false,
+    @ColumnInfo(name = "resolve_remote_domain", defaultValue = "0")
+    var resolveRemoteDomain: Boolean = false,
+    @ColumnInfo(name = "tun_driver", defaultValue = "0")
+    var tunDriver: Int = 0,
 
     @ColumnInfo(
         name = "bypass",

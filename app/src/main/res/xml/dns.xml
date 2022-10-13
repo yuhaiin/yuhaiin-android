@@ -45,6 +45,11 @@
             android:singleLine="true"
             android:key="@string/remote_dns_tls_server_name_key"
             app:useSimpleSummaryProvider="true" />
+
+        <SwitchPreferenceCompat
+            android:title="Resolve Domain"
+            android:key="@string/remote_dns_resolve_domain_key"
+            android:summary="Resolve Proxy Domain By Remote DNS instead of Pass Domain to Proxy" />
     </PreferenceCategory>
 
     <PreferenceCategory

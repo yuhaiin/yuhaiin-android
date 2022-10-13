@@ -39,6 +39,14 @@
 
     <PreferenceCategory android:title="@string/advanced">
 
+        <ListPreference
+            android:key="@string/adv_tun_driver_key"
+            android:title="@string/adv_tun_driver_key"
+            android:entries="@array/tun_drivers"
+            android:entryValues="@array/tun_drivers"
+            app:useSimpleSummaryProvider="true"
+            android:icon="@drawable/handyman" />
+
         <Preference
             android:title="DNS"
             android:icon="@drawable/dns"

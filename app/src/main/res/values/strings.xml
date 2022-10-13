@@ -80,6 +80,7 @@
     <string name="remote_dns_subnet_key">remote_dns_subnet</string>
     <string name="remote_dns_tls_server_name_key">remote_dns_tls_server_name</string>
     <string name="remote_dns_proxy_key">remote_dns_proxy</string>
+    <string name="remote_dns_resolve_domain_key">remote_dns_resolve_domain</string>
 
 
     <string name="local_dns_host_key">local_dns_host</string>
@@ -108,6 +109,13 @@
         <item>@string/dns_type_doh3</item>
     </string-array>
 
+    <string name="adv_tun_driver_key">Tun Driver</string>
+    <string name="tun_driver_fdbased">Fdbased</string>
+    <string name="tun_driver_channel">Channel</string>
+    <string-array name="tun_drivers">
+        <item>@string/tun_driver_fdbased</item>
+        <item>@string/tun_driver_channel</item>
+    </string-array>
 
     <string name="adv_auto_connect_key">auto_connect</string>
     <string name="adv_auto_connect_title">Connect on Boot</string>

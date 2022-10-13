@@ -171,6 +171,16 @@ class ProfileFragment : PreferenceFragmentCompat() {
             }
         }
 
+        findPreference<ListPreference>(resources.getString(R.string.adv_tun_driver_key))!!.also {
+            setOnPreferenceChangeListener(it) { _, newValue ->
+                profile.tunDriver = strToTunDriver(newValue.toString())
+            }
+
+            refreshPreferences.add {
+                it.value = tunDriverToStr(profile.tunDriver)
+            }
+        }
+
         findPreference<SwitchPreferenceCompat>(resources.getString(R.string.adv_per_app_key))!!.also {
             setOnPreferenceChangeListener(it) { _, newValue ->
                 profile.isPerApp = newValue as Boolean
@@ -325,6 +335,23 @@ class ProfileFragment : PreferenceFragmentCompat() {
             4 -> resources.getString(R.string.log_level_error)
             5 -> resources.getString(R.string.log_level_fatal)
             else -> resources.getString(R.string.log_level_info)
+        }
+    }
+
+
+    private fun strToTunDriver(str: String): Int {
+        return when (str) {
+            resources.getString(R.string.tun_driver_fdbased) -> 0
+            resources.getString(R.string.tun_driver_channel) -> 1
+            else -> 0
+        }
+    }
+
+    private fun tunDriverToStr(type: Int): String {
+        return when (type) {
+            0 -> resources.getString(R.string.tun_driver_fdbased)
+            1 -> resources.getString(R.string.tun_driver_channel)
+            else -> resources.getString(R.string.tun_driver_fdbased)
         }
     }
 }

@@ -10,7 +10,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 
 @Database(
     entities = [Profile::class, LastProfile::class],
-    version = 8,
+    version = 9,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -44,7 +44,7 @@ abstract class YuhaiinDatabase : RoomDatabase() {
                 .allowMainThreadQueries()
                 .addMigrations(
                     MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6,
-                    MIGRATION_6_7, MIGRATION_7_8
+                    MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9
                 )
                 .build()
         }
@@ -79,6 +79,12 @@ abstract class YuhaiinDatabase : RoomDatabase() {
         private val MIGRATION_7_8 = object : Migration(7, 8) {
             override fun migrate(database: SupportSQLiteDatabase) {
                 database.execSQL("ALTER TABLE profile ADD COLUMN log_level INTEGER NOT NULL DEFAULT 2")
+            }
+        }
+        private val MIGRATION_8_9 = object : Migration(8, 9) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("ALTER TABLE profile ADD COLUMN resolve_remote_domain INTEGER NOT NULL DEFAULT 0")
+                database.execSQL("ALTER TABLE profile ADD COLUMN tun_driver INTEGER NOT NULL DEFAULT 0")
             }
         }
     }
