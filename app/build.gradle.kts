@@ -150,7 +150,7 @@ android {
     buildFeatures {
         dataBinding = false
         viewBinding = true
-        compose = true
+        compose = false
     }
 
     composeOptions {
@@ -162,17 +162,17 @@ dependencies {
     implementation(fileTree(mapOf("include" to listOf("*.aar", "*.jar"), "dir" to "libs")))
     implementation("androidx.appcompat:appcompat:1.5.1")
     implementation("androidx.preference:preference-ktx:1.2.0")
-    implementation("com.google.android.material:material:1.7.0-rc01")
+    implementation("com.google.android.material:material:1.7.0")
     implementation("androidx.browser:browser:1.4.0")
 
     // room
     val roomVersion = "2.4.3"
     implementation("androidx.room:room-runtime:$roomVersion")
     kapt("androidx.room:room-compiler:$roomVersion")
-    implementation("com.google.code.gson:gson:2.9.1")
+    implementation("com.google.code.gson:gson:2.10")
 
     // nav
-    val navVersion = "2.5.2"
+    val navVersion = "2.5.3"
     implementation("androidx.navigation:navigation-fragment-ktx:$navVersion")
     implementation("androidx.navigation:navigation-ui-ktx:$navVersion")
 
@@ -180,6 +180,7 @@ dependencies {
     implementation(project(":logcatviewer"))
     implementation(project(":preferencex-simplemenu"))
 
+    /*
     //compose
     val composeVersion = "1.2.1"
     implementation("androidx.activity:activity-compose:1.6.0")
@@ -192,7 +193,7 @@ dependencies {
     // Compose Material Design
     implementation("androidx.compose.material3:material3:1.0.0-alpha16")
     implementation("androidx.compose.material3:material3-window-size-class:1.0.0-alpha16")
-
+    */
 
     testImplementation("androidx.test:core:1.4.0")
     testImplementation("androidx.test:runner:1.4.0")
