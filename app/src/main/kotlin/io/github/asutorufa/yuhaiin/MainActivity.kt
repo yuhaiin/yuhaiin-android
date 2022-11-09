@@ -13,6 +13,7 @@ import android.os.IBinder
 import android.util.Log
 import android.view.View
 import android.view.WindowInsetsController
+import androidx.activity.addCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.content.res.AppCompatResources
@@ -66,7 +67,7 @@ class MainActivity : AppCompatActivity() {
                     alpha = 0.5f
                 }
             }
-
+            
             toolbar.let {
                 setSupportActionBar(it)
                 it.setupWithNavController(
@@ -117,6 +118,12 @@ class MainActivity : AppCompatActivity() {
         else null
     }
 
+    private val onBackPressedCallback by lazy {
+        onBackPressedDispatcher.addCallback {
+            isFabVisible = false
+        }
+    }
+
     private var isFabVisible: Boolean = false
         set(value) {
             if (field == value) return
@@ -137,13 +144,15 @@ class MainActivity : AppCompatActivity() {
                         if (mBinder?.isRunning == true) floatingActionButtonOpen.show()
                         floatingActionButton.show()
                     }
+
+                    onBackPressedCallback.isEnabled = true
                 }
 
                 false -> {
                     mainBinding.apply {
                         floatingActionButtonOpen.hide()
                         floatingActionButton.hide()
-                        
+
                         extendedFloatingButton.shrink()
                         extendedFloatingButton.icon =
                             AppCompatResources.getDrawable(this@MainActivity, R.drawable.add_48)
@@ -153,6 +162,7 @@ class MainActivity : AppCompatActivity() {
                             mainView.setRenderEffect(null)
                         }
                     }
+                    onBackPressedCallback.isEnabled = false
                 }
             }
 
