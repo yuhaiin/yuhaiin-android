@@ -12,14 +12,12 @@ class AppListAdapter :
     private var apps: List<AppList>? = null
     var checkedApps: HashSet<String>? = null
 
-
     fun setAppList(apps: List<AppList>, checkedApps: Set<String>) {
         this.apps = apps
         this.checkedApps = HashSet(checkedApps)
         notifyItemRangeInserted(0, itemCount)
     }
-
-
+    
     inner class AppListViewHolder(private val itemBinding: ItemRecyclerApplistBinding) :
         RecyclerView.ViewHolder(itemBinding.root), View.OnClickListener {
 

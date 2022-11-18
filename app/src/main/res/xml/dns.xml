@@ -10,6 +10,10 @@
         app:useSimpleSummaryProvider="true"
         android:singleLine="true" />
 
+    <Preference
+        android:title="@string/dns_hosts_title"
+        android:key="@string/dns_hosts_key" />
+    
     <EditTextPreference
         android:key="@string/adv_fake_dns_cidr_key"
         android:title="@string/adv_fake_dns_cidr_title"

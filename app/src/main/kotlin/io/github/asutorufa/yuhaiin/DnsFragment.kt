@@ -2,6 +2,7 @@ package io.github.asutorufa.yuhaiin
 
 import android.os.Bundle
 import android.view.View
+import androidx.navigation.fragment.findNavController
 import androidx.preference.EditTextPreference
 import androidx.preference.ListPreference
 import androidx.preference.MultiSelectListPreference
@@ -19,7 +20,6 @@ class DnsFragment : PreferenceFragmentCompat() {
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) =
         setPreferencesFromResource(R.xml.dns, rootKey)
 
-
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         view.transitionName = "transition_common"
         super.onViewCreated(view, savedInstanceState)
@@ -28,10 +28,10 @@ class DnsFragment : PreferenceFragmentCompat() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        enterTransition = MaterialSharedAxis(MaterialSharedAxis.Y, /* forward= */ true).apply {
+        enterTransition = MaterialSharedAxis(MaterialSharedAxis.Y, true).apply {
             duration = 500L
         }
-        returnTransition = MaterialSharedAxis(MaterialSharedAxis.Y, /* forward= */ false).apply {
+        returnTransition = MaterialSharedAxis(MaterialSharedAxis.Y, false).apply {
             duration = 500L
         }
 
@@ -41,6 +41,13 @@ class DnsFragment : PreferenceFragmentCompat() {
             text = profile.dnsPort.toString()
             setOnPreferenceChangeListener(this) { _, newValue ->
                 profile.dnsPort = newValue.toString().toInt()
+            }
+        }
+
+        findPreference<Preference>(resources.getString(R.string.dns_hosts_key))!!.apply {
+            setOnPreferenceClickListener {
+                findNavController().navigate(DnsFragmentDirections.actionDnsFragmentToHostsListFragment())
+                true
             }
         }
 

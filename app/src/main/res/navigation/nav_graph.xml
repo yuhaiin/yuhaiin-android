@@ -26,7 +26,11 @@
     <fragment
         android:id="@+id/dnsFragment"
         android:name="io.github.asutorufa.yuhaiin.DnsFragment"
-        android:label="DNS Settings" />
+        android:label="DNS Settings">
+        <action
+            android:id="@+id/action_dnsFragment_to_hostsListFragment"
+            app:destination="@+id/hostsListFragment" />
+    </fragment>
     <fragment
         android:id="@+id/ruleFragment"
         android:name="io.github.asutorufa.yuhaiin.RulePreferenceFragment"
@@ -35,6 +39,10 @@
         android:id="@+id/appListFragment"
         android:name="io.github.asutorufa.yuhaiin.AppListDialogFragment"
         android:label="App List" />
+    <fragment
+        android:id="@+id/hostsListFragment"
+        android:name="io.github.asutorufa.yuhaiin.HostsDialogFragment"
+        android:label="Hosts List" />
     <!--    <fragment-->
     <!--        android:id="@+id/newRuleFragment"-->
     <!--        android:name="io.github.asutorufa.yuhaiin.RuleFragment"-->

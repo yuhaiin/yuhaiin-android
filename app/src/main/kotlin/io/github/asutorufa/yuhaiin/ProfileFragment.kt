@@ -36,8 +36,8 @@ class ProfileFragment : PreferenceFragmentCompat() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        exitTransition = MaterialSharedAxis(MaterialSharedAxis.Y, /* forward= */ true)
-        reenterTransition = MaterialSharedAxis(MaterialSharedAxis.Y, /* forward= */ false)
+        exitTransition = MaterialSharedAxis(MaterialSharedAxis.Y, true)
+        reenterTransition = MaterialSharedAxis(MaterialSharedAxis.Y, false)
 
         initPreferences()
     }
@@ -258,27 +258,12 @@ class ProfileFragment : PreferenceFragmentCompat() {
             }
         }
 
-        findPreference<Preference>(resources.getString(R.string.adv_dns_Key))?.let { it ->
+        findPreference<Preference>(resources.getString(R.string.adv_dns_Key))?.let {
             it.setOnPreferenceClickListener {
                 findNavController().navigate(ProfileFragmentDirections.actionProfileFragmentToDnsFragment())
-//                    val extras = FragmentNavigatorExtras(e.itemView to "shared_element_dns")
-//                    findNavController().navigate(
-//                        R.id.action_profileFragment_to_dnsFragment,
-//                        null,
-//                        null,
-//                        extras
-//                    )
                 true
             }
         }
-
-//        findPreference<Preference>(resources.getString(R.string.new_rule))?.let {
-//            it.setOnPreferenceClickListener {
-//                findNavController().navigate(ProfileFragmentDirections.actionProfileFragmentToNewRuleFragment())
-//                true
-//            }
-//        }
-
 
         findPreference<Preference>(resources.getString(R.string.ports_key))?.let {
             it.setOnPreferenceClickListener {
@@ -304,7 +289,6 @@ class ProfileFragment : PreferenceFragmentCompat() {
 
         findPreference<Preference>(resources.getString(R.string.adv_new_app_list_key))?.let {
             it.setOnPreferenceClickListener {
-//                AppListDialogFragment().show(parentFragmentManager, "dialog")
                 findNavController().navigate(ProfileFragmentDirections.actionProfileFragmentToAppListFragment())
                 true
             }
