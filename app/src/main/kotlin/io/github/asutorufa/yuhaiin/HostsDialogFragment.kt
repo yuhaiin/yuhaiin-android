@@ -2,19 +2,46 @@ package io.github.asutorufa.yuhaiin
 
 import android.app.Dialog
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
+import android.view.Menu
+import android.view.MenuInflater
+import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import android.view.Window
+import androidx.appcompat.widget.AppCompatEditText
+import androidx.core.view.MenuProvider
+import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.DialogFragment
+import androidx.lifecycle.Lifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import io.github.asutorufa.yuhaiin.database.Manager
 import io.github.asutorufa.yuhaiin.databinding.HostsDialogBinding
 import io.github.asutorufa.yuhaiin.databinding.ItemRecyclerHostsBinding
 
 class HostsDialogFragment : DialogFragment() {
 
     private val adapter = HostsListAdapter()
+    private val mainActivity by lazy { requireActivity() as MainActivity }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+//        enterTransition = MaterialSharedAxis(MaterialSharedAxis.Y, true)
+//        returnTransition = MaterialSharedAxis(MaterialSharedAxis.Y, false)
+    }
+
+    override fun onPause() {
+        Log.d("appListFragment", "onPause: ${adapter.hostsMap}")
+        adapter.hostsMap.let {
+            Manager.profile.hosts = it
+            Manager.db.updateProfile(Manager.profile)
+        }
+        super.onPause()
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -27,17 +54,53 @@ class HostsDialogFragment : DialogFragment() {
             layoutManager = LinearLayoutManager(hostsDialogFragmentBinding.root.context)
             adapter = this@HostsDialogFragment.adapter
 
-            this@HostsDialogFragment.adapter.setHostsList(buildList {
-                add(HostsList("1", "2"))
-                add(HostsList("3", "4"))
-                add(HostsList("5", "6"))
-                add(HostsList("7", "8"))
-                add(HostsList("9", "10"))
-            })
+            this@HostsDialogFragment.adapter.setHostsList(Manager.profile.hosts.toMutableMap())
         }
 
+
+        mainActivity.addMenuProvider(menuProvider, viewLifecycleOwner, Lifecycle.State.RESUMED)
         return hostsDialogFragmentBinding.root
     }
+
+    private val menuProvider = object : MenuProvider {
+        override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) =
+            menuInflater.inflate(R.menu.hosts, menu)
+
+        override fun onMenuItemSelected(menuItem: MenuItem): Boolean =
+            when (menuItem.itemId) {
+                R.id.hosts_add -> {
+                    val e = AppCompatEditText(requireContext()).apply { isSingleLine = true }
+                    showAlertDialog(R.string.dns_hosts_add_from, e, null) {
+                        val name = e.text.toString()
+                        if (name.isEmpty()) return@showAlertDialog
+                        try {
+                            adapter.addHosts(name)
+                        } catch (e: Exception) {
+                            e.message?.let { mainActivity.showSnackBar(it) }
+                        }
+                    }
+                    true
+                }
+
+                else -> false
+            }
+    }
+
+
+    fun showAlertDialog(
+        title: Int,
+        view: View?,
+        message: String?,
+        PositiveFun: () -> Unit
+    ) =
+        MaterialAlertDialogBuilder(requireContext()).apply {
+            setTitle(title)
+            view?.let { setView(it) }
+            message?.let { setMessage(it) }
+            setPositiveButton(android.R.string.ok) { _, _ -> PositiveFun() }
+            setNegativeButton(android.R.string.cancel) { _, _ -> }
+            show()
+        }
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog =
         super.onCreateDialog(savedInstanceState).apply {
@@ -46,26 +109,43 @@ class HostsDialogFragment : DialogFragment() {
 }
 
 
-data class HostsList(val from: String, val to: String)
-
 class HostsListAdapter : RecyclerView.Adapter<HostsListAdapter.HostsListViewHolder>() {
 
-    private var hosts: List<HostsList>? = null
+    private var hosts: ArrayList<String> = ArrayList()
+    lateinit var hostsMap: MutableMap<String, String>
 
-    fun setHostsList(hosts: List<HostsList>) {
-        this.hosts = hosts
+    fun addHosts(from: String) {
+        hostsMap[from] = from
+        hosts.add(from)
+        notifyItemInserted(itemCount - 1)
+    }
+
+    fun setHostsList(hosts: MutableMap<String, String>) {
+        hosts.forEach { (key, _) -> this.hosts.add(key) }
+        this.hostsMap = hosts
         notifyItemRangeInserted(0, itemCount)
     }
 
     inner class HostsListViewHolder(private val itemBinding: ItemRecyclerHostsBinding) :
         RecyclerView.ViewHolder(itemBinding.root), View.OnClickListener {
 
-        lateinit var info: HostsList
+        private lateinit var hostsFrom: String
 
-        fun bind(hosts: HostsList) {
-            this.info = hosts
-            itemBinding.fromText.setText(hosts.from)
-            itemBinding.toText.setText(hosts.to)
+        fun bind(hostsFrom: String) {
+            this.hostsFrom = hostsFrom
+            itemBinding.from.setEndIconOnClickListener {
+                Log.d("end icon click", "end icon click")
+                val index = hosts.indexOf(hostsFrom)
+                hostsMap.remove(hostsFrom)
+                hosts.remove(hostsFrom)
+                notifyItemRemoved(index)
+            }
+            itemBinding.fromText.setText(hostsFrom)
+            itemBinding.toText.setText(hostsMap[hostsFrom])
+            itemBinding.toText.doAfterTextChanged {
+                hostsMap[hostsFrom] = itemBinding.toText.text.toString()
+                Log.d("hosts dialog", "bind: $hostsMap")
+            }
             itemView.setOnClickListener(this)
         }
 
@@ -82,12 +162,9 @@ class HostsListAdapter : RecyclerView.Adapter<HostsListAdapter.HostsListViewHold
         )
     }
 
-    override fun getItemCount(): Int = hosts?.size ?: 0
+    override fun getItemCount(): Int = hosts.size
 
-    override fun onBindViewHolder(holder: HostsListViewHolder, position: Int) {
-        hosts?.let {
-            holder.bind(it[position])
-        }
-    }
+    override fun onBindViewHolder(holder: HostsListViewHolder, position: Int) =
+        hosts.let { holder.bind(it[position]) }
 
 }

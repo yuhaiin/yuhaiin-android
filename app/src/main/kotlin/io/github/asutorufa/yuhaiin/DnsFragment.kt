@@ -34,6 +34,8 @@ class DnsFragment : PreferenceFragmentCompat() {
         returnTransition = MaterialSharedAxis(MaterialSharedAxis.Y, false).apply {
             duration = 500L
         }
+        exitTransition = MaterialSharedAxis(MaterialSharedAxis.Y, true)
+        reenterTransition = MaterialSharedAxis(MaterialSharedAxis.Y, false)
 
         preferenceManager.preferenceDataStore = (activity as MainActivity).dataStore
 
