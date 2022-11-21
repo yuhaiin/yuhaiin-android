@@ -19,6 +19,18 @@ object Converters {
         return gson.toJson(list)
     }
 
+
+    @TypeConverter
+    fun fromMapString(value: String?): Map<String, String> {
+        val listType: Type = object : TypeToken<Map<String, String>?>() {}.type
+        return gson.fromJson(value, listType)
+    }
+
+    @TypeConverter
+    fun fromMap(list: Map<String, String>?): String {
+        return gson.toJson(list)
+    }
+
     @TypeConverter
     fun stringToDNS(value: String?): DNS {
         val dnsType: Type = object : TypeToken<DNS?>() {}.type
@@ -35,7 +47,7 @@ object Converters {
         val bypassType: Type = object : TypeToken<Bypass?>() {}.type
         return gson.fromJson(value, bypassType)
     }
-    
+
     @TypeConverter
     fun fromBypass(b: Bypass?): String {
         return gson.toJson(b)

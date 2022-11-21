@@ -67,5 +67,10 @@ data class Profile(
         name = "bypass",
         defaultValue = Bypass.DefaultJson
     ) var bypass: Bypass = Bypass.Default,
+
+    @ColumnInfo(
+        name = "hosts",
+        defaultValue = "{}"
+    ) var hosts: Map<String, String> = mapOf()
 )
 

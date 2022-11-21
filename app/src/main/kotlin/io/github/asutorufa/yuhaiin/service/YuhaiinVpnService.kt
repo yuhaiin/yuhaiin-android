@@ -18,6 +18,7 @@ import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import androidx.core.content.getSystemService
+import com.google.gson.Gson
 import io.github.asutorufa.yuhaiin.BuildConfig
 import io.github.asutorufa.yuhaiin.IYuhaiinVpnBinder
 import io.github.asutorufa.yuhaiin.MainActivity
@@ -311,6 +312,7 @@ class YuhaiinVpnService : VpnService() {
                 remote = convertDNS(profile.remoteDns)
                 local = convertDNS(profile.localDns)
                 bootstrap = convertDNS(profile.bootstrapDns)
+                hosts = Gson().toJson(profile.hosts).toByteArray()
             }
         })
     }
