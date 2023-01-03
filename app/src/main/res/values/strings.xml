@@ -8,6 +8,7 @@
     <string name="prof_default">Default</string>
 
     <string name="yuhaiin">Yuhaiin</string>
+    <string name="yuhaiin_running">Yuhaiin Running</string>
     <string name="yuhaiin_port_key">yuhaiin_port</string>
     <string name="yuhaiin_port_title">Yuhaiin Port</string>
     <string name="yuhaiin_host_summary">gRPC and HTTP listen port</string>
@@ -18,7 +19,8 @@
     <string name="ports_title">Ports</string>
     <string name="http_server_port_key">http_server_port</string>
     <string name="http_server_port_title">HTTP Port</string>
-    <string name="append_http_proxy_to_vpn">Append HTTP Proxy to VPN</string>
+    <string name="append_http_proxy_to_vpn_key">Append HTTP Proxy to VPN</string>
+    <string name="append_http_proxy_to_vpn_title">Append HTTP Proxy to VPN</string>
     <string name="socks5_server_port_key">socks5_server_port</string>
     <string name="socks5_server_port_title">Socks5 Port</string>
     <string name="ipv6_proxy_key">ipv6</string>
@@ -68,6 +70,7 @@
     <string name="adv_fake_dns_cidr_key">fake_dns_cidr</string>
     <string name="adv_fake_dns_cidr_title">Fake DNS CIDR</string>
 
+    <string name="nav_dns_settings">DNS</string>
     <string name="adv_dns_port_key">dns_port</string>
     <string name="adv_dns_port_title">DNS Port</string>
     <string name="dns_hosts_key">hosts_key</string>
@@ -112,12 +115,28 @@
         <item>@string/dns_type_doh3</item>
     </string-array>
 
+
+    <string name="dns_dns_hijacking_title">DNS Hijacking</string>
+    <string name="dns_remote_title">Remote</string>
+    <string name="dns_local_title">Local</string>
+    <string name="dns_bootstrap_title">Bootstrap</string>
+    <string name="dns_host_title">Host</string>
+    <string name="dns_type_title">Type</string>
+    <string name="dns_subnet_title">Subnet</string>
+    <string name="dns_tls_server_name_title">TLS Server Name</string>
+    <string name="dns_resolve_domain_title">Resolve Domain</string>
+
     <string name="adv_tun_driver_key">Tun Driver</string>
+    <string name="adv_tun_driver_title">Tun Driver</string>
     <string name="tun_driver_fdbased">Fdbased</string>
     <string name="tun_driver_channel">Channel</string>
+    <string name="tun_driver_tun2socket">Tun2socket</string>
+    <string name="tun_driver_tun2socket_gvisor">Tun2socket gVisor</string>
     <string-array name="tun_drivers">
         <item>@string/tun_driver_fdbased</item>
         <item>@string/tun_driver_channel</item>
+        <item>@string/tun_driver_tun2socket</item>
+        <item>@string/tun_driver_tun2socket_gvisor</item>
     </string-array>
 
     <string name="adv_auto_connect_key">auto_connect</string>
@@ -147,12 +166,17 @@
     <string name="rule">Rule</string>
     <string name="new_rule">New Rule</string>
     <string name="rule_update_bypass_file">Rule Update Bypass</string>
+    <string name="rule_update_bypass_file_title">Update Bypass</string>
     <string name="rule_block">Block</string>
     <string name="rule_proxy">Proxy</string>
     <string name="rule_direct">Direct</string>
+    <string name="rule_block_title">Block</string>
+    <string name="rule_proxy_title">Proxy</string>
+    <string name="rule_direct_title">Direct</string>
 
     <string name="debug">Debug</string>
     <string name="logcat">Logcat</string>
+    <string name="logcat_name">Logcat</string>
     <string name="save_logcat">save_logcat</string>
     <string name="save_logcat_name">Save Logcat</string>
     <string name="save_logcat_summary">Save logcat to
@@ -160,6 +184,7 @@
     </string>
 
     <string name="log_level">Log Level</string>
+    <string name="log_level_name">Log Level</string>
     <string name="log_level_verbose">Verbose</string>
     <string name="log_level_debug">Debug</string>
     <string name="log_level_info">Info</string>
