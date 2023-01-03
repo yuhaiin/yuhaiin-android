@@ -17,9 +17,9 @@
             android:key="@string/ports_key" />
 
         <SwitchPreferenceCompat
-            android:title="Append HTTP Proxy to VPN"
+            android:title="@string/append_http_proxy_to_vpn_title"
             android:summary="HTTP proxy will be used directly from without going through the virtual NIC device(Android 10+)"
-            android:key="@string/append_http_proxy_to_vpn" />
+            android:key="@string/append_http_proxy_to_vpn_key" />
 
         <SwitchPreferenceCompat
             android:icon="@drawable/lan"
@@ -41,20 +41,20 @@
 
         <ListPreference
             android:key="@string/adv_tun_driver_key"
-            android:title="@string/adv_tun_driver_key"
+            android:title="@string/adv_tun_driver_title"
             android:entries="@array/tun_drivers"
             android:entryValues="@array/tun_drivers"
             app:useSimpleSummaryProvider="true"
             android:icon="@drawable/handyman" />
 
         <Preference
-            android:title="DNS"
+            android:title="@string/nav_dns_settings"
             android:icon="@drawable/dns"
             android:summary="DNS Port, Fake DNS, Remote DNS, Local DNS, Bootstrap DNS."
             android:key="@string/adv_dns_Key" />
 
         <Preference
-            android:title="Rule"
+            android:title="@string/rule"
             android:icon="@drawable/router"
             android:summary="Update Bypass File, Custom Direct, Proxy, Block."
             android:key="@string/rule" />
@@ -127,7 +127,7 @@
 
         <com.takisoft.preferencex.SimpleMenuPreference
             android:key="@string/log_level"
-            android:title="@string/log_level"
+            android:title="@string/log_level_name"
             android:entries="@array/log_levels"
             app:useSimpleSummaryProvider="true"
             android:entryValues="@array/log_levels" />
@@ -135,7 +135,7 @@
         <Preference
             android:icon="@drawable/adb"
             android:key="@string/logcat"
-            android:title="@string/logcat"
+            android:title="@string/logcat_name"
             android:singleLine="true" />
 
     </PreferenceCategory>

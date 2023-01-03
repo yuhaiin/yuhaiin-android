@@ -40,7 +40,7 @@ class YuhaiinVpnService : VpnService() {
             ERROR
         }
 
-        private const val VPN_MTU = 1500
+        private const val VPN_MTU = 9000
         private const val PRIVATE_VLAN4_CLIENT = "172.19.0.1"
         private const val PRIVATE_VLAN4_ROUTER = "172.19.0.2"
         private const val PRIVATE_VLAN6_ROUTER = "fdfe:dcba:9876::2"
@@ -201,6 +201,7 @@ class YuhaiinVpnService : VpnService() {
             setSession(profile.name)
 
             addAddress(PRIVATE_VLAN4_CLIENT, 24).addRoute(PRIVATE_VLAN4_ROUTER, 32)
+
             // Route all IPv6 traffic
             if (profile.hasIPv6) addAddress(PRIVATE_VLAN6_CLIENT, 126)
                 .addRoute("2000::", 3) // https://issuetracker.google.com/issues/149636790
@@ -243,16 +244,13 @@ class YuhaiinVpnService : VpnService() {
                     Log.w(tag, e)
                 }
 
-            when (profile.isPerApp) {
-                true ->
-                    profile.appList.toMutableSet().apply {
-                        if (profile.isBypassApp) add(BuildConfig.APPLICATION_ID)
-                        else remove(BuildConfig.APPLICATION_ID)
-                        forEach { bypassApp(profile.isBypassApp, it) }
-                    }
-
-                false -> // Just bypass myself
-                    bypassApp(true, BuildConfig.APPLICATION_ID)
+            if (profile.isPerApp) {
+                profile.appList.toMutableSet().apply {
+                    // make yuhaiin using VPN, because tun2socket tcp need relay tun data to tcp a listener
+                    if (profile.isBypassApp) remove(BuildConfig.APPLICATION_ID)
+                    else add(BuildConfig.APPLICATION_ID)
+                    forEach { bypassApp(profile.isBypassApp, it) }
+                }
             }
 
             mInterface = establish()
@@ -269,6 +267,7 @@ class YuhaiinVpnService : VpnService() {
             host = "${address}:${profile.yuhaiinPort}"
             savepath = getExternalFilesDir("yuhaiin").toString()
             iPv6 = profile.hasIPv6
+
 
             if (profile.socks5ServerPort > 0) socks5 = "${address}:${profile.socks5ServerPort}"
             if (profile.httpServerPort > 0) http = "${address}:${profile.httpServerPort}"
@@ -289,12 +288,14 @@ class YuhaiinVpnService : VpnService() {
             tun = TUN().apply {
                 fd = mInterface!!.fd
                 mtu = VPN_MTU
-                gateway = PRIVATE_VLAN4_ROUTER
+                gateway = PRIVATE_VLAN4_CLIENT
+                portal = PRIVATE_VLAN4_ROUTER
                 dnsHijacking = profile.dnsHijacking
-                // 0: fdbased, 1: channel
+                // 0: fdbased, 1: channel, 2: system gvisor
                 driver = profile.tunDriver
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
                     uidDumper = this@YuhaiinVpnService.uidDumper
+                socketProtect = SocketProtect { return@SocketProtect protect(it) }
             }
 
             fun convertDNS(o: dDNS): DNS = DNS().apply {
@@ -333,7 +334,7 @@ class YuhaiinVpnService : VpnService() {
         startForeground(
             1,
             NotificationCompat.Builder(this, packageName)
-                .setContentTitle("yuhaiin running")
+                .setContentTitle(resources.getString(R.string.yuhaiin_running))
                 .setContentText(String.format(getString(R.string.notify_msg), name))
                 .setSmallIcon(R.drawable.emoji_nature)
                 .setContentIntent(

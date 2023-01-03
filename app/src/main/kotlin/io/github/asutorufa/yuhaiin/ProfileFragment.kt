@@ -131,7 +131,7 @@ class ProfileFragment : PreferenceFragmentCompat() {
             }
         }
 
-        findPreference<SwitchPreferenceCompat>(resources.getString(R.string.append_http_proxy_to_vpn))!!.also {
+        findPreference<SwitchPreferenceCompat>(resources.getString(R.string.append_http_proxy_to_vpn_key))!!.also {
             setOnPreferenceChangeListener(it) { _, newValue ->
                 profile.appendHttpProxyToSystem = newValue as Boolean
             }
@@ -327,6 +327,7 @@ class ProfileFragment : PreferenceFragmentCompat() {
         return when (str) {
             resources.getString(R.string.tun_driver_fdbased) -> 0
             resources.getString(R.string.tun_driver_channel) -> 1
+            resources.getString(R.string.tun_driver_system_gvisor) -> 2
             else -> 0
         }
     }
@@ -335,6 +336,7 @@ class ProfileFragment : PreferenceFragmentCompat() {
         return when (type) {
             0 -> resources.getString(R.string.tun_driver_fdbased)
             1 -> resources.getString(R.string.tun_driver_channel)
+            2 -> resources.getString(R.string.tun_driver_system_gvisor)
             else -> resources.getString(R.string.tun_driver_fdbased)
         }
     }

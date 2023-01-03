@@ -21,89 +21,89 @@
         android:singleLine="true" />
 
     <SwitchPreferenceCompat
-        android:title="DNS Hijacking"
+        android:title="@string/dns_dns_hijacking_title"
         android:key="@string/dns_hijacking" />
 
     <PreferenceCategory
-        android:title="Remote"
+        android:title="@string/dns_remote_title"
         android:icon="@drawable/dns">
 
         <EditTextPreference
-            android:title="Host"
+            android:title="@string/dns_host_title"
             android:singleLine="true"
             android:key="@string/remote_dns_host_key"
             app:useSimpleSummaryProvider="true" />
         <com.takisoft.preferencex.SimpleMenuPreference
-            android:title="Type"
+            android:title="@string/dns_type_title"
             android:entries="@array/dns_types"
             android:key="@string/remote_dns_type_key"
             app:useSimpleSummaryProvider="true"
             android:entryValues="@array/dns_types" />
         <EditTextPreference
-            android:title="Subnet"
+            android:title="@string/dns_subnet_title"
             android:singleLine="true"
             android:key="@string/remote_dns_subnet_key"
             app:useSimpleSummaryProvider="true" />
         <EditTextPreference
-            android:title="Tls Server Name"
+            android:title="@string/dns_tls_server_name_title"
             android:singleLine="true"
             android:key="@string/remote_dns_tls_server_name_key"
             app:useSimpleSummaryProvider="true" />
 
         <SwitchPreferenceCompat
-            android:title="Resolve Domain"
+            android:title="@string/dns_resolve_domain_title"
             android:key="@string/remote_dns_resolve_domain_key"
             android:summary="Resolve Proxy Domain By Remote DNS instead of Pass Domain to Proxy" />
     </PreferenceCategory>
 
     <PreferenceCategory
-        android:title="Local"
+        android:title="@string/dns_local_title"
         android:icon="@drawable/dns">
 
         <EditTextPreference
-            android:title="Host"
+            android:title="@string/dns_host_title"
             android:singleLine="true"
             android:key="@string/local_dns_host_key"
             app:useSimpleSummaryProvider="true" />
         <com.takisoft.preferencex.SimpleMenuPreference
-            android:title="Type"
+            android:title="@string/dns_type_title"
             android:entries="@array/dns_types"
             app:useSimpleSummaryProvider="true"
             android:key="@string/local_dns_type_key"
             android:entryValues="@array/dns_types" />
         <EditTextPreference
-            android:title="Subnet"
+            android:title="@string/dns_subnet_title"
             android:singleLine="true"
             android:key="@string/local_dns_subnet_key"
             app:useSimpleSummaryProvider="true" />
         <EditTextPreference
-            android:title="Tls Server Name"
+            android:title="@string/dns_tls_server_name_title"
             android:singleLine="true"
             android:key="@string/local_dns_tls_server_name_key"
             app:useSimpleSummaryProvider="true" />
     </PreferenceCategory>
 
     <PreferenceCategory
-        android:title="Bootstrap"
+        android:title="@string/dns_bootstrap_title"
         android:icon="@drawable/dns">
         <EditTextPreference
-            android:title="Host"
+            android:title="@string/dns_host_title"
             android:key="@string/bootstrap_dns_host_key"
             android:singleLine="true"
             app:useSimpleSummaryProvider="true" />
         <com.takisoft.preferencex.SimpleMenuPreference
-            android:title="Type"
+            android:title="@string/dns_type_title"
             android:key="@string/bootstrap_dns_type_key"
             android:entries="@array/dns_types"
             app:useSimpleSummaryProvider="true"
             android:entryValues="@array/dns_types" />
         <EditTextPreference
-            android:title="Subnet"
+            android:title="@string/dns_subnet_title"
             android:key="@string/bootstrap_dns_subnet_key"
             android:singleLine="true"
             app:useSimpleSummaryProvider="true" />
         <EditTextPreference
-            android:title="Tls Server Name"
+            android:title="@string/dns_tls_server_name_title"
             android:key="@string/bootstrap_dns_tls_server_name_key"
             android:singleLine="true"
             app:useSimpleSummaryProvider="true" />
