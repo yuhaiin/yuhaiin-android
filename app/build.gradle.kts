@@ -160,7 +160,7 @@ android {
 
 dependencies {
     implementation(fileTree(mapOf("include" to listOf("*.aar", "*.jar"), "dir" to "libs")))
-    implementation("androidx.appcompat:appcompat:1.5.1")
+    implementation("androidx.appcompat:appcompat:1.6.0")
     implementation("androidx.preference:preference-ktx:1.2.0")
     implementation("com.google.android.material:material:1.7.0")
     implementation("androidx.browser:browser:1.4.0")
@@ -169,7 +169,7 @@ dependencies {
     val roomVersion = "2.4.3"
     implementation("androidx.room:room-runtime:$roomVersion")
     kapt("androidx.room:room-compiler:$roomVersion")
-    implementation("com.google.code.gson:gson:2.10")
+    implementation("com.google.code.gson:gson:2.10.1")
 
     // nav
     val navVersion = "2.5.3"

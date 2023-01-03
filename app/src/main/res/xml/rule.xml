@@ -11,7 +11,7 @@
         android:entryValues="@array/adv_routes" />
 
     <EditTextPreference
-        android:title="Update Bypass"
+        android:title="@string/rule_update_bypass_file_title"
         android:key="@string/rule_update_bypass_file"
         app:useSimpleSummaryProvider="true"
         android:singleLine="true" />
@@ -32,19 +32,19 @@
 
     <EditTextPreference
         android:key="@string/rule_direct"
-        android:title="@string/rule_direct"
+        android:title="@string/rule_direct_title"
         android:icon="@drawable/unblock_flipped"
         app:useSimpleSummaryProvider="true"
         android:singleLine="false" />
     <EditTextPreference
         android:key="@string/rule_proxy"
-        android:title="@string/rule_proxy"
+        android:title="@string/rule_proxy_title"
         android:icon="@drawable/vpn_key"
         app:useSimpleSummaryProvider="true"
         android:singleLine="false" />
     <EditTextPreference
         android:key="@string/rule_block"
-        android:title="@string/rule_block"
+        android:title="@string/rule_block_title"
         android:icon="@drawable/block"
         app:useSimpleSummaryProvider="true"
         android:singleLine="false" />
