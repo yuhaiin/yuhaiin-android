@@ -25,4 +25,4 @@ if [ -d "${HOME}/.local/share/JetBrains/Toolbox/apps/AndroidStudio/ch-0/222.4345
   export PATH=$PATH:${HOME}/.local/share/JetBrains/Toolbox/apps/AndroidStudio/ch-0/222.4345.14.2221.9252092/jbr/bin/
 fi
 
-CGO_ENABLED=0 GOPROXY=https://goproxy.cn,direct gomobile bind -ldflags='-s -w -buildid=' -trimpath -target="android/arm64,android/amd64" -o ${current}/yuhaiin.aar -v ./cmd/android/
+GOPROXY=https://goproxy.cn,direct gomobile bind -ldflags='-s -w -buildid=' -trimpath -target="android/arm64,android/amd64" -o ${current}/yuhaiin.aar -v ./cmd/android/
