@@ -315,6 +315,8 @@ class YuhaiinVpnService : VpnService() {
                 bootstrap = convertDNS(profile.bootstrapDns)
                 hosts = Gson().toJson(profile.hosts).toByteArray()
             }
+
+            closeFallback = Closer { stop() }
         })
     }
 

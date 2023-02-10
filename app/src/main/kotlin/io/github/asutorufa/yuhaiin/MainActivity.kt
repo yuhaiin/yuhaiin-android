@@ -67,7 +67,7 @@ class MainActivity : AppCompatActivity() {
                     alpha = 0.5f
                 }
             }
-            
+
             toolbar.let {
                 setSupportActionBar(it)
                 it.setupWithNavController(
