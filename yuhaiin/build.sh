@@ -21,8 +21,9 @@ if [ -d "${HOME}/.local/storage/Android/android-ndk-r23c" ]; then
   export ANDROID_NDK_HOME="${HOME}/.local/storage/Android/android-ndk-r23c"
 fi
 
-if [ -d "${HOME}/.local/share/JetBrains/Toolbox/apps/AndroidStudio/ch-0/223.8214.52.2231.9615888/jbr/bin/" ]; then
-  export PATH=$PATH:${HOME}/.local/share/JetBrains/Toolbox/apps/AndroidStudio/ch-0/223.8214.52.2231.9615888/jbr/bin/
+java="${HOME}/.local/share/JetBrains/Toolbox/apps/AndroidStudio/ch-0/223.8836.35.2231.9848316/jbr/bin/"
+if [ -d ${java} ]; then
+  export PATH=$PATH:${java}
 fi
 
 GOPROXY=https://goproxy.cn,direct gomobile bind -ldflags='-s -w -buildid=' -trimpath -target="android/arm64,android/amd64" -o ${current}/yuhaiin.aar -v ./cmd/android/

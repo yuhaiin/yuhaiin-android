@@ -63,7 +63,7 @@ class MainActivity : AppCompatActivity() {
                 }
 
                 if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
-                    setBackgroundColor(R.attr.backgroundColor)
+                    setBackgroundColor(com.google.android.material.R.attr.backgroundColor)
                     alpha = 0.5f
                 }
             }

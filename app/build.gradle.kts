@@ -4,7 +4,7 @@ import java.util.Date
 plugins {
     id("com.android.application")
     kotlin("android")
-    kotlin("kapt")
+    id("com.google.devtools.ksp")
     id("androidx.navigation.safeargs.kotlin")
 }
 
@@ -57,13 +57,8 @@ android {
 
     compileOptions {
         // Flag to enable support for the new language APIs
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
-    }
-
-    // For Kotlin projects
-    kotlinOptions {
-        jvmTarget = "11"
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 
     defaultConfig {
@@ -73,7 +68,7 @@ android {
         // Now we can use ${documentsAuthority} in our Manifest
         manifestPlaceholders["documentsAuthority"] = documentsAuthorityValue
         // Now we can use BuildConfig.DOCUMENTS_AUTHORITY in our code
-        buildConfigField("String", "DOCUMENTS_AUTHORITY", """"${documentsAuthorityValue}"""")
+        buildConfigField("String", "DOCUMENTS_AUTHORITY", """"$documentsAuthorityValue"""")
 
         minSdk = 21
         targetSdk = 33
@@ -155,6 +150,8 @@ android {
         dataBinding = false
         viewBinding = true
         compose = false
+        buildConfig = true
+        aidl = true
     }
 
     composeOptions {
@@ -172,7 +169,7 @@ dependencies {
     // room
     val roomVersion = "2.5.1"
     implementation("androidx.room:room-runtime:$roomVersion")
-    kapt("androidx.room:room-compiler:$roomVersion")
+    ksp("androidx.room:room-compiler:$roomVersion")
     implementation("com.google.code.gson:gson:2.10.1")
 
     // nav
@@ -199,11 +196,11 @@ dependencies {
     implementation("androidx.compose.material3:material3-window-size-class:1.0.0-alpha16")
     */
 
-    testImplementation("androidx.test:core:1.4.0")
-    testImplementation("androidx.test:runner:1.4.0")
+    testImplementation("androidx.test:core:1.5.0")
+    testImplementation("androidx.test:runner:1.5.2")
     testImplementation("junit:junit:4.13.2")
-    testImplementation("androidx.test.espresso:espresso-core:3.4.0")
-    testImplementation("androidx.test.ext:junit-ktx:1.1.3")
-    androidTestUtil("androidx.test:orchestrator:1.4.1")
+    testImplementation("androidx.test.espresso:espresso-core:3.5.1")
+    testImplementation("androidx.test.ext:junit-ktx:1.1.5")
+    androidTestUtil("androidx.test:orchestrator:1.4.2")
     testImplementation("org.robolectric:robolectric:4.10")
 }

@@ -7,11 +7,15 @@ android {
         viewBinding = true
     }
 
-    compileSdkVersion 33
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
 
     defaultConfig {
         minSdkVersion 21
         targetSdkVersion 33
+        compileSdk 33
     }
 
     buildTypes {
