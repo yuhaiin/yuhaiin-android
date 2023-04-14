@@ -3,15 +3,13 @@ package io.github.asutorufa.yuhaiin.database
 import androidx.room.TypeConverter
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
-import java.lang.reflect.Type
 
 object Converters {
     private val gson = Gson()
 
     @TypeConverter
     fun fromString(value: String?): Set<String> {
-        val listType: Type = object : TypeToken<Set<String?>?>() {}.type
-        return gson.fromJson(value, listType)
+        return gson.fromJson(value, TypeToken.getParameterized(Set::class.java,String::class.java).type)
     }
 
     @TypeConverter
@@ -22,8 +20,7 @@ object Converters {
 
     @TypeConverter
     fun fromMapString(value: String?): Map<String, String> {
-        val listType: Type = object : TypeToken<Map<String, String>?>() {}.type
-        return gson.fromJson(value, listType)
+        return gson.fromJson(value, TypeToken.getParameterized(Map::class.java,String::class.java,String::class.java).type)
     }
 
     @TypeConverter
@@ -33,8 +30,7 @@ object Converters {
 
     @TypeConverter
     fun stringToDNS(value: String?): DNS {
-        val dnsType: Type = object : TypeToken<DNS?>() {}.type
-        return gson.fromJson(value, dnsType)
+        return gson.fromJson(value, TypeToken.get(DNS::class.java).type)
     }
 
     @TypeConverter
@@ -44,8 +40,7 @@ object Converters {
 
     @TypeConverter
     fun stringToBypass(value: String?): Bypass {
-        val bypassType: Type = object : TypeToken<Bypass?>() {}.type
-        return gson.fromJson(value, bypassType)
+        return gson.fromJson(value, TypeToken.get(Bypass::class.java).type)
     }
 
     @TypeConverter

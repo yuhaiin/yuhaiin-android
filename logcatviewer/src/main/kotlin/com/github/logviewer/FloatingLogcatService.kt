@@ -42,7 +42,7 @@ class FloatingLogcatService : Service() {
         ).apply { start() }
 
         val typedValue = TypedValue()
-        if (context.theme.resolveAttribute(R.attr.colorSurfaceVariant, typedValue, true)
+        if (context.theme.resolveAttribute(com.google.android.material.R.attr.colorSurfaceVariant, typedValue, true)
         ) mBinding.getRoot().setBackgroundColor(typedValue.data)
         initViews()
         return super.onStartCommand(intent, flags, startId)
