@@ -91,31 +91,31 @@
     </PreferenceCategory>
 
 
-    <PreferenceCategory android:title="@string/authentication">
+<!--    <PreferenceCategory android:title="@string/authentication">-->
 
-        <SwitchPreferenceCompat
-            android:icon="@drawable/authenticator"
-            android:key="@string/auth_userpw_key"
-            android:title="@string/auth_userpw_title" />
+<!--        <SwitchPreferenceCompat-->
+<!--            android:icon="@drawable/authenticator"-->
+<!--            android:key="@string/auth_userpw_key"-->
+<!--            android:title="@string/auth_userpw_title" />-->
 
-        <EditTextPreference
-            android:key="@string/auth_username_key"
-            android:title="@string/auth_username_title"
-            android:icon="@drawable/face"
-            android:dependency="@string/auth_userpw_key"
-            app:useSimpleSummaryProvider="true"
-            android:singleLine="true" />
+<!--        <EditTextPreference-->
+<!--            android:key="@string/auth_username_key"-->
+<!--            android:title="@string/auth_username_title"-->
+<!--            android:icon="@drawable/face"-->
+<!--            android:dependency="@string/auth_userpw_key"-->
+<!--            app:useSimpleSummaryProvider="true"-->
+<!--            android:singleLine="true" />-->
 
-        <EditTextPreference
-            android:key="@string/auth_password_key"
-            android:title="@string/auth_password_title"
-            android:icon="@drawable/password"
-            android:inputType="textPassword"
-            android:dependency="@string/auth_userpw_key"
-            app:useSimpleSummaryProvider="true"
-            android:singleLine="true" />
+<!--        <EditTextPreference-->
+<!--            android:key="@string/auth_password_key"-->
+<!--            android:title="@string/auth_password_title"-->
+<!--            android:icon="@drawable/password"-->
+<!--            android:inputType="textPassword"-->
+<!--            android:dependency="@string/auth_userpw_key"-->
+<!--            app:useSimpleSummaryProvider="true"-->
+<!--            android:singleLine="true" />-->
 
-    </PreferenceCategory>
+<!--    </PreferenceCategory>-->
 
     <PreferenceCategory android:title="@string/debug">
 

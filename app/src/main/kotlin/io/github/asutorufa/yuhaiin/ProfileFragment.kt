@@ -137,39 +137,39 @@ class ProfileFragment : PreferenceFragmentCompat() {
             }
             refreshPreferences.add { it.isChecked = profile.appendHttpProxyToSystem }
         }
-
-        findPreference<SwitchPreferenceCompat>(resources.getString(R.string.auth_userpw_key))!!.also {
-            setOnPreferenceChangeListener(it) { _, newValue ->
-                profile.isUserPw = newValue as Boolean
-                reload()
-            }
-            refreshPreferences.add { it.isChecked = profile.isUserPw }
-        }
-
-        findPreference<EditTextPreference>(resources.getString(R.string.auth_username_key))!!.also {
-            setOnPreferenceChangeListener(it) { _, newValue ->
-                profile.username = newValue.toString()
-            }
-            refreshPreferences.add {
-                it.text = profile.username
-                it.isVisible = profile.isUserPw
-            }
-        }
-
-        findPreference<EditTextPreference>(resources.getString(R.string.auth_password_key))!!.also {
-            it.setOnBindEditTextListener { editText: EditText ->
-                editText.inputType =
-                    InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
-            }
-
-            setOnPreferenceChangeListener(it) { _, newValue ->
-                profile.password = newValue.toString()
-            }
-            refreshPreferences.add {
-                it.text = profile.password
-                it.isVisible = profile.isUserPw
-            }
-        }
+//
+//        findPreference<SwitchPreferenceCompat>(resources.getString(R.string.auth_userpw_key))!!.also {
+//            setOnPreferenceChangeListener(it) { _, newValue ->
+//                profile.isUserPw = newValue as Boolean
+//                reload()
+//            }
+//            refreshPreferences.add { it.isChecked = profile.isUserPw }
+//        }
+//
+//        findPreference<EditTextPreference>(resources.getString(R.string.auth_username_key))!!.also {
+//            setOnPreferenceChangeListener(it) { _, newValue ->
+//                profile.username = newValue.toString()
+//            }
+//            refreshPreferences.add {
+//                it.text = profile.username
+//                it.isVisible = profile.isUserPw
+//            }
+//        }
+//
+//        findPreference<EditTextPreference>(resources.getString(R.string.auth_password_key))!!.also {
+//            it.setOnBindEditTextListener { editText: EditText ->
+//                editText.inputType =
+//                    InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+//            }
+//
+//            setOnPreferenceChangeListener(it) { _, newValue ->
+//                profile.password = newValue.toString()
+//            }
+//            refreshPreferences.add {
+//                it.text = profile.password
+//                it.isVisible = profile.isUserPw
+//            }
+//        }
 
         findPreference<ListPreference>(resources.getString(R.string.adv_tun_driver_key))!!.also {
             setOnPreferenceChangeListener(it) { _, newValue ->

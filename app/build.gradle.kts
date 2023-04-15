@@ -68,7 +68,7 @@ android {
         // Now we can use ${documentsAuthority} in our Manifest
         manifestPlaceholders["documentsAuthority"] = documentsAuthorityValue
         // Now we can use BuildConfig.DOCUMENTS_AUTHORITY in our code
-        buildConfigField("String", "DOCUMENTS_AUTHORITY", """"$documentsAuthorityValue"""")
+        buildConfigField("String", "DOCUMENTS_AUTHORITY", "\"$documentsAuthorityValue\"")
 
         minSdk = 21
         targetSdk = 33
