@@ -1,7 +1,9 @@
 package io.github.asutorufa.yuhaiin
 
+import android.Manifest
 import android.app.Activity
 import android.content.*
+import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.graphics.RenderEffect
 import android.graphics.Shader
@@ -18,6 +20,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.content.res.AppCompatResources
 import androidx.browser.customtabs.CustomTabsIntent
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.ui.setupWithNavController
@@ -264,12 +268,27 @@ class MainActivity : AppCompatActivity() {
             )
         }
 
-    private fun startService() =
+    private fun startService() {
+
+        if (Build.VERSION.SDK_INT >= 33
+            &&
+            ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) != PackageManager.PERMISSION_GRANTED
+        )
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                0
+            )
+
         // prepare to get vpn permission
         VpnService.prepare(this)?.apply {
             vpnPermissionDialogLauncher.launch(this)
         } ?: startService(Intent(this, YuhaiinVpnService::class.java))
 
+    }
 
     inner class DataStore : PreferenceDataStore() {
         private val store = ConcurrentHashMap<String, Any>()
