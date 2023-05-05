@@ -163,7 +163,7 @@ dependencies {
     implementation(fileTree(mapOf("include" to listOf("*.aar", "*.jar"), "dir" to "libs")))
     implementation("androidx.appcompat:appcompat:1.6.1")
     implementation("androidx.preference:preference-ktx:1.2.0")
-    implementation("com.google.android.material:material:1.8.0")
+    implementation("com.google.android.material:material:1.9.0")
     implementation("androidx.browser:browser:1.5.0")
 
     // room
@@ -202,5 +202,5 @@ dependencies {
     testImplementation("androidx.test.espresso:espresso-core:3.5.1")
     testImplementation("androidx.test.ext:junit-ktx:1.1.5")
     androidTestUtil("androidx.test:orchestrator:1.4.2")
-    testImplementation("org.robolectric:robolectric:4.10.1")
+    testImplementation("org.robolectric:robolectric:4.10.2")
 }

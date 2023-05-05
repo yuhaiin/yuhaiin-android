@@ -1,0 +1,3 @@
+[submodule "yuhaiin/code"]
+	path = yuhaiin/code
+	url = ../yuhaiin.git
