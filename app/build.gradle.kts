@@ -202,5 +202,5 @@ dependencies {
     testImplementation("androidx.test.espresso:espresso-core:3.5.1")
     testImplementation("androidx.test.ext:junit-ktx:1.1.5")
     androidTestUtil("androidx.test:orchestrator:1.4.2")
-    testImplementation("org.robolectric:robolectric:4.10.2")
+    testImplementation("org.robolectric:robolectric:4.10.3")
 }
