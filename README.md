@@ -16,6 +16,10 @@ Android 5.0+ (API level 21)
 
 [Release](https://github.com/Asutorufa/yuhaiin-android/releases)
 
+## Screenshot
+
+![screenshot](https://raw.githubusercontent.com/Asutorufa/yuhaiin-android/main/assets/image.png "screenshot")
+
 ## Acknowledgement
 
 - [bndeff/socksdroid](https://github.com/bndeff/socksdroid)
