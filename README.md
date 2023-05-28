@@ -16,6 +16,15 @@ Android 5.0+ (API level 21)
 
 [Release](https://github.com/Asutorufa/yuhaiin-android/releases)
 
+## Build
+
+```shell
+git submodule update --init --recursive
+git submodule update --recursive --remote
+./yuhaiin/build.sh
+./build_release
+```
+
 ## Screenshot
 
 ![screenshot](https://raw.githubusercontent.com/Asutorufa/yuhaiin-android/main/assets/image.png "screenshot")

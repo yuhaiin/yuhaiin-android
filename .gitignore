@@ -15,3 +15,4 @@ app/release/
 /build_release
 /yuhaiin/yuhaiin.aar
 /yuhaiin/yuhaiin-sources.jar
+/yuhaiin/build_local.sh
