@@ -167,13 +167,13 @@ dependencies {
     implementation("androidx.browser:browser:1.5.0")
 
     // room
-    val roomVersion = "2.5.1"
+    val roomVersion = "2.5.2"
     implementation("androidx.room:room-runtime:$roomVersion")
     ksp("androidx.room:room-compiler:$roomVersion")
     implementation("com.google.code.gson:gson:2.10.1")
 
     // nav
-    val navVersion = "2.5.3"
+    val navVersion = "2.6.0"
     implementation("androidx.navigation:navigation-fragment-ktx:$navVersion")
     implementation("androidx.navigation:navigation-ui-ktx:$navVersion")
 
