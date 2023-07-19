@@ -50,7 +50,7 @@ class MainActivity : AppCompatActivity() {
                     .apply {
                         setColorScheme(CustomTabsIntent.COLOR_SCHEME_SYSTEM)
                     }.build().apply {
-                        intent.data = Uri.parse("http://localhost:${Manager.profile.yuhaiinPort}")
+                        intent.data = Uri.parse("http://127.0.0.1:${Manager.profile.yuhaiinPort}")
                         this@MainActivity.startActivity(intent)
                     }
             }
