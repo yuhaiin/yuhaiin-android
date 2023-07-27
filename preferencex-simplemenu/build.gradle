@@ -18,5 +18,5 @@ android {
 }
 
 dependencies {
-    api "androidx.preference:preference:1.2.0"
+    api "androidx.preference:preference:1.2.1"
 }
