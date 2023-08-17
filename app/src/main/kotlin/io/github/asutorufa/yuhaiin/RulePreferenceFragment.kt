@@ -66,10 +66,7 @@ class RulePreferenceFragment : PreferenceFragmentCompat() {
                             ).let {
                                 if (it?.isNotEmpty() == true) throw Exception(it)
                             }
-                        else App().saveNewBypass(
-                            newValue,
-                            context.getExternalFilesDir("yuhaiin")!!.absolutePath
-                        )
+                        else App().saveNewBypass(newValue)
                         "Update Bypass File Successful"
                     } catch (e: Exception) {
                         "Update Bypass File Failed: ${e.message}"
