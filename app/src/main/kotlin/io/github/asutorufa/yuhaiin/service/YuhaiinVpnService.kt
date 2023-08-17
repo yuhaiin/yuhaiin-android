@@ -68,10 +68,7 @@ class YuhaiinVpnService : VpnService() {
         override fun saveNewBypass(url: String): String {
             Log.d(tag, "SaveNewBypass: $url")
             return try {
-                app.saveNewBypass(
-                    Uri.parse(url).toString(),
-                    getExternalFilesDir("yuhaiin")!!.absolutePath
-                )
+                app.saveNewBypass(Uri.parse(url).toString())
                 ""
             } catch (e: Exception) {
                 e.message.toString()

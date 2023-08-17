@@ -8,15 +8,18 @@ if [ -d "${HOME}/.local/storage/Android/android-ndk-r23c" ]; then
   export ANDROID_NDK_HOME="${HOME}/.local/storage/Android/android-ndk-r23c"
 fi
 
-java="${HOME}/.local/share/JetBrains/Toolbox/apps/AndroidStudio/ch-0"
-if [ -d "${java}" ]; then
-  for file in "${java}"/*; do
-    if [ -f "${file}/jbr/bin/javac" ]; then
-      export PATH=$PATH:"${file}/jbr/bin"
-      break
-    fi
-  done
-fi
+
+export PATH=$PATH:"${HOME}/.local/share/JetBrains/Toolbox/apps/android-studio/jbr/bin"
+
+#java="${HOME}/.local/share/JetBrains/Toolbox/apps/android-studio"
+#if [ -d "${java}" ]; then
+#  for file in "${java}"/*; do
+#    if [ -f "${file}/jbr/bin/javac" ]; then
+#      export PATH=$PATH:"${file}/jbr/bin"
+#      break
+#    fi
+#  done
+#fi
 
 set -x && \
 cd "${current}"/code && \
