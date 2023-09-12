@@ -23,4 +23,4 @@ export PATH=$PATH:"${HOME}/.local/share/JetBrains/Toolbox/apps/android-studio/jb
 
 set -x && \
 cd "${current}"/code && \
-gomobile bind -ldflags='-s -w -buildid=' -trimpath -target="android/arm64,android/amd64" -androidapi 21 -o "${current}"/yuhaiin.aar -v ./cmd/android/
+gomobile bind -ldflags='-s -w -buildid=' -tags="page" -trimpath -target="android/arm64,android/amd64" -androidapi 21 -o "${current}"/yuhaiin.aar -v ./cmd/android/
