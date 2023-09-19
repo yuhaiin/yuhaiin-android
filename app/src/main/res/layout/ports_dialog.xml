@@ -13,8 +13,8 @@
         android:orientation="vertical">
 
         <com.google.android.material.textfield.TextInputLayout
-            android:hint="HTTP"
-            app:startIconContentDescription="HTTP"
+            android:hint="HTTP&amp;SOCKS5"
+            app:startIconContentDescription="HTTP&amp;SOCKS5"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginLeft="10dp"
@@ -30,23 +30,23 @@
 
         </com.google.android.material.textfield.TextInputLayout>
 
-        <com.google.android.material.textfield.TextInputLayout
-            android:hint="SOCKS5"
-            app:startIconContentDescription="SOCKS5"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginLeft="10dp"
-            android:layout_marginRight="10dp">
+<!--        <com.google.android.material.textfield.TextInputLayout-->
+<!--            android:hint="SOCKS5"-->
+<!--            app:startIconContentDescription="SOCKS5"-->
+<!--            android:layout_width="match_parent"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:layout_marginLeft="10dp"-->
+<!--            android:layout_marginRight="10dp">-->
 
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/socks5"
-                android:maxLines="1"
-                android:maxLength="5"
-                android:inputType="number"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content" />
+<!--            <com.google.android.material.textfield.TextInputEditText-->
+<!--                android:id="@+id/socks5"-->
+<!--                android:maxLines="1"-->
+<!--                android:maxLength="5"-->
+<!--                android:inputType="number"-->
+<!--                android:layout_width="match_parent"-->
+<!--                android:layout_height="wrap_content" />-->
 
-        </com.google.android.material.textfield.TextInputLayout>
+<!--        </com.google.android.material.textfield.TextInputLayout>-->
 
         <com.google.android.material.textfield.TextInputLayout
             android:hint="YUHAIIN"

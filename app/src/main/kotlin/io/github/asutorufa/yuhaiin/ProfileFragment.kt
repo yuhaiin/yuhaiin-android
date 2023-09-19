@@ -270,7 +270,7 @@ class ProfileFragment : PreferenceFragmentCompat() {
 
                 val bind = PortsDialogBinding.inflate(requireActivity().layoutInflater, null, false)
 
-                bind.socks5.setText(profile.socks5ServerPort.toString())
+//                bind.socks5.setText(profile.socks5ServerPort.toString())
                 bind.http.setText(profile.httpServerPort.toString())
                 bind.yuhaiin.setText(profile.yuhaiinPort.toString())
                 showAlertDialog(
@@ -278,7 +278,7 @@ class ProfileFragment : PreferenceFragmentCompat() {
                     bind.root,
                     null
                 ) {
-                    profile.socks5ServerPort = bind.socks5.text.toString().toInt()
+//                    profile.socks5ServerPort = bind.socks5.text.toString().toInt()
                     profile.httpServerPort = bind.http.text.toString().toInt()
                     profile.yuhaiinPort = bind.yuhaiin.text.toString().toInt()
                     Manager.db.updateProfile(profile)
