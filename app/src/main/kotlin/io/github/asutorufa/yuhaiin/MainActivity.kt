@@ -183,13 +183,17 @@ class MainActivity : AppCompatActivity() {
             Context.BIND_AUTO_CREATE
         )
 
-        registerReceiver(bReceiver, IntentFilter().apply {
+        val intentFilter = IntentFilter().apply {
             addAction(State.CONNECTING.toString())
             addAction(State.CONNECTED.toString())
             addAction(State.DISCONNECTING.toString())
             addAction(State.DISCONNECTED.toString())
             addAction(State.ERROR.toString())
-        })
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
+            registerReceiver(bReceiver, intentFilter, RECEIVER_EXPORTED)
+        else registerReceiver(bReceiver, intentFilter)
     }
 
     override fun onDestroy() {

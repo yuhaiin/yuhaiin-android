@@ -53,7 +53,7 @@ tasks.withType<org.jetbrains.kotlin.gradle.internal.KaptWithoutKotlincTask>()
     }
 
 android {
-    compileSdk = 33
+    compileSdk = 34
 
     compileOptions {
         // Flag to enable support for the new language APIs
@@ -71,7 +71,7 @@ android {
         buildConfigField("String", "DOCUMENTS_AUTHORITY", "\"$documentsAuthorityValue\"")
 
         minSdk = 21
-        targetSdk = 33
+        targetSdk = 34
 
         versionCode = getVersionCode()
         versionName = getVersionName() + getCommit()
@@ -164,7 +164,7 @@ dependencies {
     implementation("androidx.appcompat:appcompat:1.6.1")
     implementation("androidx.preference:preference-ktx:1.2.1")
     implementation("com.google.android.material:material:1.9.0")
-    implementation("androidx.browser:browser:1.5.0")
+    implementation("androidx.browser:browser:1.6.0")
 
     // room
     val roomVersion = "2.5.2"
@@ -173,7 +173,7 @@ dependencies {
     implementation("com.google.code.gson:gson:2.10.1")
 
     // nav
-    val navVersion = "2.6.0"
+    val navVersion = "2.7.3"
     implementation("androidx.navigation:navigation-fragment-ktx:$navVersion")
     implementation("androidx.navigation:navigation-ui-ktx:$navVersion")
 
