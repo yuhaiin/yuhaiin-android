@@ -192,6 +192,13 @@ class YuhaiinVpnService : VpnService() {
         }
     }
 
+    private fun VpnService.Builder.addRuleRoute(profile: Profile) {
+        Yuhaiin.addRulesCidr(
+            { addRoute(it.ip, it.mask) },
+            "${profile.ruleProxy}\n${profile.ruleBlock}"
+        )
+    }
+
     private fun configure(profile: Profile) {
         Builder().apply {
             setMtu(VPN_MTU)
@@ -205,12 +212,16 @@ class YuhaiinVpnService : VpnService() {
                 .addRoute(PRIVATE_VLAN6_ROUTER, 128)
 
             when (profile.route) {
-                resources.getString(R.string.adv_route_non_chn) ->
+                resources.getString(R.string.adv_route_non_chn) -> {
                     resources.getStringArray(R.array.simple_route).forEach { addRoute(it) }
+                    addRuleRoute(profile)
+                }
 
-                resources.getString(R.string.adv_route_non_local) ->
+                resources.getString(R.string.adv_route_non_local) -> {
                     resources.getStringArray(R.array.all_routes_except_local)
                         .forEach { addRoute(it) }
+                    addRuleRoute(profile)
+                }
 
                 else -> {
                     addRoute("0.0.0.0/0")
