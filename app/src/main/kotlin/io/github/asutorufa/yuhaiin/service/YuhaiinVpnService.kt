@@ -53,6 +53,7 @@ class YuhaiinVpnService : VpnService() {
     private var state = State.DISCONNECTED
         set(value) {
             field = value
+            Log.d("VpnService", "send broadcast $value")
             applicationContext.sendBroadcast(Intent(value.toString()))
         }
 
@@ -128,7 +129,8 @@ class YuhaiinVpnService : VpnService() {
         state = State.DISCONNECTING
 
         try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) stopForeground(Service.STOP_FOREGROUND_REMOVE)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N)
+                stopForeground(Service.STOP_FOREGROUND_REMOVE)
             else stopForeground(true)
 
             mInterface?.close()
@@ -165,7 +167,6 @@ class YuhaiinVpnService : VpnService() {
             startNotification(profile.name)
 
             state = State.CONNECTED
-
         } catch (e: Exception) {
             e.printStackTrace()
             state = State.DISCONNECTED
