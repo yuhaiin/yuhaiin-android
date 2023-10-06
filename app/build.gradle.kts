@@ -163,7 +163,7 @@ dependencies {
     implementation(fileTree(mapOf("include" to listOf("*.aar", "*.jar"), "dir" to "libs")))
     implementation("androidx.appcompat:appcompat:1.6.1")
     implementation("androidx.preference:preference-ktx:1.2.1")
-    implementation("com.google.android.material:material:1.9.0")
+    implementation("com.google.android.material:material:1.10.0")
     implementation("androidx.browser:browser:1.6.0")
 
     // room
@@ -173,7 +173,7 @@ dependencies {
     implementation("com.google.code.gson:gson:2.10.1")
 
     // nav
-    val navVersion = "2.7.3"
+    val navVersion = "2.7.4"
     implementation("androidx.navigation:navigation-fragment-ktx:$navVersion")
     implementation("androidx.navigation:navigation-ui-ktx:$navVersion")
 
