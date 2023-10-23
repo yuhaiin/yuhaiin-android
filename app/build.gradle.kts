@@ -167,7 +167,7 @@ dependencies {
     implementation("androidx.browser:browser:1.6.0")
 
     // room
-    val roomVersion = "2.5.2"
+    val roomVersion = "2.6.0"
     implementation("androidx.room:room-runtime:$roomVersion")
     ksp("androidx.room:room-compiler:$roomVersion")
     implementation("com.google.code.gson:gson:2.10.1")
