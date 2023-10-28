@@ -91,6 +91,12 @@ android {
             }
     }
 
+    this.buildOutputs.all {
+        val variantOutputImpl = this as com.android.build.gradle.internal.api.BaseVariantOutputImpl
+        val variantName: String = variantOutputImpl.name
+        variantOutputImpl.outputFileName = "yuhaiin-${variantName}.apk"
+    }
+
     buildTypes {
         release {
             // Enables code shrinking, obfuscation, and optimization for only
