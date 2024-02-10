@@ -24,7 +24,7 @@ jobs:
           git submodule update --recursive --remote
 
       - name: Set up Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
           check-latest: true
           go-version-file: 'yuhaiin/code/go.mod'
