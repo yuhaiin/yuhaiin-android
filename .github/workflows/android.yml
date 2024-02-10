@@ -26,7 +26,9 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
-          go-version: '>=1.21.0'
+          check-latest: true
+          go-version-file: 'yuhaiin/code/go.mod'
+          cache-dependency-path: 'yuhaiin/code/go.sum'
 
       - name: clone
         run: |
