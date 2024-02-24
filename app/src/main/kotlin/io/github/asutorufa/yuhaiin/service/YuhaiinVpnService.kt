@@ -297,8 +297,8 @@ class YuhaiinVpnService : VpnService() {
             tun = TUN().apply {
                 fd = mInterface!!.fd
                 mtu = VPN_MTU
-                gateway = PRIVATE_VLAN4_CLIENT
-                portal = PRIVATE_VLAN4_ROUTER
+                gateway = PRIVATE_VLAN4_ROUTER
+                portal = PRIVATE_VLAN4_CLIENT
                 dnsHijacking = profile.dnsHijacking
                 // 0: fdbased, 1: channel, 2: system gvisor
                 driver = profile.tunDriver

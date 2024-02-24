@@ -130,7 +130,7 @@
     <string name="adv_tun_driver_title">Tun Driver</string>
     <string name="tun_driver_fdbased">gVisor Fdbased</string>
     <string name="tun_driver_channel">gVisor Channel</string>
-    <string name="tun_driver_system_gvisor">System gVisor</string>
+    <string name="tun_driver_system_gvisor">System</string>
     <string-array name="tun_drivers">
         <item>@string/tun_driver_fdbased</item>
         <item>@string/tun_driver_channel</item>
