@@ -41,10 +41,10 @@ class YuhaiinVpnService : VpnService() {
         }
 
         private const val VPN_MTU = 9000
-        private const val PRIVATE_VLAN4_CLIENT = "172.19.0.1"
-        private const val PRIVATE_VLAN4_ROUTER = "172.19.0.2"
-        private const val PRIVATE_VLAN6_ROUTER = "fdfe:dcba:9876::2"
-        private const val PRIVATE_VLAN6_CLIENT = "fdfe:dcba:9876::1"
+        private const val PRIVATE_VLAN4_ADDRESS = "172.19.0.1"
+        private const val PRIVATE_VLAN4_PORTAL = "172.19.0.2"
+        private const val PRIVATE_VLAN6_ADDRESS = "fdfe:dcba:9876::1"
+        private const val PRIVATE_VLAN6_PORTAL = "fdfe:dcba:9876::2"
     }
 
 
@@ -205,12 +205,13 @@ class YuhaiinVpnService : VpnService() {
             setMtu(VPN_MTU)
             setSession(profile.name)
 
-            addAddress(PRIVATE_VLAN4_CLIENT, 24).addRoute(PRIVATE_VLAN4_ROUTER, 32)
+            addAddress(PRIVATE_VLAN4_ADDRESS, 24).
+            addRoute(PRIVATE_VLAN4_PORTAL, 32)
 
             // Route all IPv6 traffic
-            if (profile.hasIPv6) addAddress(PRIVATE_VLAN6_CLIENT, 126)
+            if (profile.hasIPv6) addAddress(PRIVATE_VLAN6_ADDRESS, 64)
                 .addRoute("2000::", 3) // https://issuetracker.google.com/issues/149636790
-                .addRoute(PRIVATE_VLAN6_ROUTER, 128)
+                .addRoute(PRIVATE_VLAN6_PORTAL, 128)
 
             when (profile.route) {
                 resources.getString(R.string.adv_route_non_chn) -> {
@@ -230,7 +231,7 @@ class YuhaiinVpnService : VpnService() {
                 }
             }
 
-            addDnsServer(PRIVATE_VLAN4_ROUTER)
+            addDnsServer(PRIVATE_VLAN4_PORTAL)
             addRoute(profile.fakeDnsCidr)
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P)
@@ -297,8 +298,8 @@ class YuhaiinVpnService : VpnService() {
             tun = TUN().apply {
                 fd = mInterface!!.fd
                 mtu = VPN_MTU
-                gateway = PRIVATE_VLAN4_ROUTER
-                portal = PRIVATE_VLAN4_CLIENT
+                portal = "$PRIVATE_VLAN4_ADDRESS/24"
+                if (profile.hasIPv6) portalV6 = "$PRIVATE_VLAN6_ADDRESS/64"
                 dnsHijacking = profile.dnsHijacking
                 // 0: fdbased, 1: channel, 2: system gvisor
                 driver = profile.tunDriver
