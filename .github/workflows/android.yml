@@ -35,7 +35,7 @@ jobs:
           cd yuhaiin/code/internal/http
           git clone --depth=1 https://github.com/yuhaiin/yuhaiin.github.io.git out
           rm -rf out/.git out/.nojekyll
-          go run -v compress.go
+          go run -v generate.go
           echo ${PWD}
           ls
 
