@@ -28,6 +28,10 @@ data class Profile(
         name = "fake_dns_cidr",
         defaultValue = "10.0.2.1/24"
     ) var fakeDnsCidr: String = "10.0.2.1/24",
+    @ColumnInfo(
+        name = "fake_dnsv6_cidr",
+        defaultValue = "fc00::/64"
+    ) var fakeDnsv6Cidr: String = "fc00::/64",
     @ColumnInfo(name = "dns_port", defaultValue = "35353") var dnsPort: Int = 35353,
     @ColumnInfo(name = "per_app", defaultValue = "false") var isPerApp: Boolean = false,
     @ColumnInfo(name = "bypassApp", defaultValue = "false") var isBypassApp: Boolean = false,

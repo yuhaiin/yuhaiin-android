@@ -209,7 +209,7 @@ class YuhaiinVpnService : VpnService() {
             addRoute(PRIVATE_VLAN4_PORTAL, 32)
 
             // Route all IPv6 traffic
-            if (profile.hasIPv6) addAddress(PRIVATE_VLAN6_ADDRESS, 64)
+            addAddress(PRIVATE_VLAN6_ADDRESS, 64)
                 .addRoute("2000::", 3) // https://issuetracker.google.com/issues/149636790
                 .addRoute(PRIVATE_VLAN6_PORTAL, 128)
 
@@ -232,7 +232,9 @@ class YuhaiinVpnService : VpnService() {
             }
 
             addDnsServer(PRIVATE_VLAN4_PORTAL)
+            addDnsServer(PRIVATE_VLAN6_PORTAL)
             addRoute(profile.fakeDnsCidr)
+            addRoute(profile.fakeDnsv6Cidr)
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P)
                 connectivity.requestNetwork(defaultNetworkRequest, defaultNetworkCallback)
@@ -278,7 +280,6 @@ class YuhaiinVpnService : VpnService() {
             savepath = getExternalFilesDir("yuhaiin").toString()
             iPv6 = profile.hasIPv6
 
-
             if (profile.socks5ServerPort > 0) socks5 = "${address}:${profile.socks5ServerPort}"
             if (profile.httpServerPort > 0) http = "${address}:${profile.httpServerPort}"
 
@@ -299,7 +300,7 @@ class YuhaiinVpnService : VpnService() {
                 fd = mInterface!!.fd
                 mtu = VPN_MTU
                 portal = "$PRIVATE_VLAN4_ADDRESS/24"
-                if (profile.hasIPv6) portalV6 = "$PRIVATE_VLAN6_ADDRESS/64"
+                portalV6 = "$PRIVATE_VLAN6_ADDRESS/64"
                 dnsHijacking = profile.dnsHijacking
                 // 0: fdbased, 1: channel, 2: system gvisor
                 driver = profile.tunDriver
@@ -317,8 +318,9 @@ class YuhaiinVpnService : VpnService() {
 
             dns = DNSSetting().apply {
                 if (profile.dnsPort > 0) server = "${address}:${profile.dnsPort}"
-                fakedns = profile.fakeDnsCidr.isNotEmpty()
+                fakedns = profile.fakeDnsCidr.isNotEmpty() || profile.fakeDnsv6Cidr.isNotEmpty()
                 fakednsIpRange = profile.fakeDnsCidr
+                fakednsIpv6Range = profile.fakeDnsv6Cidr
                 resolveRemoteDomain = profile.resolveRemoteDomain
                 remote = convertDNS(profile.remoteDns)
                 local = convertDNS(profile.localDns)

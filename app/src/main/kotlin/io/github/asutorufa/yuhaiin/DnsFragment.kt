@@ -59,6 +59,12 @@ class DnsFragment : PreferenceFragmentCompat() {
                 profile.fakeDnsCidr = newValue as String
             }
         }
+        findPreference<EditTextPreference>(resources.getString(R.string.adv_fake_dnsv6_cidr_key))!!.apply {
+            text = profile.fakeDnsv6Cidr
+            setOnPreferenceChangeListener(this) { _, newValue ->
+                profile.fakeDnsv6Cidr = newValue as String
+            }
+        }
 
         findPreference<SwitchPreferenceCompat>(resources.getString(R.string.dns_hijacking))!!.apply {
             isChecked = profile.dnsHijacking

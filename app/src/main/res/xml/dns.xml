@@ -20,6 +20,12 @@
         app:useSimpleSummaryProvider="true"
         android:singleLine="true" />
 
+    <EditTextPreference
+        android:key="@string/adv_fake_dnsv6_cidr_key"
+        android:title="@string/adv_fake_dnsv6_cidr_title"
+        app:useSimpleSummaryProvider="true"
+        android:singleLine="true" />
+
     <SwitchPreferenceCompat
         android:title="@string/dns_dns_hijacking_title"
         android:key="@string/dns_hijacking" />

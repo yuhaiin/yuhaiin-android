@@ -12,7 +12,7 @@ fun getVersionCode(): Int {
     return try {
         val stdout = ByteArrayOutputStream()
         exec {
-            commandLine = listOf("git", "rev-list", "--first-parent", "--count", "master")
+            commandLine = listOf("git", "rev-list", "--first-parent", "--count", "main")
             standardOutput = stdout
         }
         Integer.parseInt(stdout.toString().trim())
