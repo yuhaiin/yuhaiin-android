@@ -37,20 +37,14 @@ jobs:
           distribution: "temurin"
           cache: gradle
 
-      - name: front and rule
-        run: |
-          cd yuhaiin/code
-          git clone --depth=1 https://github.com/yuhaiin/yuhaiin.github.io.git internal/http/out
-          rm -rf internal/http/out/.git internal/http/out/.nojekyll
-          go generate internal/http/generate.go
-          curl https://raw.githubusercontent.com/yuhaiin/yuhaiin/ACL/yuhaiin/yuhaiin.conf -o internal/statics/bypass.conf
-          go generate internal/statics/generate.go
-
       - name: build yuhaiin aar
         run: |
+          cd yuhaiin/code
+          go get -v -u github.com/yuhaiin/kitte@$(curl -H "Accept: application/vnd.github.VERSION.sha" "https://api.github.com/repos/yuhaiin/kitte/commits/main")
+          go get -v -u github.com/yuhaiin/yuhaiin.github.io@$(curl -H "Accept: application/vnd.github.VERSION.sha" "https://api.github.com/repos/yuhaiin/yuhaiin.github.io/commits/main")
           go install golang.org/x/mobile/cmd/gomobile@latest
           gomobile init
-          sh yuhaiin/build.sh
+          sh ../build.sh
 
       - name: Build with Gradle
         env:
