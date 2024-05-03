@@ -10,7 +10,6 @@ import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.SwitchPreferenceCompat
 import com.google.android.material.transition.platform.MaterialSharedAxis
-import com.takisoft.preferencex.SimpleMenuPreference
 import io.github.asutorufa.yuhaiin.database.DNS
 import io.github.asutorufa.yuhaiin.database.Manager.profile
 import io.github.asutorufa.yuhaiin.database.Manager.setOnPreferenceChangeListener
@@ -81,7 +80,7 @@ class DnsFragment : PreferenceFragmentCompat() {
             }
         }
 
-        findPreference<SimpleMenuPreference>(resources.getString(R.string.remote_dns_type_key))!!.apply {
+        findPreference<ListPreference>(resources.getString(R.string.remote_dns_type_key))!!.apply {
             value = dnsTypeToStr(DNS.Type.fromInt(profile.remoteDns.type))
             setOnPreferenceChangeListener(this) { _, newValue ->
                 profile.remoteDns.type = strToDNSType(newValue as String).value
@@ -116,7 +115,7 @@ class DnsFragment : PreferenceFragmentCompat() {
                 profile.localDns.host = newValue as String
             }
         }
-        findPreference<SimpleMenuPreference>(resources.getString(R.string.local_dns_type_key))!!.apply {
+        findPreference<ListPreference>(resources.getString(R.string.local_dns_type_key))!!.apply {
             value = dnsTypeToStr(DNS.Type.fromInt(profile.localDns.type))
             setOnPreferenceChangeListener(this) { _, newValue ->
                 profile.localDns.type = strToDNSType(newValue as String).value
@@ -145,7 +144,7 @@ class DnsFragment : PreferenceFragmentCompat() {
                 profile.bootstrapDns.host = newValue as String
             }
         }
-        findPreference<SimpleMenuPreference>(resources.getString(R.string.bootstrap_dns_type_key))!!.apply {
+        findPreference<ListPreference>(resources.getString(R.string.bootstrap_dns_type_key))!!.apply {
             value = dnsTypeToStr(DNS.Type.fromInt(profile.bootstrapDns.type))
             setOnPreferenceChangeListener(this) { _, newValue ->
                 profile.bootstrapDns.type = strToDNSType(newValue as String).value

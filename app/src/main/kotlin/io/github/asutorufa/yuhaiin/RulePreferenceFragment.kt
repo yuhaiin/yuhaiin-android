@@ -5,7 +5,6 @@ import android.view.View
 import androidx.preference.*
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.transition.platform.MaterialSharedAxis
-import com.takisoft.preferencex.SimpleMenuPreference
 import io.github.asutorufa.yuhaiin.database.Bypass
 import io.github.asutorufa.yuhaiin.database.Manager.profile
 import io.github.asutorufa.yuhaiin.database.Manager.setOnPreferenceChangeListener
@@ -40,7 +39,7 @@ class RulePreferenceFragment : PreferenceFragmentCompat() {
 
         preferenceManager.preferenceDataStore = mainActivity.dataStore
 
-        findPreference<SimpleMenuPreference>(resources.getString(R.string.adv_route_Key))!!.also {
+        findPreference<ListPreference>(resources.getString(R.string.adv_route_Key))!!.also {
             it.value = profile.route
             setOnPreferenceChangeListener(it) { _, newValue ->
                 profile.route = newValue as String
@@ -103,14 +102,14 @@ class RulePreferenceFragment : PreferenceFragmentCompat() {
             }
         }
 
-        findPreference<SimpleMenuPreference>(resources.getString(R.string.bypass_tcp))!!.also {
+        findPreference<ListPreference>(resources.getString(R.string.bypass_tcp))!!.also {
             it.value = bypassTypeToStr(Bypass.Type.fromInt(profile.bypass.tcp))
             setOnPreferenceChangeListener(it) { _, newValue ->
                 profile.bypass.tcp = strToBypassType(newValue as String).value
             }
         }
 
-        findPreference<SimpleMenuPreference>(resources.getString(R.string.bypass_udp))!!.also {
+        findPreference<ListPreference>(resources.getString(R.string.bypass_udp))!!.also {
             it.value = bypassTypeToStr(Bypass.Type.fromInt(profile.bypass.udp))
             setOnPreferenceChangeListener(it) { _, newValue ->
                 profile.bypass.udp = strToBypassType(newValue as String).value

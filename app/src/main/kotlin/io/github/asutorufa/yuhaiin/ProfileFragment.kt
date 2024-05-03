@@ -20,7 +20,6 @@ import androidx.preference.SwitchPreferenceCompat
 import com.github.logviewer.LogcatActivity
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.transition.platform.MaterialSharedAxis
-import com.takisoft.preferencex.SimpleMenuPreference
 import io.github.asutorufa.yuhaiin.database.Manager
 import io.github.asutorufa.yuhaiin.database.Manager.profile
 import io.github.asutorufa.yuhaiin.database.Manager.setOnPreferenceChangeListener
@@ -229,7 +228,7 @@ class ProfileFragment : PreferenceFragmentCompat() {
             refreshPreferences.add { it.isChecked = profile.saveLogcat }
         }
 
-        findPreference<SimpleMenuPreference>(resources.getString(R.string.log_level))!!.also {
+        findPreference<ListPreference>(resources.getString(R.string.log_level))!!.also {
             setOnPreferenceChangeListener(it) { _, newValue ->
                 profile.logLevel = strToLogLevel(newValue.toString())
             }

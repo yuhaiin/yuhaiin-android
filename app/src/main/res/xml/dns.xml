@@ -39,7 +39,7 @@
             android:singleLine="true"
             android:key="@string/remote_dns_host_key"
             app:useSimpleSummaryProvider="true" />
-        <com.takisoft.preferencex.SimpleMenuPreference
+        <ListPreference
             android:title="@string/dns_type_title"
             android:entries="@array/dns_types"
             android:key="@string/remote_dns_type_key"
@@ -71,7 +71,7 @@
             android:singleLine="true"
             android:key="@string/local_dns_host_key"
             app:useSimpleSummaryProvider="true" />
-        <com.takisoft.preferencex.SimpleMenuPreference
+        <ListPreference
             android:title="@string/dns_type_title"
             android:entries="@array/dns_types"
             app:useSimpleSummaryProvider="true"
@@ -97,7 +97,7 @@
             android:key="@string/bootstrap_dns_host_key"
             android:singleLine="true"
             app:useSimpleSummaryProvider="true" />
-        <com.takisoft.preferencex.SimpleMenuPreference
+        <ListPreference
             android:title="@string/dns_type_title"
             android:key="@string/bootstrap_dns_type_key"
             android:entries="@array/dns_types"

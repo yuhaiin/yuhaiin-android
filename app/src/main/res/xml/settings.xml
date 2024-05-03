@@ -125,7 +125,7 @@
             android:title="@string/save_logcat_name"
             android:summary="@string/save_logcat_summary" />
 
-        <com.takisoft.preferencex.SimpleMenuPreference
+        <ListPreference
             android:key="@string/log_level"
             android:title="@string/log_level_name"
             android:entries="@array/log_levels"

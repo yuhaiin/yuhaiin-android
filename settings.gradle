@@ -1,1 +1,1 @@
-include ':app', ':yuhaiin', ':logcatviewer', ':preferencex-simplemenu'
+include ':app', ':yuhaiin', ':logcatviewer'

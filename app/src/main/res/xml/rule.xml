@@ -2,7 +2,7 @@
 <androidx.preference.PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <com.takisoft.preferencex.SimpleMenuPreference
+    <ListPreference
         android:icon="@drawable/router"
         android:key="@string/adv_route_Key"
         android:title="@string/adv_route_title"
@@ -16,14 +16,14 @@
         app:useSimpleSummaryProvider="true"
         android:singleLine="true" />
 
-    <com.takisoft.preferencex.SimpleMenuPreference
+    <ListPreference
         android:key="@string/bypass_tcp"
         android:title="@string/bypass_tcp"
         android:entries="@array/adv_bypass_mode"
         app:useSimpleSummaryProvider="true"
         android:entryValues="@array/adv_bypass_mode" />
 
-    <com.takisoft.preferencex.SimpleMenuPreference
+    <ListPreference
         android:key="@string/bypass_udp"
         android:title="@string/bypass_udp"
         android:entries="@array/adv_bypass_mode"

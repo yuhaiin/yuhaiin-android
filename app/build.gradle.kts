@@ -185,7 +185,6 @@ dependencies {
 
     implementation(project(":yuhaiin"))
     implementation(project(":logcatviewer"))
-    implementation(project(":preferencex-simplemenu"))
 
     /*
     //compose
