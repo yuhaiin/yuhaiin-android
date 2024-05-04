@@ -6,8 +6,8 @@ import androidx.preference.*
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.transition.platform.MaterialSharedAxis
 import io.github.asutorufa.yuhaiin.database.Bypass
-import io.github.asutorufa.yuhaiin.database.Manager.profile
-import io.github.asutorufa.yuhaiin.database.Manager.setOnPreferenceChangeListener
+import io.github.asutorufa.yuhaiin.MainApplication.Companion.profile
+import io.github.asutorufa.yuhaiin.MainApplication.Companion.setOnPreferenceChangeListener
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope

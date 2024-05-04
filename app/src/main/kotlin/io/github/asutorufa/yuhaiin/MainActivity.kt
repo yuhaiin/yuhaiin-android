@@ -27,7 +27,6 @@ import androidx.navigation.fragment.findNavController
 import androidx.navigation.ui.setupWithNavController
 import androidx.preference.PreferenceDataStore
 import com.google.android.material.snackbar.Snackbar
-import io.github.asutorufa.yuhaiin.database.Manager
 import io.github.asutorufa.yuhaiin.databinding.MainActivityBinding
 import io.github.asutorufa.yuhaiin.service.YuhaiinVpnService
 import io.github.asutorufa.yuhaiin.service.YuhaiinVpnService.Companion.State
@@ -52,7 +51,7 @@ class MainActivity : AppCompatActivity() {
                     .apply {
                         setColorScheme(CustomTabsIntent.COLOR_SCHEME_SYSTEM)
                     }.build().apply {
-                        intent.data = Uri.parse("http://127.0.0.1:${Manager.profile.yuhaiinPort}")
+                        intent.data = Uri.parse("http://127.0.0.1:${MainApplication.profile.yuhaiinPort}")
                         this@MainActivity.startActivity(intent)
                     }
             }
@@ -271,7 +270,7 @@ class MainActivity : AppCompatActivity() {
                     this,
                     YuhaiinVpnService::class.java
                 ).apply {
-                    putExtra("profile", Json.encodeToString(Manager.profile))
+                    putExtra("profile", Json.encodeToString(MainApplication.profile))
                 }
             )
         }
@@ -295,7 +294,7 @@ class MainActivity : AppCompatActivity() {
         VpnService.prepare(this)?.apply {
             vpnPermissionDialogLauncher.launch(this)
         } ?: startService(Intent(this, YuhaiinVpnService::class.java).apply {
-            putExtra("profile", Json.encodeToString(Manager.profile))
+            putExtra("profile", Json.encodeToString(MainApplication.profile))
         })
 
     }

@@ -18,7 +18,6 @@ import androidx.lifecycle.Lifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import io.github.asutorufa.yuhaiin.database.Manager
 import io.github.asutorufa.yuhaiin.databinding.HostsDialogBinding
 import io.github.asutorufa.yuhaiin.databinding.ItemRecyclerHostsBinding
 
@@ -37,8 +36,8 @@ class HostsDialogFragment : DialogFragment() {
     override fun onPause() {
         Log.d("appListFragment", "onPause: ${adapter.hostsMap}")
         adapter.hostsMap.let {
-            Manager.profile.hosts = it
-            Manager.db.updateProfile(Manager.profile)
+            MainApplication.profile.hosts = it
+            MainApplication.db.updateProfile(MainApplication.profile)
         }
         super.onPause()
     }
@@ -54,7 +53,7 @@ class HostsDialogFragment : DialogFragment() {
             layoutManager = LinearLayoutManager(hostsDialogFragmentBinding.root.context)
             adapter = this@HostsDialogFragment.adapter
 
-            this@HostsDialogFragment.adapter.setHostsList(Manager.profile.hosts.toMutableMap())
+            this@HostsDialogFragment.adapter.setHostsList(MainApplication.profile.hosts.toMutableMap())
         }
 
 

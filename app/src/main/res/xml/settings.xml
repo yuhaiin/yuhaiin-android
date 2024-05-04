@@ -2,13 +2,6 @@
 <androidx.preference.PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <ListPreference
-        android:key="@string/profile_key"
-        android:title="@string/profile_title"
-        android:persistent="false"
-        app:useSimpleSummaryProvider="true"
-        android:icon="@drawable/person" />
-
     <PreferenceCategory android:title="@string/connection">
 
         <Preference

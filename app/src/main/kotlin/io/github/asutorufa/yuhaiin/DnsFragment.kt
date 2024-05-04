@@ -11,8 +11,8 @@ import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.SwitchPreferenceCompat
 import com.google.android.material.transition.platform.MaterialSharedAxis
 import io.github.asutorufa.yuhaiin.database.DNS
-import io.github.asutorufa.yuhaiin.database.Manager.profile
-import io.github.asutorufa.yuhaiin.database.Manager.setOnPreferenceChangeListener
+import io.github.asutorufa.yuhaiin.MainApplication.Companion.profile
+import io.github.asutorufa.yuhaiin.MainApplication.Companion.setOnPreferenceChangeListener
 
 
 class DnsFragment : PreferenceFragmentCompat() {

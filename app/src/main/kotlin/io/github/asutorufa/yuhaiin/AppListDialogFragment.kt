@@ -15,7 +15,6 @@ import android.view.Window
 import androidx.fragment.app.DialogFragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.github.logviewer.ReadLogcat.Companion.ignore
-import io.github.asutorufa.yuhaiin.database.Manager
 import io.github.asutorufa.yuhaiin.databinding.ApplistDialogFragmentBinding
 import kotlinx.coroutines.*
 
@@ -39,7 +38,7 @@ class AppListDialogFragment : DialogFragment() {
                 ignore {
                     val list = packages
                     requireActivity().runOnUiThread {
-                        this@AppListDialogFragment.adapter.setAppList(list, Manager.profile.appList)
+                        this@AppListDialogFragment.adapter.setAppList(list, MainApplication.profile.appList)
                         appListBinding.appListProgressIndicator.visibility = View.GONE
                     }
                 }
@@ -58,8 +57,8 @@ class AppListDialogFragment : DialogFragment() {
     override fun onPause() {
         Log.d("appListFragment", "onPause: ${adapter.checkedApps}")
         adapter.checkedApps?.let {
-            Manager.profile.appList = it
-            Manager.db.updateProfile(Manager.profile)
+            MainApplication.profile.appList = it
+            MainApplication.db.updateProfile(MainApplication.profile)
         }
         super.onPause()
     }
@@ -88,7 +87,7 @@ class AppListDialogFragment : DialogFragment() {
                 else
                     packageManager.getInstalledPackages(PackageManager.GET_PERMISSIONS)
 
-            val checkedApps = Manager.profile.appList
+            val checkedApps = MainApplication.profile.appList
 
             val apps = mutableListOf<AppList>()
 

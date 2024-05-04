@@ -1,15 +1,7 @@
 package io.github.asutorufa.yuhaiin
 
 import android.os.Bundle
-import android.text.InputType
-import android.view.Menu
-import android.view.MenuInflater
-import android.view.MenuItem
 import android.view.View
-import android.widget.EditText
-import androidx.appcompat.widget.AppCompatEditText
-import androidx.core.view.MenuProvider
-import androidx.lifecycle.Lifecycle
 import androidx.navigation.fragment.findNavController
 import androidx.preference.EditTextPreference
 import androidx.preference.ListPreference
@@ -20,9 +12,8 @@ import androidx.preference.SwitchPreferenceCompat
 import com.github.logviewer.LogcatActivity
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.transition.platform.MaterialSharedAxis
-import io.github.asutorufa.yuhaiin.database.Manager
-import io.github.asutorufa.yuhaiin.database.Manager.profile
-import io.github.asutorufa.yuhaiin.database.Manager.setOnPreferenceChangeListener
+import io.github.asutorufa.yuhaiin.MainApplication.Companion.profile
+import io.github.asutorufa.yuhaiin.MainApplication.Companion.setOnPreferenceChangeListener
 import io.github.asutorufa.yuhaiin.databinding.PortsDialogBinding
 
 class ProfileFragment : PreferenceFragmentCompat() {
@@ -45,7 +36,6 @@ class ProfileFragment : PreferenceFragmentCompat() {
         super.onViewCreated(view, savedInstanceState)
         view.transitionName = "transition_common"
 
-        mainActivity.addMenuProvider(menuProvider, viewLifecycleOwner, Lifecycle.State.RESUMED)
         preferenceManager.preferenceDataStore = mainActivity.dataStore
         reload()
     }
@@ -74,61 +64,8 @@ class ProfileFragment : PreferenceFragmentCompat() {
             show()
         }
 
-    private val menuProvider = object : MenuProvider {
-        override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) =
-            menuInflater.inflate(R.menu.main, menu)
-
-        override fun onMenuItemSelected(menuItem: MenuItem): Boolean =
-            when (menuItem.itemId) {
-                R.id.prof_add -> {
-                    val e = AppCompatEditText(requireContext()).apply { isSingleLine = true }
-                    showAlertDialog(R.string.prof_add, e, null) {
-                        val name = e.text.toString()
-                        if (name.isEmpty()) return@showAlertDialog
-                        try {
-                            Manager.addProfile(name)
-                        } catch (e: Exception) {
-                            e.message?.let { mainActivity.showSnackBar(it) }
-                        }
-                        reload()
-                    }
-                    true
-                }
-
-                R.id.prof_del -> {
-                    showAlertDialog(
-                        R.string.prof_del,
-                        null,
-                        String.format(getString(R.string.prof_del_confirm), profile.name)
-                    ) {
-                        try {
-                            Manager.deleteProfile()
-                            reload()
-                        } catch (e: Exception) {
-                            e.message?.let { mainActivity.showSnackBar(it) }
-                        }
-                    }
-                    true
-                }
-
-                else -> false
-            }
-    }
 
     private fun initPreferences() {
-        findPreference<ListPreference>(resources.getString(R.string.profile_key))!!.also {
-            refreshPreferences.add {
-                it.value = profile.name
-                val profiles = Manager.getProfileNames()
-                it.entries = profiles.toTypedArray()
-                it.entryValues = profiles.toTypedArray()
-            }
-
-            setOnPreferenceChangeListener(it) { _, newValue ->
-                Manager.switchProfile(newValue as String)
-                reload()
-            }
-        }
 
         findPreference<SwitchPreferenceCompat>(resources.getString(R.string.append_http_proxy_to_vpn_key))!!.also {
             setOnPreferenceChangeListener(it) { _, newValue ->
@@ -136,39 +73,6 @@ class ProfileFragment : PreferenceFragmentCompat() {
             }
             refreshPreferences.add { it.isChecked = profile.appendHttpProxyToSystem }
         }
-//
-//        findPreference<SwitchPreferenceCompat>(resources.getString(R.string.auth_userpw_key))!!.also {
-//            setOnPreferenceChangeListener(it) { _, newValue ->
-//                profile.isUserPw = newValue as Boolean
-//                reload()
-//            }
-//            refreshPreferences.add { it.isChecked = profile.isUserPw }
-//        }
-//
-//        findPreference<EditTextPreference>(resources.getString(R.string.auth_username_key))!!.also {
-//            setOnPreferenceChangeListener(it) { _, newValue ->
-//                profile.username = newValue.toString()
-//            }
-//            refreshPreferences.add {
-//                it.text = profile.username
-//                it.isVisible = profile.isUserPw
-//            }
-//        }
-//
-//        findPreference<EditTextPreference>(resources.getString(R.string.auth_password_key))!!.also {
-//            it.setOnBindEditTextListener { editText: EditText ->
-//                editText.inputType =
-//                    InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
-//            }
-//
-//            setOnPreferenceChangeListener(it) { _, newValue ->
-//                profile.password = newValue.toString()
-//            }
-//            refreshPreferences.add {
-//                it.text = profile.password
-//                it.isVisible = profile.isUserPw
-//            }
-//        }
 
         findPreference<ListPreference>(resources.getString(R.string.adv_tun_driver_key))!!.also {
             setOnPreferenceChangeListener(it) { _, newValue ->
@@ -269,7 +173,6 @@ class ProfileFragment : PreferenceFragmentCompat() {
 
                 val bind = PortsDialogBinding.inflate(requireActivity().layoutInflater, null, false)
 
-//                bind.socks5.setText(profile.socks5ServerPort.toString())
                 bind.http.setText(profile.httpServerPort.toString())
                 bind.yuhaiin.setText(profile.yuhaiinPort.toString())
                 showAlertDialog(
@@ -277,10 +180,9 @@ class ProfileFragment : PreferenceFragmentCompat() {
                     bind.root,
                     null
                 ) {
-//                    profile.socks5ServerPort = bind.socks5.text.toString().toInt()
                     profile.httpServerPort = bind.http.text.toString().toInt()
                     profile.yuhaiinPort = bind.yuhaiin.text.toString().toInt()
-                    Manager.db.updateProfile(profile)
+                    MainApplication.db.updateProfile(profile)
                 }
                 true
             }
