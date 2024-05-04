@@ -18,13 +18,13 @@ import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import androidx.core.content.getSystemService
-import com.google.gson.Gson
 import io.github.asutorufa.yuhaiin.BuildConfig
 import io.github.asutorufa.yuhaiin.IYuhaiinVpnBinder
 import io.github.asutorufa.yuhaiin.MainActivity
 import io.github.asutorufa.yuhaiin.R
-import io.github.asutorufa.yuhaiin.database.Manager
 import io.github.asutorufa.yuhaiin.database.Profile
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import yuhaiin.*
 import java.net.InetSocketAddress
 import io.github.asutorufa.yuhaiin.database.DNS as dDNS
@@ -160,7 +160,7 @@ class YuhaiinVpnService : VpnService() {
         state = State.CONNECTING
 
         try {
-            val profile = Manager.db.getProfileByName(Manager.db.getLastProfile() ?: "Default")
+            val profile = Json.decodeFromString<Profile>(intent?.getStringExtra("profile")!!)
 
             configure(profile)
             start(profile)
@@ -325,7 +325,7 @@ class YuhaiinVpnService : VpnService() {
                 remote = convertDNS(profile.remoteDns)
                 local = convertDNS(profile.localDns)
                 bootstrap = convertDNS(profile.bootstrapDns)
-                hosts = Gson().toJson(profile.hosts).toByteArray()
+                hosts = Json.encodeToString(profile.hosts).toByteArray()
             }
 
             closeFallback = Closer { stop() }

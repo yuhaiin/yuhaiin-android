@@ -1,50 +1,47 @@
 package io.github.asutorufa.yuhaiin.database
 
 import androidx.room.TypeConverter
-import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 
 object Converters {
-    private val gson = Gson()
-
     @TypeConverter
     fun fromString(value: String?): Set<String> {
-        return gson.fromJson(value, TypeToken.getParameterized(Set::class.java,String::class.java).type)
+        return Json.decodeFromString(value.orEmpty())
     }
 
     @TypeConverter
     fun fromSet(list: Set<String?>?): String {
-        return gson.toJson(list)
+       return  Json.encodeToString(list.orEmpty())
     }
-
 
     @TypeConverter
     fun fromMapString(value: String?): Map<String, String> {
-        return gson.fromJson(value, TypeToken.getParameterized(Map::class.java,String::class.java,String::class.java).type)
+        return Json.decodeFromString(value.orEmpty())
     }
 
     @TypeConverter
     fun fromMap(list: Map<String, String>?): String {
-        return gson.toJson(list)
+        return Json.encodeToString(list.orEmpty())
     }
 
     @TypeConverter
     fun stringToDNS(value: String?): DNS {
-        return gson.fromJson(value, TypeToken.get(DNS::class.java).type)
+        return  Json.decodeFromString(value.orEmpty())
     }
 
     @TypeConverter
     fun fromDNS(dns: DNS?): String {
-        return gson.toJson(dns)
+        return Json.encodeToString(dns)
     }
 
     @TypeConverter
     fun stringToBypass(value: String?): Bypass {
-        return gson.fromJson(value, TypeToken.get(Bypass::class.java).type)
+        return  Json.decodeFromString(value.orEmpty())
     }
 
     @TypeConverter
     fun fromBypass(b: Bypass?): String {
-        return gson.toJson(b)
+        return Json.encodeToString(b)
     }
 }

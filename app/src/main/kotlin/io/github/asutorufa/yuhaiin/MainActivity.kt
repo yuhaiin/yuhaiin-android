@@ -31,6 +31,8 @@ import io.github.asutorufa.yuhaiin.database.Manager
 import io.github.asutorufa.yuhaiin.databinding.MainActivityBinding
 import io.github.asutorufa.yuhaiin.service.YuhaiinVpnService
 import io.github.asutorufa.yuhaiin.service.YuhaiinVpnService.Companion.State
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import java.util.concurrent.ConcurrentHashMap
 
 
@@ -268,7 +270,9 @@ class MainActivity : AppCompatActivity() {
                 Intent(
                     this,
                     YuhaiinVpnService::class.java
-                )
+                ).apply {
+                    putExtra("profile", Json.encodeToString(Manager.profile))
+                }
             )
         }
 
@@ -290,7 +294,9 @@ class MainActivity : AppCompatActivity() {
         // prepare to get vpn permission
         VpnService.prepare(this)?.apply {
             vpnPermissionDialogLauncher.launch(this)
-        } ?: startService(Intent(this, YuhaiinVpnService::class.java))
+        } ?: startService(Intent(this, YuhaiinVpnService::class.java).apply {
+            putExtra("profile", Json.encodeToString(Manager.profile))
+        })
 
     }
 

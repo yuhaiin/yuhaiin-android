@@ -1,5 +1,8 @@
 package io.github.asutorufa.yuhaiin.database
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 class DNS {
     var host: String = ""
     var type: Int = 0

@@ -3,9 +3,11 @@ package io.github.asutorufa.yuhaiin.database
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import kotlinx.serialization.Serializable
 
+@Serializable
 @Entity(tableName = "profile")
-data class Profile(
+data class Profile (
     @PrimaryKey @ColumnInfo(
         name = "profile_name",
         defaultValue = "Default"

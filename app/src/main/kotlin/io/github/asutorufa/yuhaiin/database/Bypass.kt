@@ -1,5 +1,8 @@
 package io.github.asutorufa.yuhaiin.database
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 class Bypass {
     var tcp: Int = 0
     var udp: Int = 0

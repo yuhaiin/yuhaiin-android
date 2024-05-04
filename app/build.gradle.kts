@@ -6,6 +6,7 @@ plugins {
     kotlin("android")
     id("com.google.devtools.ksp")
     id("androidx.navigation.safeargs.kotlin")
+    kotlin("plugin.serialization") version "1.9.23"
 }
 
 fun getVersionCode(): Int {
@@ -171,12 +172,12 @@ dependencies {
     implementation("androidx.preference:preference-ktx:1.2.1")
     implementation("com.google.android.material:material:1.12.0")
     implementation("androidx.browser:browser:1.8.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
 
     // room
     val roomVersion = "2.6.1"
     implementation("androidx.room:room-runtime:$roomVersion")
     ksp("androidx.room:room-compiler:$roomVersion")
-    implementation("com.google.code.gson:gson:2.10.1")
 
     // nav
     val navVersion = "2.7.7"
