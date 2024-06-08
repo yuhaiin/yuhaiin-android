@@ -74,6 +74,9 @@ data class Profile (
         defaultValue = Bypass.DefaultJson
     ) var bypass: Bypass = Bypass.Default,
 
+    @ColumnInfo(name = "udp_proxy_fqdn", defaultValue = "0")
+    var udpProxyFqdn: Boolean = false,
+
     @ColumnInfo(
         name = "hosts",
         defaultValue = "{}"

@@ -115,12 +115,20 @@ class RulePreferenceFragment : PreferenceFragmentCompat() {
                 profile.bypass.udp = strToBypassType(newValue as String).value
             }
         }
+
+        findPreference<SwitchPreferenceCompat>(resources.getString(R.string.udp_proxy_fqdn))!!.also {
+            it.isChecked = profile.udpProxyFqdn
+            setOnPreferenceChangeListener(it) { _, newValue ->
+                profile.udpProxyFqdn = newValue as Boolean
+            }
+        }
     }
 
     override fun onDisplayPreferenceDialog(preference: Preference) {
         when (preference) {
             is ListPreference, is EditTextPreference, is MultiSelectListPreference ->
                 showDialog(preference)
+
             else -> super.onDisplayPreferenceDialog(preference)
         }
     }

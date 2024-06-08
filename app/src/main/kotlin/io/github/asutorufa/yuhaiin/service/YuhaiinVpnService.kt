@@ -205,8 +205,7 @@ class YuhaiinVpnService : VpnService() {
             setMtu(VPN_MTU)
             setSession(profile.name)
 
-            addAddress(PRIVATE_VLAN4_ADDRESS, 24).
-            addRoute(PRIVATE_VLAN4_PORTAL, 32)
+            addAddress(PRIVATE_VLAN4_ADDRESS, 24).addRoute(PRIVATE_VLAN4_PORTAL, 32)
 
             // Route all IPv6 traffic
             addAddress(PRIVATE_VLAN6_ADDRESS, 64)
@@ -294,6 +293,7 @@ class YuhaiinVpnService : VpnService() {
                 direct = profile.ruleDirect
                 tcp = profile.bypass.tcp
                 udp = profile.bypass.udp
+                udpSkipResolveFqdn = profile.udpProxyFqdn
             }
 
             tun = TUN().apply {

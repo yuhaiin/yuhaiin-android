@@ -63,6 +63,7 @@
         <item>@string/bypass_proxy</item>
         <item>@string/bypass_block</item>
     </string-array>
+    <string name="udp_proxy_fqdn">UDP proxy FQDN</string>
 
 
     <string name="adv_dns_Key">dns</string>
