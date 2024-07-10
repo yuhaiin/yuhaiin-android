@@ -36,6 +36,12 @@
         android:title="@string/udp_proxy_fqdn"
         android:layout_height="match_parent" />
 
+    <SwitchPreferenceCompat
+        android:icon="@drawable/router"
+        android:key="@string/sniff"
+        android:title="@string/sniff"
+        android:layout_height="match_parent" />
+
     <EditTextPreference
         android:key="@string/rule_direct"
         android:title="@string/rule_direct_title"

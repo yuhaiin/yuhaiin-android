@@ -76,6 +76,8 @@ data class Profile (
 
     @ColumnInfo(name = "udp_proxy_fqdn", defaultValue = "0")
     var udpProxyFqdn: Boolean = false,
+    @ColumnInfo(name = "sniff_enabled", defaultValue = "1")
+    var sniffEnabled: Boolean = true,
 
     @ColumnInfo(
         name = "hosts",

@@ -202,11 +202,11 @@ dependencies {
     implementation("androidx.compose.material3:material3-window-size-class:1.0.0-alpha16")
     */
 
-    testImplementation("androidx.test:core:1.5.0")
-    testImplementation("androidx.test:runner:1.5.2")
+    testImplementation("androidx.test:core:1.6.1")
+    testImplementation("androidx.test:runner:1.6.1")
     testImplementation("junit:junit:4.13.2")
-    testImplementation("androidx.test.espresso:espresso-core:3.5.1")
-    testImplementation("androidx.test.ext:junit-ktx:1.1.5")
-    androidTestUtil("androidx.test:orchestrator:1.4.2")
+    testImplementation("androidx.test.espresso:espresso-core:3.6.1")
+    testImplementation("androidx.test.ext:junit-ktx:1.2.1")
+    androidTestUtil("androidx.test:orchestrator:1.5.0")
     testImplementation("org.robolectric:robolectric:4.13")
 }

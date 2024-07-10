@@ -294,6 +294,7 @@ class YuhaiinVpnService : VpnService() {
                 tcp = profile.bypass.tcp
                 udp = profile.bypass.udp
                 udpSkipResolveFqdn = profile.udpProxyFqdn
+                sniffy = profile.sniffEnabled
             }
 
             tun = TUN().apply {

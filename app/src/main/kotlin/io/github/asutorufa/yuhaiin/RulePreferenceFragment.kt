@@ -122,6 +122,13 @@ class RulePreferenceFragment : PreferenceFragmentCompat() {
                 profile.udpProxyFqdn = newValue as Boolean
             }
         }
+
+        findPreference<SwitchPreferenceCompat>(resources.getString(R.string.sniff))!!.also {
+            it.isChecked = profile.sniffEnabled
+            setOnPreferenceChangeListener(it) { _, newValue ->
+                profile.sniffEnabled = newValue as Boolean
+            }
+        }
     }
 
     override fun onDisplayPreferenceDialog(preference: Preference) {
