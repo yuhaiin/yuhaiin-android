@@ -19,10 +19,13 @@ Android 5.0+ (API level 21)
 ## Build
 
 ```shell
-git submodule update --init --recursive
-git submodule update --recursive --remote
+git clone https://github.com/yuhaiin/yuhaiin.git yuhaiin/code
 ./yuhaiin/build.sh
-./build_release
+export KEYSTORE_PATH=keystore.keystore
+export KEY_ALIAS=key0
+KEYSTORE_PASSWORD=keystore_password
+KEY_PASSWORD=key_password
+./gradlew app:assembleRelease --stacktrace
 ```
 
 ## Screenshot
