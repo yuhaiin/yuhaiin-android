@@ -7,6 +7,8 @@ import android.net.VpnService
 import android.util.Log
 import androidx.core.content.ContextCompat
 import io.github.asutorufa.yuhaiin.service.YuhaiinVpnService
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 
 class BootReceiver : BroadcastReceiver() {
     private val tag = this.javaClass.simpleName
@@ -20,7 +22,9 @@ class BootReceiver : BroadcastReceiver() {
             Log.d(tag, "starting VPN service on boot")
             ContextCompat.startForegroundService(
                 context,
-                Intent(context, YuhaiinVpnService::class.java)
+                Intent(context, YuhaiinVpnService::class.java).apply {
+                    putExtra("profile", Json.encodeToString(MainApplication.profile))
+                }
             )
         }
     }
