@@ -6,7 +6,7 @@ plugins {
     kotlin("android")
     id("com.google.devtools.ksp")
     id("androidx.navigation.safeargs.kotlin")
-    kotlin("plugin.serialization") version "2.0.0"
+    kotlin("plugin.serialization") version "2.0.10"
 }
 
 fun getVersionCode(): Int {
