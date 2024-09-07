@@ -7,23 +7,25 @@ import android.net.VpnService
 import android.util.Log
 import androidx.core.content.ContextCompat
 import io.github.asutorufa.yuhaiin.service.YuhaiinVpnService
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
+import yuhaiin.Yuhaiin
 
 class BootReceiver : BroadcastReceiver() {
     private val tag = this.javaClass.simpleName
 
     override fun onReceive(context: Context, intent: Intent) {
+        val autoConnect = MainApplication.store.getBoolean("auto_connect")
+        val data = MainApplication.store.dump()
+        Yuhaiin.closeStore()
         if (
             Intent.ACTION_BOOT_COMPLETED == intent.action
-            && MainApplication.profile.autoConnect
+            && autoConnect
             && VpnService.prepare(context) == null
         ) {
             Log.d(tag, "starting VPN service on boot")
             ContextCompat.startForegroundService(
                 context,
                 Intent(context, YuhaiinVpnService::class.java).apply {
-                    putExtra("profile", Json.encodeToString(MainApplication.profile))
+                    putExtra("profile", data)
                 }
             )
         }

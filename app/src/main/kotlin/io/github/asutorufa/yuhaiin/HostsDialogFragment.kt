@@ -26,18 +26,10 @@ class HostsDialogFragment : DialogFragment() {
     private val adapter = HostsListAdapter()
     private val mainActivity by lazy { requireActivity() as MainActivity }
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-
-//        enterTransition = MaterialSharedAxis(MaterialSharedAxis.Y, true)
-//        returnTransition = MaterialSharedAxis(MaterialSharedAxis.Y, false)
-    }
-
     override fun onPause() {
         Log.d("appListFragment", "onPause: ${adapter.hostsMap}")
         adapter.hostsMap.let {
-            MainApplication.profile.hosts = it
-            MainApplication.db.updateProfile(MainApplication.profile)
+            MainApplication.store.putStringMap("hosts", it)
         }
         super.onPause()
     }
@@ -53,9 +45,9 @@ class HostsDialogFragment : DialogFragment() {
             layoutManager = LinearLayoutManager(hostsDialogFragmentBinding.root.context)
             adapter = this@HostsDialogFragment.adapter
 
-            this@HostsDialogFragment.adapter.setHostsList(MainApplication.profile.hosts.toMutableMap())
+            val hostsSet = MainApplication.store.getStringMap("hosts")
+            this@HostsDialogFragment.adapter.setHostsList(hostsSet.toMutableMap())
         }
-
 
         mainActivity.addMenuProvider(menuProvider, viewLifecycleOwner, Lifecycle.State.RESUMED)
         return hostsDialogFragmentBinding.root
@@ -90,13 +82,13 @@ class HostsDialogFragment : DialogFragment() {
         title: Int,
         view: View?,
         message: String?,
-        PositiveFun: () -> Unit
+        positiveFun: () -> Unit
     ) =
         MaterialAlertDialogBuilder(requireContext()).apply {
             setTitle(title)
             view?.let { setView(it) }
             message?.let { setMessage(it) }
-            setPositiveButton(android.R.string.ok) { _, _ -> PositiveFun() }
+            setPositiveButton(android.R.string.ok) { _, _ -> positiveFun() }
             setNegativeButton(android.R.string.cancel) { _, _ -> }
             show()
         }

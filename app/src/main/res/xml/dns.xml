@@ -7,6 +7,7 @@
         android:title="@string/adv_dns_port_title"
         android:inputType="number"
         android:digits="0123456789"
+        android:defaultValue="0"
         app:useSimpleSummaryProvider="true"
         android:singleLine="true" />
 
@@ -16,18 +17,21 @@
     
     <EditTextPreference
         android:key="@string/adv_fake_dns_cidr_key"
+        android:defaultValue="10.0.2.1/24"
         android:title="@string/adv_fake_dns_cidr_title"
         app:useSimpleSummaryProvider="true"
         android:singleLine="true" />
 
     <EditTextPreference
         android:key="@string/adv_fake_dnsv6_cidr_key"
+        android:defaultValue="fc00::/64"
         android:title="@string/adv_fake_dnsv6_cidr_title"
         app:useSimpleSummaryProvider="true"
         android:singleLine="true" />
 
     <SwitchPreferenceCompat
         android:title="@string/dns_dns_hijacking_title"
+        android:defaultValue="true"
         android:key="@string/dns_hijacking" />
 
     <PreferenceCategory
@@ -38,13 +42,15 @@
             android:title="@string/dns_host_title"
             android:singleLine="true"
             android:key="@string/remote_dns_host_key"
+            android:defaultValue="cloudflare.com"
             app:useSimpleSummaryProvider="true" />
         <ListPreference
             android:title="@string/dns_type_title"
             android:entries="@array/dns_types"
             android:key="@string/remote_dns_type_key"
+            android:defaultValue="@string/dns_type_doh_value"
             app:useSimpleSummaryProvider="true"
-            android:entryValues="@array/dns_types" />
+            android:entryValues="@array/dns_types_value" />
         <EditTextPreference
             android:title="@string/dns_subnet_title"
             android:singleLine="true"
@@ -70,13 +76,15 @@
             android:title="@string/dns_host_title"
             android:singleLine="true"
             android:key="@string/local_dns_host_key"
+            android:defaultValue="1.1.1.1"
             app:useSimpleSummaryProvider="true" />
         <ListPreference
             android:title="@string/dns_type_title"
             android:entries="@array/dns_types"
             app:useSimpleSummaryProvider="true"
             android:key="@string/local_dns_type_key"
-            android:entryValues="@array/dns_types" />
+            android:defaultValue="@string/dns_type_doh_value"
+            android:entryValues="@array/dns_types_value" />
         <EditTextPreference
             android:title="@string/dns_subnet_title"
             android:singleLine="true"
@@ -96,13 +104,15 @@
             android:title="@string/dns_host_title"
             android:key="@string/bootstrap_dns_host_key"
             android:singleLine="true"
+            android:defaultValue="1.1.1.1"
             app:useSimpleSummaryProvider="true" />
         <ListPreference
             android:title="@string/dns_type_title"
             android:key="@string/bootstrap_dns_type_key"
             android:entries="@array/dns_types"
+            android:defaultValue="@string/dns_type_doh_value"
             app:useSimpleSummaryProvider="true"
-            android:entryValues="@array/dns_types" />
+            android:entryValues="@array/dns_types_value" />
         <EditTextPreference
             android:title="@string/dns_subnet_title"
             android:key="@string/bootstrap_dns_subnet_key"

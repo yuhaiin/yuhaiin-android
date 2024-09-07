@@ -57,11 +57,21 @@
     <string name="bypass_direct">DIRECT</string>
     <string name="bypass_proxy">PROXY</string>
     <string name="bypass_block">BLOCK</string>
+    <string name="bypass_bypass_value">bypass</string>
+    <string name="bypass_direct_value">direct</string>
+    <string name="bypass_proxy_value">proxy</string>
+    <string name="bypass_block_value">block</string>
     <string-array name="adv_bypass_mode">
         <item>@string/bypass_bypass</item>
         <item>@string/bypass_direct</item>
         <item>@string/bypass_proxy</item>
         <item>@string/bypass_block</item>
+    </string-array>
+    <string-array name="adv_bypass_mode_value">
+        <item>@string/bypass_bypass_value</item>
+        <item>@string/bypass_direct_value</item>
+        <item>@string/bypass_proxy_value</item>
+        <item>@string/bypass_block_value</item>
     </string-array>
     <string name="udp_proxy_fqdn">UDP proxy FQDN</string>
     <string name="sniff">Sniff</string>
@@ -104,12 +114,19 @@
     <string name="bootstrap_dns_subnet_key">bootstrap_dns_subnet</string>
     <string name="bootstrap_dns_tls_server_name_key">bootstrap_dns_tls_server_name</string>
 
+
     <string name="dns_type_doudp">DNS over UDP</string>
     <string name="dns_type_dotcp">DNS over TCP</string>
     <string name="dns_type_doh">DNS over HTTPS</string>
     <string name="dns_type_dot">DNS over TLS</string>
     <string name="dns_type_doq">DNS over QUIC</string>
     <string name="dns_type_doh3">DNS over HTTPS3</string>
+    <string name="dns_type_doudp_value">udp</string>
+    <string name="dns_type_dotcp_value">tcp</string>
+    <string name="dns_type_doh_value">doh</string>
+    <string name="dns_type_dot_value">dot</string>
+    <string name="dns_type_doq_value">doq</string>
+    <string name="dns_type_doh3_value">doh3</string>
     <string-array name="dns_types">
         <item>@string/dns_type_doudp</item>
         <item>@string/dns_type_dotcp</item>
@@ -118,6 +135,14 @@
         <item>@string/dns_type_doq</item>
         <item>@string/dns_type_doh3</item>
     </string-array>
+    <string-array name="dns_types_value">
+    <item>@string/dns_type_doudp_value</item>
+    <item>@string/dns_type_dotcp_value</item>
+    <item>@string/dns_type_doh_value</item>
+    <item>@string/dns_type_dot_value</item>
+    <item>@string/dns_type_doq_value</item>
+    <item>@string/dns_type_doh3_value</item>
+</string-array>
 
 
     <string name="dns_dns_hijacking_title">DNS Hijacking</string>
@@ -135,11 +160,19 @@
     <string name="tun_driver_fdbased">gVisor Fdbased</string>
     <string name="tun_driver_channel">gVisor Channel</string>
     <string name="tun_driver_system_gvisor">System</string>
+    <string name="tun_driver_fdbased_value">fdbased</string>
+    <string name="tun_driver_channel_value">channel</string>
+    <string name="tun_driver_system_gvisor_value">system_gvisor</string>
     <string-array name="tun_drivers">
         <item>@string/tun_driver_fdbased</item>
         <item>@string/tun_driver_channel</item>
         <item>@string/tun_driver_system_gvisor</item>
     </string-array>
+    <string-array name="tun_drivers_value">
+    <item>@string/tun_driver_fdbased_value</item>
+    <item>@string/tun_driver_channel_value</item>
+    <item>@string/tun_driver_system_gvisor_value</item>
+</string-array>
 
     <string name="adv_auto_connect_key">auto_connect</string>
     <string name="adv_auto_connect_title">Connect on Boot</string>
@@ -187,12 +220,12 @@
 
     <string name="log_level">Log Level</string>
     <string name="log_level_name">Log Level</string>
-    <string name="log_level_verbose">Verbose</string>
-    <string name="log_level_debug">Debug</string>
-    <string name="log_level_info">Info</string>
-    <string name="log_level_warning">Warning</string>
-    <string name="log_level_error">Error</string>
-    <string name="log_level_fatal">Fatal</string>
+    <string name="log_level_verbose">verbose</string>
+    <string name="log_level_debug">debug</string>
+    <string name="log_level_info">info</string>
+    <string name="log_level_warning">warning</string>
+    <string name="log_level_error">error</string>
+    <string name="log_level_fatal">fatal</string>
     <string-array name="log_levels">
         <item>@string/log_level_verbose</item>
         <item>@string/log_level_debug</item>

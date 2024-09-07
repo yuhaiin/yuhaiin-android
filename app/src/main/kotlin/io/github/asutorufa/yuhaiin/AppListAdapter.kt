@@ -6,8 +6,7 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import io.github.asutorufa.yuhaiin.databinding.ItemRecyclerApplistBinding
 
-class AppListAdapter :
-    RecyclerView.Adapter<AppListAdapter.AppListViewHolder>() {
+class AppListAdapter : RecyclerView.Adapter<AppListAdapter.AppListViewHolder>() {
 
     private var apps: List<AppList>? = null
     var checkedApps: HashSet<String>? = null
@@ -17,11 +16,11 @@ class AppListAdapter :
         this.checkedApps = HashSet(checkedApps)
         notifyItemRangeInserted(0, itemCount)
     }
-    
+
     inner class AppListViewHolder(private val itemBinding: ItemRecyclerApplistBinding) :
         RecyclerView.ViewHolder(itemBinding.root), View.OnClickListener {
 
-        lateinit var info: AppList
+        private lateinit var info: AppList
 
         fun bind(app: AppList) {
             this.info = app
@@ -48,9 +47,7 @@ class AppListAdapter :
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): AppListViewHolder {
         return AppListViewHolder(
             ItemRecyclerApplistBinding.inflate(
-                LayoutInflater.from(parent.context),
-                parent,
-                false
+                LayoutInflater.from(parent.context), parent, false
             )
         )
     }

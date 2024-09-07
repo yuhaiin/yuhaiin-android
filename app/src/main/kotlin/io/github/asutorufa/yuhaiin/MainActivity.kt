@@ -30,14 +30,11 @@ import com.google.android.material.snackbar.Snackbar
 import io.github.asutorufa.yuhaiin.databinding.MainActivityBinding
 import io.github.asutorufa.yuhaiin.service.YuhaiinVpnService
 import io.github.asutorufa.yuhaiin.service.YuhaiinVpnService.Companion.State
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
-import java.util.concurrent.ConcurrentHashMap
 
 
 class MainActivity : AppCompatActivity() {
     val tag: String = this.javaClass.simpleName
-    val dataStore = DataStore()
+    val dataStore = BBoltDataStore()
 
     private val mainBinding: MainActivityBinding by lazy {
         MainActivityBinding.inflate(layoutInflater).apply {
@@ -47,13 +44,13 @@ class MainActivity : AppCompatActivity() {
             }
 
             floatingActionButtonOpen.setOnClickListener {
-                CustomTabsIntent.Builder()
-                    .apply {
-                        setColorScheme(CustomTabsIntent.COLOR_SCHEME_SYSTEM)
-                    }.build().apply {
-                        intent.data = Uri.parse("http://127.0.0.1:${MainApplication.profile.yuhaiinPort}")
-                        this@MainActivity.startActivity(intent)
-                    }
+                CustomTabsIntent.Builder().apply {
+                    setColorScheme(CustomTabsIntent.COLOR_SCHEME_SYSTEM)
+                }.build().apply {
+                    intent.data =
+                        Uri.parse("http://127.0.0.1:${MainApplication.store.getInt("yuhaiin_port")}")
+                    this@MainActivity.startActivity(intent)
+                }
             }
 
 
@@ -87,6 +84,7 @@ class MainActivity : AppCompatActivity() {
 
         setContentView(mainBinding.root)
 
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             window.setDecorFitsSystemWindows(true)
         }
@@ -114,12 +112,9 @@ class MainActivity : AppCompatActivity() {
 
 
     private val blurEffect by lazy {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
-            RenderEffect.createBlurEffect(
-                20f,
-                20f,
-                Shader.TileMode.CLAMP
-            )
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) RenderEffect.createBlurEffect(
+            20f, 20f, Shader.TileMode.CLAMP
+        )
         else null
     }
 
@@ -179,9 +174,7 @@ class MainActivity : AppCompatActivity() {
         super.onStart()
 
         bindService(
-            Intent(this, YuhaiinVpnService::class.java),
-            mConnection,
-            Context.BIND_AUTO_CREATE
+            Intent(this, YuhaiinVpnService::class.java), mConnection, Context.BIND_AUTO_CREATE
         )
 
         val intentFilter = IntentFilter().apply {
@@ -192,8 +185,9 @@ class MainActivity : AppCompatActivity() {
             addAction(State.ERROR.toString())
         }
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
-            registerReceiver(bReceiver, intentFilter, RECEIVER_EXPORTED)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) registerReceiver(
+            bReceiver, intentFilter, RECEIVER_EXPORTED
+        )
         else registerReceiver(bReceiver, intentFilter)
     }
 
@@ -253,9 +247,7 @@ class MainActivity : AppCompatActivity() {
 
     fun showSnackBar(message: String) {
         Snackbar.make(
-            findViewById(android.R.id.content),
-            message,
-            Snackbar.LENGTH_SHORT
+            findViewById(android.R.id.content), message, Snackbar.LENGTH_SHORT
         ).apply {
             anchorView =
                 if (isFabVisible) mainBinding.floatingActionButtonOpen else mainBinding.extendedFloatingButton
@@ -265,71 +257,67 @@ class MainActivity : AppCompatActivity() {
 
     private val vpnPermissionDialogLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-            if (result.resultCode == Activity.RESULT_OK) startService(
-                Intent(
-                    this,
-                    YuhaiinVpnService::class.java
-                ).apply {
-                    putExtra("profile", Json.encodeToString(MainApplication.profile))
-                }
-            )
+            if (result.resultCode == Activity.RESULT_OK) {
+                startService(
+                    Intent(
+                        this,
+                        YuhaiinVpnService::class.java
+                    ).apply {
+                        putExtra("profile", MainApplication.store.dump())
+                    }
+                )
+            }
         }
 
     private fun startService() {
-
-        if (Build.VERSION.SDK_INT >= 33
-            &&
-            ContextCompat.checkSelfPermission(
-                this,
-                Manifest.permission.POST_NOTIFICATIONS
+        if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(
+                this, Manifest.permission.POST_NOTIFICATIONS
             ) != PackageManager.PERMISSION_GRANTED
-        )
+        ) {
             ActivityCompat.requestPermissions(
-                this,
-                arrayOf(Manifest.permission.POST_NOTIFICATIONS),
-                0
+                this, arrayOf(Manifest.permission.POST_NOTIFICATIONS), 0
             )
+        }
 
         // prepare to get vpn permission
         VpnService.prepare(this)?.apply {
             vpnPermissionDialogLauncher.launch(this)
         } ?: startService(Intent(this, YuhaiinVpnService::class.java).apply {
-            putExtra("profile", Json.encodeToString(MainApplication.profile))
+            putExtra("profile", MainApplication.store.dump())
         })
-
     }
 
-    inner class DataStore : PreferenceDataStore() {
-        private val store = ConcurrentHashMap<String, Any>()
-        private fun put(key: String?, value: Any?) {
-            if (key != null && value != null)
-                store[key] = value
-        }
+    inner class BBoltDataStore : PreferenceDataStore() {
+        override fun putString(key: String?, value: String?) =
+            MainApplication.store.putString(key, value)
 
-        override fun putString(key: String?, value: String?) = put(key, value)
-        override fun putStringSet(key: String?, values: Set<String?>?) = put(key, values)
-        override fun putInt(key: String?, value: Int) = put(key, value)
-        override fun putLong(key: String?, value: Long) = put(key, value)
-        override fun putFloat(key: String?, value: Float) = put(key, value)
-        override fun putBoolean(key: String?, value: Boolean) = put(key, value)
+        override fun putStringSet(key: String?, values: Set<String?>?) =
+            MainApplication.store.putStringSet(key, values)
 
-        override fun getString(key: String?, defValue: String?): String? =
-            store[key]?.toString() ?: defValue
+        override fun putInt(key: String?, value: Int) = MainApplication.store.putInt(key, value)
+        override fun putLong(key: String?, value: Long) = MainApplication.store.putLong(key, value)
 
-        @Suppress("UNCHECKED_CAST")
-        override fun getStringSet(key: String?, defValues: Set<String?>?): Set<String?>? =
-            store[key] as Set<String?>? ?: defValues
+        override fun putFloat(key: String?, value: Float) =
+            MainApplication.store.putFloat(key, value)
 
-        override fun getInt(key: String?, defValue: Int): Int =
-            store[key]?.toString()?.toInt() ?: defValue
+        override fun putBoolean(key: String?, value: Boolean) =
+            MainApplication.store.putBoolean(key, value)
+
+        override fun getString(key: String?, defValue: String?): String =
+            MainApplication.store.getString(key)
+
+        override fun getStringSet(key: String?, defValues: Set<String?>?): Set<String> =
+            MainApplication.store.getStringSet(key)
+
+        override fun getInt(key: String?, defValue: Int): Int = MainApplication.store.getInt(key)
 
         override fun getLong(key: String?, defValue: Long): Long =
-            store[key]?.toString()?.toLong() ?: defValue
+            MainApplication.store.getLong(key)
 
         override fun getFloat(key: String?, defValue: Float): Float =
-            store[key]?.toString()?.toFloat() ?: defValue
+            MainApplication.store.getFloat(key)
 
         override fun getBoolean(key: String?, defValue: Boolean): Boolean =
-            store[key]?.toString()?.toBoolean() ?: defValue
+            MainApplication.store.getBoolean(key)
     }
 }

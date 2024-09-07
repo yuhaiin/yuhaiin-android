@@ -4,7 +4,6 @@ import java.util.Date
 plugins {
     id("com.android.application")
     kotlin("android")
-    id("com.google.devtools.ksp")
     id("androidx.navigation.safeargs.kotlin")
     kotlin("plugin.serialization") version "2.0.20"
 }
@@ -174,13 +173,8 @@ dependencies {
     implementation("androidx.browser:browser:1.8.0")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.2")
 
-    // room
-    val roomVersion = "2.6.1"
-    implementation("androidx.room:room-runtime:$roomVersion")
-    ksp("androidx.room:room-compiler:$roomVersion")
-
     // nav
-    val navVersion = "2.7.7"
+    val navVersion = "2.8.0"
     implementation("androidx.navigation:navigation-fragment-ktx:$navVersion")
     implementation("androidx.navigation:navigation-ui-ktx:$navVersion")
 
@@ -203,7 +197,7 @@ dependencies {
     */
 
     testImplementation("androidx.test:core:1.6.1")
-    testImplementation("androidx.test:runner:1.6.1")
+    testImplementation("androidx.test:runner:1.6.2")
     testImplementation("junit:junit:4.13.2")
     testImplementation("androidx.test.espresso:espresso-core:3.6.1")
     testImplementation("androidx.test.ext:junit-ktx:1.2.1")

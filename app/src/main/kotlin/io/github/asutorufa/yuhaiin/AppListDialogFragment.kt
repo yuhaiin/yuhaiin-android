@@ -25,9 +25,7 @@ class AppListDialogFragment : DialogFragment() {
 
     @OptIn(DelicateCoroutinesApi::class)
     override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
+        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View {
         val appListBinding = ApplistDialogFragmentBinding.inflate(inflater, container, false)
         appListBinding.appListRecyclerview.apply {
@@ -38,7 +36,8 @@ class AppListDialogFragment : DialogFragment() {
                 ignore {
                     val list = packages
                     requireActivity().runOnUiThread {
-                        this@AppListDialogFragment.adapter.setAppList(list, MainApplication.profile.appList)
+                        val checkedApps = MainApplication.store.getStringSet("app_list")
+                        this@AppListDialogFragment.adapter.setAppList(list, checkedApps)
                         appListBinding.appListProgressIndicator.visibility = View.GONE
                     }
                 }
@@ -57,8 +56,7 @@ class AppListDialogFragment : DialogFragment() {
     override fun onPause() {
         Log.d("appListFragment", "onPause: ${adapter.checkedApps}")
         adapter.checkedApps?.let {
-            MainApplication.profile.appList = it
-            MainApplication.db.updateProfile(MainApplication.profile)
+            MainApplication.store.putStringSet("app_list", it)
         }
         super.onPause()
     }
@@ -78,17 +76,14 @@ class AppListDialogFragment : DialogFragment() {
         get() {
             val packageManager = requireContext().packageManager
             val packages =
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
-                    packageManager.getInstalledPackages(
-                        PackageManager.PackageInfoFlags.of(
-                            PackageManager.GET_PERMISSIONS.toLong()
-                        )
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) packageManager.getInstalledPackages(
+                    PackageManager.PackageInfoFlags.of(
+                        PackageManager.GET_PERMISSIONS.toLong()
                     )
-                else
-                    packageManager.getInstalledPackages(PackageManager.GET_PERMISSIONS)
+                )
+                else packageManager.getInstalledPackages(PackageManager.GET_PERMISSIONS)
 
-            val checkedApps = MainApplication.profile.appList
-
+            val checkedApps = MainApplication.store.getStringSet("app_list")
             val apps = mutableListOf<AppList>()
 
             packages.sortBy { it.applicationInfo.loadLabel(packageManager).toString() }
@@ -100,8 +95,7 @@ class AppListDialogFragment : DialogFragment() {
 
                 val app = AppList(
                     applicationInfo.loadLabel(packageManager).toString(), // app name
-                    it.packageName,
-                    applicationInfo.loadIcon(packageManager), // icon
+                    it.packageName, applicationInfo.loadIcon(packageManager), // icon
                     (applicationInfo.flags and ApplicationInfo.FLAG_SYSTEM) > 0, // is system
                     checkedApps.contains(it.packageName)
                 )

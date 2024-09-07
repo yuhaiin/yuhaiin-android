@@ -6,12 +6,14 @@
         android:icon="@drawable/router"
         android:key="@string/adv_route_Key"
         android:title="@string/adv_route_title"
+        android:defaultValue="@string/adv_route_all"
         android:entries="@array/adv_routes"
         app:useSimpleSummaryProvider="true"
         android:entryValues="@array/adv_routes" />
 
     <EditTextPreference
         android:title="@string/rule_update_bypass_file_title"
+        android:defaultValue="https://raw.githubusercontent.com/yuhaiin/kitte/main/yuhaiin/remote.conf"
         android:key="@string/rule_update_bypass_file"
         app:useSimpleSummaryProvider="true"
         android:singleLine="true" />
@@ -19,16 +21,18 @@
     <ListPreference
         android:key="@string/bypass_tcp"
         android:title="@string/bypass_tcp"
+        android:defaultValue="@string/bypass_bypass_value"
         android:entries="@array/adv_bypass_mode"
-        app:useSimpleSummaryProvider="true"
-        android:entryValues="@array/adv_bypass_mode" />
+        android:entryValues="@array/adv_bypass_mode_value"
+        app:useSimpleSummaryProvider="true" />
 
     <ListPreference
         android:key="@string/bypass_udp"
         android:title="@string/bypass_udp"
+        android:defaultValue="@string/bypass_bypass_value"
         android:entries="@array/adv_bypass_mode"
-        app:useSimpleSummaryProvider="true"
-        android:entryValues="@array/adv_bypass_mode" />
+        android:entryValues="@array/adv_bypass_mode_value"
+        app:useSimpleSummaryProvider="true" />
 
     <SwitchPreferenceCompat
         android:icon="@drawable/vpn_key"
@@ -40,6 +44,7 @@
         android:icon="@drawable/router"
         android:key="@string/sniff"
         android:title="@string/sniff"
+        android:defaultValue="true"
         android:layout_height="match_parent" />
 
     <EditTextPreference

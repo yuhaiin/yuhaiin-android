@@ -22,12 +22,9 @@ import io.github.asutorufa.yuhaiin.BuildConfig
 import io.github.asutorufa.yuhaiin.IYuhaiinVpnBinder
 import io.github.asutorufa.yuhaiin.MainActivity
 import io.github.asutorufa.yuhaiin.R
-import io.github.asutorufa.yuhaiin.database.Profile
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import yuhaiin.*
 import java.net.InetSocketAddress
-import io.github.asutorufa.yuhaiin.database.DNS as dDNS
 
 
 class YuhaiinVpnService : VpnService() {
@@ -160,11 +157,11 @@ class YuhaiinVpnService : VpnService() {
         state = State.CONNECTING
 
         try {
-            val profile = Json.decodeFromString<Profile>(intent?.getStringExtra("profile")!!)
+            val store = Yuhaiin.mapStoreFromJson(intent?.getByteArrayExtra("profile")!!)
 
-            configure(profile)
-            start(profile)
-            startNotification(profile.name)
+            configure(store)
+            start(store)
+            startNotification("Default")
 
             state = State.CONNECTED
         } catch (e: Exception) {
@@ -193,17 +190,21 @@ class YuhaiinVpnService : VpnService() {
         }
     }
 
-    private fun VpnService.Builder.addRuleRoute(profile: Profile) {
+    private fun VpnService.Builder.addRuleRoute(profile: MapStore) {
         Yuhaiin.addRulesCidr(
             { addRoute(it.ip, it.mask) },
-            "${profile.ruleProxy}\n${profile.ruleBlock}"
+            "${profile.getString(resources.getString(R.string.rule_proxy))}\n${
+                profile.getString(
+                    resources.getString(R.string.rule_block)
+                )
+            }"
         )
     }
 
-    private fun configure(profile: Profile) {
+    private fun configure(profile: MapStore) {
         Builder().apply {
             setMtu(VPN_MTU)
-            setSession(profile.name)
+            setSession("Default")
 
             addAddress(PRIVATE_VLAN4_ADDRESS, 24).addRoute(PRIVATE_VLAN4_PORTAL, 32)
 
@@ -212,7 +213,7 @@ class YuhaiinVpnService : VpnService() {
                 .addRoute("2000::", 3) // https://issuetracker.google.com/issues/149636790
                 .addRoute(PRIVATE_VLAN6_PORTAL, 128)
 
-            when (profile.route) {
+            when (profile.getString(resources.getString(R.string.adv_route_Key))) {
                 resources.getString(R.string.adv_route_non_chn) -> {
                     resources.getStringArray(R.array.simple_route).forEach { addRoute(it) }
                     addRuleRoute(profile)
@@ -226,26 +227,29 @@ class YuhaiinVpnService : VpnService() {
 
                 else -> {
                     addRoute("0.0.0.0/0")
-                    if (profile.hasIPv6) addRoute("[::]/0")
+                    if (profile.getBoolean(resources.getString(R.string.ipv6_proxy_key))) addRoute("[::]/0")
                 }
             }
 
             addDnsServer(PRIVATE_VLAN4_PORTAL)
             addDnsServer(PRIVATE_VLAN6_PORTAL)
-            addRoute(profile.fakeDnsCidr)
-            addRoute(profile.fakeDnsv6Cidr)
+            addRoute(profile.getString(resources.getString(R.string.adv_fake_dns_cidr_key)))
+            addRoute(profile.getString(resources.getString(R.string.adv_fake_dnsv6_cidr_key)))
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P)
                 connectivity.requestNetwork(defaultNetworkRequest, defaultNetworkCallback)
 
+            val httpProxy = profile.getInt("http_port")
+
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 setMetered(false)
-                if (profile.httpServerPort != 0 && profile.appendHttpProxyToSystem) {
-                    setHttpProxy(ProxyInfo.buildDirectProxy("127.0.0.1", profile.httpServerPort))
+                if (httpProxy != 0 && profile.getBoolean(resources.getString(R.string.append_http_proxy_to_vpn_key))) {
+                    setHttpProxy(ProxyInfo.buildDirectProxy("127.0.0.1", httpProxy))
                 }
             }
 
-            Log.d(tag, "configure: ${profile.appList}")
+            val appListString = profile.getString("app_list")
+            Log.d(tag, "configure: $appListString")
 
             fun bypassApp(bypass: Boolean, app: String) =
                 try {
@@ -255,12 +259,14 @@ class YuhaiinVpnService : VpnService() {
                     Log.w(tag, e)
                 }
 
-            if (profile.isPerApp) {
-                profile.appList.toMutableSet().apply {
+            if (profile.getBoolean(resources.getString(R.string.adv_per_app_key))) {
+                val appList = Json.decodeFromString<MutableSet<String>>(appListString)
+                val bypass = profile.getBoolean(resources.getString(R.string.adv_app_bypass_key))
+                appList.toMutableSet().apply {
                     // make yuhaiin using VPN, because tun2socket tcp need relay tun data to tcp a listener
-                    if (profile.isBypassApp) remove(BuildConfig.APPLICATION_ID)
+                    if (bypass) remove(BuildConfig.APPLICATION_ID)
                     else add(BuildConfig.APPLICATION_ID)
-                    forEach { bypassApp(profile.isBypassApp, it) }
+                    forEach { bypassApp(bypass, it) }
                 }
             }
 
@@ -268,65 +274,19 @@ class YuhaiinVpnService : VpnService() {
         }
     }
 
-    private fun start(profile: Profile) {
-        if (profile.yuhaiinPort <= 0) throw Exception("Invalid yuhaiin port: ${profile.yuhaiinPort}")
-
-        var address = "127.0.0.1"
-        if (profile.allowLan) address = "0.0.0.0"
-
+    private fun start(profile: MapStore) {
         app.start(Opts().apply {
-            host = "${address}:${profile.yuhaiinPort}"
+            mapStore = profile
             savepath = getExternalFilesDir("yuhaiin").toString()
-            iPv6 = profile.hasIPv6
-
-            if (profile.socks5ServerPort > 0) socks5 = "${address}:${profile.socks5ServerPort}"
-            if (profile.httpServerPort > 0) http = "${address}:${profile.httpServerPort}"
-
-            log = Log().apply {
-                saveLogcat = profile.saveLogcat
-                logLevel = profile.logLevel
-            }
-
-            bypass = Bypass().apply {
-                block = profile.ruleBlock
-                proxy = profile.ruleProxy
-                direct = profile.ruleDirect
-                tcp = profile.bypass.tcp
-                udp = profile.bypass.udp
-                udpSkipResolveFqdn = profile.udpProxyFqdn
-                sniffy = profile.sniffEnabled
-            }
 
             tun = TUN().apply {
                 fd = mInterface!!.fd
                 mtu = VPN_MTU
                 portal = "$PRIVATE_VLAN4_ADDRESS/24"
                 portalV6 = "$PRIVATE_VLAN6_ADDRESS/64"
-                dnsHijacking = profile.dnsHijacking
-                // 0: fdbased, 1: channel, 2: system gvisor
-                driver = profile.tunDriver
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
                     uidDumper = this@YuhaiinVpnService.uidDumper
                 socketProtect = SocketProtect { return@SocketProtect protect(it) }
-            }
-
-            fun convertDNS(o: dDNS): DNS = DNS().apply {
-                host = o.host
-                subnet = o.subnet
-                type = o.type
-                tlsServername = o.tlsServerName
-            }
-
-            dns = DNSSetting().apply {
-                if (profile.dnsPort > 0) server = "${address}:${profile.dnsPort}"
-                fakedns = profile.fakeDnsCidr.isNotEmpty() || profile.fakeDnsv6Cidr.isNotEmpty()
-                fakednsIpRange = profile.fakeDnsCidr
-                fakednsIpv6Range = profile.fakeDnsv6Cidr
-                resolveRemoteDomain = profile.resolveRemoteDomain
-                remote = convertDNS(profile.remoteDns)
-                local = convertDNS(profile.localDns)
-                bootstrap = convertDNS(profile.bootstrapDns)
-                hosts = Json.encodeToString(profile.hosts).toByteArray()
             }
 
             closeFallback = Closer { stop() }

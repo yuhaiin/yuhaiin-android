@@ -18,12 +18,14 @@
             android:icon="@drawable/lan"
             android:key="@string/allow_lan_key"
             android:title="@string/allow_lan_title"
+            android:defaultValue="false"
             android:layout_height="match_parent" />
 
         <SwitchPreferenceCompat
             android:icon="@drawable/hub"
             android:key="@string/ipv6_proxy_key"
             android:title="@string/ipv6_proxy_title"
+            android:defaultValue="true"
             android:summary="@string/ipv6_proxy_sum"
             android:layout_height="match_parent" />
 
@@ -36,7 +38,8 @@
             android:key="@string/adv_tun_driver_key"
             android:title="@string/adv_tun_driver_title"
             android:entries="@array/tun_drivers"
-            android:entryValues="@array/tun_drivers"
+            android:entryValues="@array/tun_drivers_value"
+            android:defaultValue="@string/tun_driver_system_gvisor_value"
             app:useSimpleSummaryProvider="true"
             android:icon="@drawable/handyman" />
 
@@ -61,16 +64,19 @@
         <SwitchPreferenceCompat
             android:icon="@drawable/auto_mode"
             android:key="@string/adv_auto_connect_key"
+            android:defaultValue="false"
             android:title="@string/adv_auto_connect_title" />
 
         <SwitchPreferenceCompat
             android:key="@string/adv_per_app_key"
+            android:defaultValue="false"
             android:icon="@drawable/settop_component"
             android:title="@string/adv_per_app_title" />
 
         <SwitchPreferenceCompat
             android:key="@string/adv_app_bypass_key"
             android:icon="@drawable/alt_route"
+            android:defaultValue="false"
             android:title="@string/adv_app_bypass_title"
             android:summary="@string/adv_app_bypass_sum"
             android:dependency="@string/adv_per_app_key" />
@@ -114,6 +120,7 @@
 
         <SwitchPreferenceCompat
             android:icon="@drawable/save"
+            android:defaultValue="false"
             android:key="@string/save_logcat"
             android:title="@string/save_logcat_name"
             android:summary="@string/save_logcat_summary" />
@@ -121,6 +128,7 @@
         <ListPreference
             android:key="@string/log_level"
             android:title="@string/log_level_name"
+            android:defaultValue="@string/log_level_info"
             android:entries="@array/log_levels"
             app:useSimpleSummaryProvider="true"
             android:entryValues="@array/log_levels" />

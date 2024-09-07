@@ -8,20 +8,19 @@ import androidx.preference.ListPreference
 import androidx.preference.MultiSelectListPreference
 import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
-import androidx.preference.SwitchPreferenceCompat
 import com.github.logviewer.LogcatActivity
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.transition.platform.MaterialSharedAxis
-import io.github.asutorufa.yuhaiin.MainApplication.Companion.profile
-import io.github.asutorufa.yuhaiin.MainApplication.Companion.setOnPreferenceChangeListener
 import io.github.asutorufa.yuhaiin.databinding.PortsDialogBinding
+import java.util.Locale
 
 class ProfileFragment : PreferenceFragmentCompat() {
     private val refreshPreferences = ArrayList<() -> Unit>()
-    private val mainActivity by lazy { requireActivity() as MainActivity }
 
-    override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) =
+    override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
+        preferenceManager.preferenceDataStore = (activity as MainActivity).dataStore
         setPreferencesFromResource(R.xml.settings, rootKey)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -35,8 +34,6 @@ class ProfileFragment : PreferenceFragmentCompat() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         view.transitionName = "transition_common"
-
-        preferenceManager.preferenceDataStore = mainActivity.dataStore
         reload()
     }
 
@@ -49,75 +46,23 @@ class ProfileFragment : PreferenceFragmentCompat() {
         }
     }
 
-    fun showAlertDialog(
+    private fun showAlertDialog(
         title: Int,
         view: View?,
         message: String?,
-        PositiveFun: () -> Unit
+        positiveFun: () -> Unit
     ) =
         MaterialAlertDialogBuilder(requireContext()).apply {
             setTitle(title)
             view?.let { setView(it) }
             message?.let { setMessage(it) }
-            setPositiveButton(android.R.string.ok) { _, _ -> PositiveFun() }
+            setPositiveButton(android.R.string.ok) { _, _ -> positiveFun() }
             setNegativeButton(android.R.string.cancel) { _, _ -> }
             show()
         }
 
 
     private fun initPreferences() {
-
-        findPreference<SwitchPreferenceCompat>(resources.getString(R.string.append_http_proxy_to_vpn_key))!!.also {
-            setOnPreferenceChangeListener(it) { _, newValue ->
-                profile.appendHttpProxyToSystem = newValue as Boolean
-            }
-            refreshPreferences.add { it.isChecked = profile.appendHttpProxyToSystem }
-        }
-
-        findPreference<ListPreference>(resources.getString(R.string.adv_tun_driver_key))!!.also {
-            setOnPreferenceChangeListener(it) { _, newValue ->
-                profile.tunDriver = strToTunDriver(newValue.toString())
-            }
-
-            refreshPreferences.add {
-                it.value = tunDriverToStr(profile.tunDriver)
-            }
-        }
-
-        findPreference<SwitchPreferenceCompat>(resources.getString(R.string.adv_per_app_key))!!.also {
-            setOnPreferenceChangeListener(it) { _, newValue ->
-                profile.isPerApp = newValue as Boolean
-            }
-            refreshPreferences.add { it.isChecked = profile.isPerApp }
-        }
-
-        findPreference<SwitchPreferenceCompat>(resources.getString(R.string.adv_app_bypass_key))!!.also {
-            setOnPreferenceChangeListener(it) { _, newValue ->
-                profile.isBypassApp = newValue as Boolean
-            }
-            refreshPreferences.add { it.isChecked = profile.isBypassApp }
-        }
-
-        findPreference<SwitchPreferenceCompat>(resources.getString(R.string.ipv6_proxy_key))!!.also {
-            setOnPreferenceChangeListener(it) { _, newValue ->
-                profile.hasIPv6 = newValue as Boolean
-            }
-            refreshPreferences.add { it.isChecked = profile.hasIPv6 }
-        }
-
-        findPreference<SwitchPreferenceCompat>(resources.getString(R.string.adv_auto_connect_key))!!.also {
-            setOnPreferenceChangeListener(it) { _, newValue ->
-                profile.autoConnect = newValue as Boolean
-            }
-            refreshPreferences.add { it.isChecked = profile.autoConnect }
-        }
-
-        findPreference<SwitchPreferenceCompat>(resources.getString(R.string.allow_lan_key))!!.also {
-            setOnPreferenceChangeListener(it) { _, newValue ->
-                profile.allowLan = newValue as Boolean
-            }
-            refreshPreferences.add { it.isChecked = profile.allowLan }
-        }
         findPreference<Preference>(resources.getString(R.string.rule))!!.also {
             it.setOnPreferenceClickListener {
                 findNavController().navigate(ProfileFragmentDirections.actionProfileFragmentToRuleFragment())
@@ -125,20 +70,6 @@ class ProfileFragment : PreferenceFragmentCompat() {
             }
         }
 
-        findPreference<SwitchPreferenceCompat>(resources.getString(R.string.save_logcat))!!.also {
-            setOnPreferenceChangeListener(it) { _, newValue ->
-                profile.saveLogcat = newValue as Boolean
-            }
-            refreshPreferences.add { it.isChecked = profile.saveLogcat }
-        }
-
-        findPreference<ListPreference>(resources.getString(R.string.log_level))!!.also {
-            setOnPreferenceChangeListener(it) { _, newValue ->
-                profile.logLevel = strToLogLevel(newValue.toString())
-            }
-
-            refreshPreferences.add { it.value = logLevelToStr(profile.logLevel) }
-        }
 
         findPreference<Preference>(resources.getString(R.string.logcat))?.apply {
             setOnPreferenceClickListener {
@@ -173,16 +104,29 @@ class ProfileFragment : PreferenceFragmentCompat() {
 
                 val bind = PortsDialogBinding.inflate(requireActivity().layoutInflater, null, false)
 
-                bind.http.setText(profile.httpServerPort.toString())
-                bind.yuhaiin.setText(profile.yuhaiinPort.toString())
+                bind.http.setText(
+                    String.format(
+                        Locale.ENGLISH,
+                        "%d",
+                        MainApplication.store.getInt("http_port")
+                    )
+                )
+                bind.yuhaiin.setText(
+                    String.format(
+                        Locale.ENGLISH,
+                        MainApplication.store.getInt("yuhaiin_port").toString()
+                    )
+                )
                 showAlertDialog(
                     R.string.ports_title,
                     bind.root,
                     null
                 ) {
-                    profile.httpServerPort = bind.http.text.toString().toInt()
-                    profile.yuhaiinPort = bind.yuhaiin.text.toString().toInt()
-                    MainApplication.db.updateProfile(profile)
+                    MainApplication.store.putInt("http_port", bind.http.text.toString().toInt())
+                    MainApplication.store.putInt(
+                        "yuhaiin_port",
+                        bind.yuhaiin.text.toString().toInt()
+                    )
                 }
                 true
             }
@@ -197,48 +141,4 @@ class ProfileFragment : PreferenceFragmentCompat() {
     }
 
     private fun reload() = refreshPreferences.forEach { it() }
-
-
-    private fun strToLogLevel(str: String): Int {
-        return when (str) {
-            resources.getString(R.string.log_level_verbose) -> 0
-            resources.getString(R.string.log_level_debug) -> 1
-            resources.getString(R.string.log_level_info) -> 2
-            resources.getString(R.string.log_level_warning) -> 3
-            resources.getString(R.string.log_level_error) -> 4
-            resources.getString(R.string.log_level_fatal) -> 5
-            else -> 2
-        }
-    }
-
-    private fun logLevelToStr(type: Int): String {
-        return when (type) {
-            0 -> resources.getString(R.string.log_level_verbose)
-            1 -> resources.getString(R.string.log_level_debug)
-            2 -> resources.getString(R.string.log_level_info)
-            3 -> resources.getString(R.string.log_level_warning)
-            4 -> resources.getString(R.string.log_level_error)
-            5 -> resources.getString(R.string.log_level_fatal)
-            else -> resources.getString(R.string.log_level_info)
-        }
-    }
-
-
-    private fun strToTunDriver(str: String): Int {
-        return when (str) {
-            resources.getString(R.string.tun_driver_fdbased) -> 0
-            resources.getString(R.string.tun_driver_channel) -> 1
-            resources.getString(R.string.tun_driver_system_gvisor) -> 2
-            else -> 0
-        }
-    }
-
-    private fun tunDriverToStr(type: Int): String {
-        return when (type) {
-            0 -> resources.getString(R.string.tun_driver_fdbased)
-            1 -> resources.getString(R.string.tun_driver_channel)
-            2 -> resources.getString(R.string.tun_driver_system_gvisor)
-            else -> resources.getString(R.string.tun_driver_fdbased)
-        }
-    }
 }

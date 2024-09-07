@@ -1,32 +1,19 @@
 package io.github.asutorufa.yuhaiin
 
 import android.app.Application
-import androidx.preference.Preference
 import com.google.android.material.color.DynamicColors
 import go.Seq
-import io.github.asutorufa.yuhaiin.database.Profile
-import io.github.asutorufa.yuhaiin.database.ProfileDao
-import io.github.asutorufa.yuhaiin.database.YuhaiinDatabase
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
+import yuhaiin.Store
+import yuhaiin.Yuhaiin
 
 open class MainApplication : Application() {
 
     companion object {
-        lateinit var db: ProfileDao
-        lateinit var profile:Profile
-
-        fun setOnPreferenceChangeListener(
-            it: Preference,
-            run: (p: Preference, newValue: Any) -> Unit
-        ) {
-            it.setOnPreferenceChangeListener { preference, newValue ->
-                try {
-                    run(preference, newValue)
-                    db.updateProfile(profile)
-                    true
-                } catch (e: Exception) {
-                    false
-                }
-            }
+        lateinit var store: Store
+        fun changeStore(name: String) {
+            store = Yuhaiin.getStore(name)
         }
     }
 
@@ -34,8 +21,29 @@ open class MainApplication : Application() {
         super.onCreate()
 
         Seq.setContext(this)
-        db = YuhaiinDatabase.getInstance(applicationContext).ProfileDao()
-        profile = db.getProfileByName(db.getLastProfile() ?: "Default")
+        Yuhaiin.initDB(getExternalFilesDir("yuhaiin").toString())
+        store = Yuhaiin.getStore("Default")
         DynamicColors.applyToActivitiesIfAvailable(this)
     }
 }
+
+fun Store.getStringSet(key: String?): Set<String> {
+    val data = getString(key)
+    if (data.isEmpty()) return HashSet()
+    return Json.decodeFromString<Set<String>>(data)
+}
+
+fun Store.putStringSet(key: String?, values: Set<String?>?) {
+    putString(key, Json.encodeToString(values))
+}
+
+fun Store.getStringMap(key: String?): Map<String, String> {
+    val data = getString(key)
+    if (data.isEmpty()) return HashMap()
+    return Json.decodeFromString<Map<String, String>>(data)
+}
+
+fun Store.putStringMap(key: String?, values: Map<String, String>) {
+    putString(key, Json.encodeToString(values))
+}
+
