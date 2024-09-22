@@ -17,13 +17,21 @@ import android.os.ParcelFileDescriptor
 import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.getSystemService
 import io.github.asutorufa.yuhaiin.BuildConfig
 import io.github.asutorufa.yuhaiin.IYuhaiinVpnBinder
 import io.github.asutorufa.yuhaiin.MainActivity
 import io.github.asutorufa.yuhaiin.R
 import kotlinx.serialization.json.Json
-import yuhaiin.*
+import yuhaiin.App
+import yuhaiin.Closer
+import yuhaiin.MapStore
+import yuhaiin.NotifySpped
+import yuhaiin.Opts
+import yuhaiin.SocketProtect
+import yuhaiin.TUN
+import yuhaiin.Yuhaiin
 import java.net.InetSocketAddress
 
 
@@ -59,6 +67,22 @@ class YuhaiinVpnService : VpnService() {
     private val notification by lazy { application.getSystemService<NotificationManager>()!! }
     private val uidDumper = UidDumper()
     private val app = App()
+
+    private fun notificationBuilder(): NotificationCompat.Builder {
+        return NotificationCompat.Builder(this, packageName)
+            .setContentTitle(resources.getString(R.string.yuhaiin_running))
+            .setContentText(String.format(getString(R.string.notify_msg), "VPN"))
+            .setSmallIcon(R.drawable.emoji_nature)
+            .setOnlyAlertOnce(true)
+            .setContentIntent(
+                PendingIntent.getActivity(
+                    this,
+                    0,
+                    Intent(this, MainActivity::class.java),
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                )
+            )
+    }
 
     inner class VpnBinder : IYuhaiinVpnBinder.Stub() {
         override fun isRunning() = state == State.CONNECTED
@@ -160,8 +184,8 @@ class YuhaiinVpnService : VpnService() {
             val store = Yuhaiin.mapStoreFromJson(intent?.getByteArrayExtra("profile")!!)
 
             configure(store)
+            startNotification()
             start(store)
-            startNotification("Default")
 
             state = State.CONNECTED
         } catch (e: Exception) {
@@ -278,6 +302,10 @@ class YuhaiinVpnService : VpnService() {
         app.start(Opts().apply {
             mapStore = profile
             savepath = getExternalFilesDir("yuhaiin").toString()
+            notifySpped = SpeedNotifier(
+                notificationBuilder(),
+                NotificationManagerCompat.from(this@YuhaiinVpnService)
+            )
 
             tun = TUN().apply {
                 fd = mInterface!!.fd
@@ -293,7 +321,7 @@ class YuhaiinVpnService : VpnService() {
         })
     }
 
-    private fun startNotification(name: String) {
+    private fun startNotification(name: String = "Default") {
         // Notifications on Oreo and above need a channel
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
             notification.createNotificationChannel(
@@ -305,22 +333,26 @@ class YuhaiinVpnService : VpnService() {
             )
 
 
+        startForeground(1, notificationBuilder().build())
+    }
 
-        startForeground(
-            1,
-            NotificationCompat.Builder(this, packageName)
-                .setContentTitle(resources.getString(R.string.yuhaiin_running))
-                .setContentText(String.format(getString(R.string.notify_msg), name))
-                .setSmallIcon(R.drawable.emoji_nature)
-                .setContentIntent(
-                    PendingIntent.getActivity(
-                        this,
-                        0,
-                        Intent(this, MainActivity::class.java),
-                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-                    )
+    inner class SpeedNotifier(
+        private var builder: NotificationCompat.Builder,
+        private val notificationManagerCompat: NotificationManagerCompat
+    ) : NotifySpped {
+
+        private val enabled = notificationManagerCompat.areNotificationsEnabled()
+
+        override fun notifyEnable(): Boolean = enabled
+
+        override fun notify(str: String) {
+            if (enabled)
+                notificationManagerCompat.notify(
+                    1,
+                    builder.setContentText(str)
+                        .build()
                 )
-                .build()
-        )
+        }
+
     }
 }
