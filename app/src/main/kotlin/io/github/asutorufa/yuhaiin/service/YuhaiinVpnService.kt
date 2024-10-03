@@ -251,7 +251,7 @@ class YuhaiinVpnService : VpnService() {
 
                 else -> {
                     addRoute("0.0.0.0/0")
-                    if (profile.getBoolean(resources.getString(R.string.ipv6_proxy_key))) addRoute("[::]/0")
+                    if (profile.getBoolean(resources.getString(R.string.ipv6_proxy_key))) addRoute("::/0")
                 }
             }
 
