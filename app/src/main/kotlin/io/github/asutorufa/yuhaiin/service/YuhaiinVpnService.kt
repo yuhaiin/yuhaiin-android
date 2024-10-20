@@ -1,5 +1,6 @@
 package io.github.asutorufa.yuhaiin.service
 
+import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -74,6 +75,9 @@ class YuhaiinVpnService : VpnService() {
             .setContentText(String.format(getString(R.string.notify_msg), "VPN"))
             .setSmallIcon(R.drawable.emoji_nature)
             .setOnlyAlertOnce(true)
+            .setOngoing(true)
+            .setShowWhen(false)
+            .setPriority(NotificationCompat.PRIORITY_MIN)
             .setContentIntent(
                 PendingIntent.getActivity(
                     this,
@@ -328,8 +332,10 @@ class YuhaiinVpnService : VpnService() {
                 NotificationChannel(
                     packageName,
                     getString(R.string.channel_name),
-                    NotificationManager.IMPORTANCE_MIN
-                )
+                    NotificationManager.IMPORTANCE_NONE
+                ).apply {
+                    lockscreenVisibility = Notification.VISIBILITY_PRIVATE
+                }
             )
 
 
@@ -349,7 +355,8 @@ class YuhaiinVpnService : VpnService() {
             if (enabled)
                 notificationManagerCompat.notify(
                     1,
-                    builder.setContentText(str)
+                    builder.setStyle(NotificationCompat.BigTextStyle().bigText(str))
+                        .setContentText(str)
                         .build()
                 )
         }
