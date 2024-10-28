@@ -84,7 +84,10 @@ class ProfileFragment : PreferenceFragmentCompat() {
                     ".*TextClassifier called on main thread.*",
                     ".*android added item .*",
                     ".*No package ID .* found for ID.*",
-                    ".*eglMakeCurrent:.*"
+                    ".*eglMakeCurrent:.*",
+		    ".*NotificationManager: io.github.asutorufa.yuhaiin: notify.*",
+		    ".*InputEventReceiver_DOT: IER.scheduleInputVsync.*",
+                    ".*ViewRootImpl@.*[.*]: .*"
                 )
 
                 startActivity(LogcatActivity.intent(logcatExcludeRules, requireActivity()))
