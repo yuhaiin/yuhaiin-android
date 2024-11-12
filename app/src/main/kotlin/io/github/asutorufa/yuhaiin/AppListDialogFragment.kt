@@ -86,21 +86,23 @@ class AppListDialogFragment : DialogFragment() {
             val checkedApps = MainApplication.store.getStringSet("app_list")
             val apps = mutableListOf<AppList>()
 
-            packages.sortBy { it.applicationInfo.loadLabel(packageManager).toString() }
+            packages.sortBy { it.applicationInfo?.loadLabel(packageManager).toString() }
 
             var index = 0
             packages.forEach {
                 if (!it.hasInternetPermission && it.packageName != "android") return@forEach
-                val applicationInfo = it.applicationInfo
 
-                val app = AppList(
-                    applicationInfo.loadLabel(packageManager).toString(), // app name
-                    it.packageName, applicationInfo.loadIcon(packageManager), // icon
-                    (applicationInfo.flags and ApplicationInfo.FLAG_SYSTEM) > 0, // is system
-                    checkedApps.contains(it.packageName)
-                )
-                if (app.isChecked) apps.add(index++, app)
-                else apps.add(app)
+                it.applicationInfo?.apply {
+                    val app = AppList(
+                        this.loadLabel(packageManager).toString(), // app name
+                        it.packageName, this.loadIcon(packageManager), // icon
+                        (this.flags and ApplicationInfo.FLAG_SYSTEM) > 0, // is system
+                        checkedApps.contains(it.packageName)
+                    )
+                    if (app.isChecked) apps.add(index++, app)
+                    else apps.add(app)
+                }
+
             }
             return apps
         }

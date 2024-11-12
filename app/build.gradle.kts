@@ -53,7 +53,7 @@ tasks.withType<org.jetbrains.kotlin.gradle.internal.KaptWithoutKotlincTask>()
     }
 
 android {
-    compileSdk = 34
+    compileSdk = 35
 
     compileOptions {
         // Flag to enable support for the new language APIs
@@ -71,7 +71,7 @@ android {
         buildConfigField("String", "DOCUMENTS_AUTHORITY", "\"$documentsAuthorityValue\"")
 
         minSdk = 21
-        targetSdk = 34
+        targetSdk = 35
 
         versionCode = 184
         versionName = getVersionName() + getCommit()
