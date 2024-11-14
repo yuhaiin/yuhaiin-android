@@ -69,40 +69,37 @@ class AppListDialogFragment : DialogFragment() {
     private val PackageInfo.hasInternetPermission: Boolean
         get() {
             val permissions = requestedPermissions
-            return permissions?.any { it == Manifest.permission.INTERNET } ?: false
+            return permissions?.any { it == Manifest.permission.INTERNET } == true
         }
 
     private val packages: List<AppList>
         get() {
             val packageManager = requireContext().packageManager
-            val packages =
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) packageManager.getInstalledPackages(
-                    PackageManager.PackageInfoFlags.of(
-                        PackageManager.GET_PERMISSIONS.toLong()
-                    )
-                )
-                else packageManager.getInstalledPackages(PackageManager.GET_PERMISSIONS)
+//            val packages =
+//                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) packageManager.getInstalledPackages(
+//                    PackageManager.PackageInfoFlags.of(
+//                        PackageManager.GET_PERMISSIONS.toLong()
+//                    )
+//                )
+//                else packageManager.getInstalledPackages(PackageManager.GET_PERMISSIONS)
+            val packages = packageManager.getInstalledApplications(PackageManager.GET_PERMISSIONS)
 
             val checkedApps = MainApplication.store.getStringSet("app_list")
             val apps = mutableListOf<AppList>()
 
-            packages.sortBy { it.applicationInfo?.loadLabel(packageManager).toString() }
+            packages.sortBy { it.loadLabel(packageManager).toString() }
 
             var index = 0
             packages.forEach {
-                if (!it.hasInternetPermission && it.packageName != "android") return@forEach
-
-                it.applicationInfo?.apply {
+//                if (!it.hasInternetPermission && it.packageName != "android") return@forEach
                     val app = AppList(
-                        this.loadLabel(packageManager).toString(), // app name
-                        it.packageName, this.loadIcon(packageManager), // icon
-                        (this.flags and ApplicationInfo.FLAG_SYSTEM) > 0, // is system
+                        it.loadLabel(packageManager).toString(), // app name
+                        it.packageName, it.loadIcon(packageManager), // icon
+                        (it.flags and ApplicationInfo.FLAG_SYSTEM) > 0, // is system
                         checkedApps.contains(it.packageName)
                     )
                     if (app.isChecked) apps.add(index++, app)
                     else apps.add(app)
-                }
-
             }
             return apps
         }
