@@ -257,7 +257,7 @@ class MainActivity : AppCompatActivity() {
 
     private val vpnPermissionDialogLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-            if (result.resultCode == Activity.RESULT_OK) {
+            if (result.resultCode == RESULT_OK) {
                 startService(
                     Intent(
                         this,

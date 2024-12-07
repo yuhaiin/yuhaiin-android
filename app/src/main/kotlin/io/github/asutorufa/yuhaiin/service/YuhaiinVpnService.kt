@@ -72,7 +72,7 @@ class YuhaiinVpnService : VpnService() {
     private fun notificationBuilder(): NotificationCompat.Builder {
         return NotificationCompat.Builder(this, packageName)
             .setContentTitle(resources.getString(R.string.yuhaiin_running))
-            .setContentText(String.format(getString(R.string.notify_msg), "VPN"))
+//            .setContentText(String.format(getString(R.string.notify_msg), "VPN"))
             .setSmallIcon(R.drawable.emoji_nature)
             .setOnlyAlertOnce(true)
             .setOngoing(true)
@@ -355,8 +355,8 @@ class YuhaiinVpnService : VpnService() {
             if (enabled)
                 notificationManagerCompat.notify(
                     1,
-                    builder.setStyle(NotificationCompat.BigTextStyle().bigText(str))
-                        .setContentText(str)
+                    builder
+                        .setContentTitle("${resources.getString(R.string.yuhaiin_running)} $str")
                         .build()
                 )
         }

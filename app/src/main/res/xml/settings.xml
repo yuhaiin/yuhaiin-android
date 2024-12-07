@@ -29,6 +29,14 @@
             android:summary="@string/ipv6_proxy_sum"
             android:layout_height="match_parent" />
 
+        <SwitchPreferenceCompat
+            android:icon="@drawable/speed_24px"
+            android:key="@string/network_speed_key"
+            android:title="@string/network_speed_title"
+            android:defaultValue="false"
+            android:summary="@string/network_speed_sum"
+            android:layout_height="match_parent" />
+
     </PreferenceCategory>
 
 

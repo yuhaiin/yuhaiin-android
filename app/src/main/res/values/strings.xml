@@ -28,6 +28,9 @@
     <string name="ipv6_proxy_sum">Enable IPv6 forwarding. If the server supports IPv6, you can access IPv6 contents from
         IPv4 network with this enabled.
     </string>
+    <string name="network_speed_key">network_speed</string>
+    <string name="network_speed_title">Network Speed</string>
+    <string name="network_speed_sum">Show network speed in notification.</string>
     <string name="allow_lan_key">allow_lan</string>
     <string name="allow_lan_title">Allow Lan Connect</string>
 
