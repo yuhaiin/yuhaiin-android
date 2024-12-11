@@ -21,7 +21,7 @@ open class MainApplication : Application() {
         super.onCreate()
 
         Seq.setContext(this)
-        Yuhaiin.initDB(getExternalFilesDir("yuhaiin").toString())
+        Yuhaiin.initDB(getExternalFilesDir("yuhaiin").toString(),applicationInfo.dataDir)
         store = Yuhaiin.getStore("Default")
         DynamicColors.applyToActivitiesIfAvailable(this)
     }

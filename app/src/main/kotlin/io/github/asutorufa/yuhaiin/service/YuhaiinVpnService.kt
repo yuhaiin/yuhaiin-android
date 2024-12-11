@@ -23,11 +23,11 @@ import androidx.core.content.getSystemService
 import io.github.asutorufa.yuhaiin.BuildConfig
 import io.github.asutorufa.yuhaiin.IYuhaiinVpnBinder
 import io.github.asutorufa.yuhaiin.MainActivity
+import io.github.asutorufa.yuhaiin.MainApplication
 import io.github.asutorufa.yuhaiin.R
 import kotlinx.serialization.json.Json
 import yuhaiin.App
 import yuhaiin.Closer
-import yuhaiin.MapStore
 import yuhaiin.NotifySpped
 import yuhaiin.Opts
 import yuhaiin.SocketProtect
@@ -185,11 +185,9 @@ class YuhaiinVpnService : VpnService() {
         state = State.CONNECTING
 
         try {
-            val store = Yuhaiin.mapStoreFromJson(intent?.getByteArrayExtra("profile")!!)
-
-            configure(store)
+            configure()
             startNotification()
-            start(store)
+            start()
 
             state = State.CONNECTED
         } catch (e: Exception) {
@@ -207,7 +205,7 @@ class YuhaiinVpnService : VpnService() {
         return START_STICKY
     }
 
-    private fun VpnService.Builder.addRoute(cidr: String) {
+    private fun Builder.addRoute(cidr: String) {
         try {
             Yuhaiin.parseCIDR(cidr).apply {
                 // Cannot handle 127.0.0.0/8
@@ -218,18 +216,18 @@ class YuhaiinVpnService : VpnService() {
         }
     }
 
-    private fun VpnService.Builder.addRuleRoute(profile: MapStore) {
+    private fun Builder.addRuleRoute() {
         Yuhaiin.addRulesCidr(
             { addRoute(it.ip, it.mask) },
-            "${profile.getString(resources.getString(R.string.rule_proxy))}\n${
-                profile.getString(
+            "${MainApplication.store.getString(resources.getString(R.string.rule_proxy))}\n${
+                MainApplication.store.getString(
                     resources.getString(R.string.rule_block)
                 )
             }"
         )
     }
 
-    private fun configure(profile: MapStore) {
+    private fun configure() {
         Builder().apply {
             setMtu(VPN_MTU)
             setSession("Default")
@@ -241,42 +239,42 @@ class YuhaiinVpnService : VpnService() {
                 .addRoute("2000::", 3) // https://issuetracker.google.com/issues/149636790
                 .addRoute(PRIVATE_VLAN6_PORTAL, 128)
 
-            when (profile.getString(resources.getString(R.string.adv_route_Key))) {
+            when (MainApplication.store.getString(resources.getString(R.string.adv_route_Key))) {
                 resources.getString(R.string.adv_route_non_chn) -> {
                     resources.getStringArray(R.array.simple_route).forEach { addRoute(it) }
-                    addRuleRoute(profile)
+                    addRuleRoute()
                 }
 
                 resources.getString(R.string.adv_route_non_local) -> {
                     resources.getStringArray(R.array.all_routes_except_local)
                         .forEach { addRoute(it) }
-                    addRuleRoute(profile)
+                    addRuleRoute()
                 }
 
                 else -> {
                     addRoute("0.0.0.0/0")
-                    if (profile.getBoolean(resources.getString(R.string.ipv6_proxy_key))) addRoute("::/0")
+                    if (MainApplication.store.getBoolean(resources.getString(R.string.ipv6_proxy_key))) addRoute("::/0")
                 }
             }
 
             addDnsServer(PRIVATE_VLAN4_PORTAL)
             addDnsServer(PRIVATE_VLAN6_PORTAL)
-            addRoute(profile.getString(resources.getString(R.string.adv_fake_dns_cidr_key)))
-            addRoute(profile.getString(resources.getString(R.string.adv_fake_dnsv6_cidr_key)))
+            addRoute(MainApplication.store.getString(resources.getString(R.string.adv_fake_dns_cidr_key)))
+            addRoute(MainApplication.store.getString(resources.getString(R.string.adv_fake_dnsv6_cidr_key)))
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P)
                 connectivity.requestNetwork(defaultNetworkRequest, defaultNetworkCallback)
 
-            val httpProxy = profile.getInt("http_port")
+            val httpProxy = MainApplication.store.getInt("http_port")
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 setMetered(false)
-                if (httpProxy != 0 && profile.getBoolean(resources.getString(R.string.append_http_proxy_to_vpn_key))) {
+                if (httpProxy != 0 && MainApplication.store.getBoolean(resources.getString(R.string.append_http_proxy_to_vpn_key))) {
                     setHttpProxy(ProxyInfo.buildDirectProxy("127.0.0.1", httpProxy))
                 }
             }
 
-            val appListString = profile.getString("app_list")
+            val appListString = MainApplication.store.getString("app_list")
             Log.d(tag, "configure: $appListString")
 
             fun bypassApp(bypass: Boolean, app: String) =
@@ -287,9 +285,9 @@ class YuhaiinVpnService : VpnService() {
                     Log.w(tag, e)
                 }
 
-            if (profile.getBoolean(resources.getString(R.string.adv_per_app_key))) {
+            if (MainApplication.store.getBoolean(resources.getString(R.string.adv_per_app_key))) {
                 val appList = Json.decodeFromString<MutableSet<String>>(appListString)
-                val bypass = profile.getBoolean(resources.getString(R.string.adv_app_bypass_key))
+                val bypass = MainApplication.store.getBoolean(resources.getString(R.string.adv_app_bypass_key))
                 appList.toMutableSet().apply {
                     // make yuhaiin using VPN, because tun2socket tcp need relay tun data to tcp a listener
                     if (bypass) remove(BuildConfig.APPLICATION_ID)
@@ -302,9 +300,8 @@ class YuhaiinVpnService : VpnService() {
         }
     }
 
-    private fun start(profile: MapStore) {
+    private fun start() {
         app.start(Opts().apply {
-            mapStore = profile
             savepath = getExternalFilesDir("yuhaiin").toString()
             notifySpped = SpeedNotifier(
                 notificationBuilder(),

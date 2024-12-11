@@ -14,8 +14,6 @@ class BootReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
         val autoConnect = MainApplication.store.getBoolean("auto_connect")
-        val data = MainApplication.store.dump()
-        Yuhaiin.closeStore()
         if (
             Intent.ACTION_BOOT_COMPLETED == intent.action
             && autoConnect
@@ -24,9 +22,7 @@ class BootReceiver : BroadcastReceiver() {
             Log.d(tag, "starting VPN service on boot")
             ContextCompat.startForegroundService(
                 context,
-                Intent(context, YuhaiinVpnService::class.java).apply {
-                    putExtra("profile", data)
-                }
+                Intent(context, YuhaiinVpnService::class.java)
             )
         }
     }

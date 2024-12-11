@@ -259,12 +259,7 @@ class MainActivity : AppCompatActivity() {
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == RESULT_OK) {
                 startService(
-                    Intent(
-                        this,
-                        YuhaiinVpnService::class.java
-                    ).apply {
-                        putExtra("profile", MainApplication.store.dump())
-                    }
+                    Intent(this, YuhaiinVpnService::class.java)
                 )
             }
         }
@@ -282,9 +277,7 @@ class MainActivity : AppCompatActivity() {
         // prepare to get vpn permission
         VpnService.prepare(this)?.apply {
             vpnPermissionDialogLauncher.launch(this)
-        } ?: startService(Intent(this, YuhaiinVpnService::class.java).apply {
-            putExtra("profile", MainApplication.store.dump())
-        })
+        } ?: startService(Intent(this, YuhaiinVpnService::class.java))
     }
 
     inner class BBoltDataStore : PreferenceDataStore() {
