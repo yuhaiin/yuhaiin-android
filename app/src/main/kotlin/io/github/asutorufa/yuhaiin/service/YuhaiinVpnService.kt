@@ -20,6 +20,7 @@ import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.getSystemService
+import com.github.logviewer.ReadLogcat.Companion.ignore
 import io.github.asutorufa.yuhaiin.BuildConfig
 import io.github.asutorufa.yuhaiin.IYuhaiinVpnBinder
 import io.github.asutorufa.yuhaiin.MainActivity
@@ -217,13 +218,36 @@ class YuhaiinVpnService : VpnService() {
     }
 
     private fun Builder.addRuleRoute() {
-        Yuhaiin.addRulesCidr({ addRoute(it.ip, it.mask) })
+        Yuhaiin.addRulesCidrv2 { ignore { addRoute(it.ip, it.mask) } }
     }
 
     private fun configure() {
         Builder().apply {
             setMtu(VPN_MTU)
             setSession("Default")
+
+            val appListString = MainApplication.store.getString("app_list")
+            Log.d(tag, "configure: $appListString")
+
+            fun bypassApp(bypass: Boolean, app: String) =
+                try {
+                    if (bypass) addDisallowedApplication(app.trim())
+                    else addAllowedApplication(app.trim())
+                } catch (e: Exception) {
+                    Log.w(tag, e)
+                }
+
+            if (MainApplication.store.getBoolean(resources.getString(R.string.adv_per_app_key))) {
+                val appList = Json.decodeFromString<MutableSet<String>>(appListString)
+                val bypass =
+                    MainApplication.store.getBoolean(resources.getString(R.string.adv_app_bypass_key))
+                appList.toMutableSet().apply {
+                    // make yuhaiin using VPN, because tun2socket tcp need relay tun data to tcp a listener
+                    if (bypass) remove(BuildConfig.APPLICATION_ID)
+                    else add(BuildConfig.APPLICATION_ID)
+                    forEach { bypassApp(bypass, it) }
+                }
+            }
 
             addAddress(PRIVATE_VLAN4_ADDRESS, 24).addRoute(PRIVATE_VLAN4_PORTAL, 32)
 
@@ -269,28 +293,6 @@ class YuhaiinVpnService : VpnService() {
                 }
             }
 
-            val appListString = MainApplication.store.getString("app_list")
-            Log.d(tag, "configure: $appListString")
-
-            fun bypassApp(bypass: Boolean, app: String) =
-                try {
-                    if (bypass) addDisallowedApplication(app.trim())
-                    else addAllowedApplication(app.trim())
-                } catch (e: Exception) {
-                    Log.w(tag, e)
-                }
-
-            if (MainApplication.store.getBoolean(resources.getString(R.string.adv_per_app_key))) {
-                val appList = Json.decodeFromString<MutableSet<String>>(appListString)
-                val bypass =
-                    MainApplication.store.getBoolean(resources.getString(R.string.adv_app_bypass_key))
-                appList.toMutableSet().apply {
-                    // make yuhaiin using VPN, because tun2socket tcp need relay tun data to tcp a listener
-                    if (bypass) remove(BuildConfig.APPLICATION_ID)
-                    else add(BuildConfig.APPLICATION_ID)
-                    forEach { bypassApp(bypass, it) }
-                }
-            }
 
             mInterface = establish()
         }

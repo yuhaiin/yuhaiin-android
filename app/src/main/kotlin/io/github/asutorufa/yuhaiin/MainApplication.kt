@@ -47,3 +47,12 @@ fun Store.putStringMap(key: String?, values: Map<String, String>) {
     putString(key, Json.encodeToString(values))
 }
 
+fun Store.getStringArrayList(key: String): ArrayList<String> {
+    val data = getString(key)
+    if (data.isEmpty()) return ArrayList()
+    return Json.decodeFromString<ArrayList<String>>(data)
+}
+
+fun Store.putStringArrayList(key: String, values: ArrayList<String>) {
+    putString(key, Json.encodeToString(values))
+}

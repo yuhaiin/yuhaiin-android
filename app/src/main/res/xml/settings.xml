@@ -51,23 +51,28 @@
             app:useSimpleSummaryProvider="true"
             android:icon="@drawable/handyman" />
 
+        <ListPreference
+            android:icon="@drawable/router"
+            android:key="@string/adv_route_Key"
+            android:title="@string/adv_route_title"
+            android:defaultValue="@string/adv_route_all"
+            android:entries="@array/adv_routes"
+            app:useSimpleSummaryProvider="true"
+            android:entryValues="@array/adv_routes" />
+
         <Preference
             android:title="@string/nav_dns_settings"
             android:icon="@drawable/dns"
             android:summary="DNS Port, Fake DNS, Remote DNS, Local DNS, Bootstrap DNS."
             android:key="@string/adv_dns_Key" />
 
-        <Preference
-            android:title="@string/rule"
-            android:icon="@drawable/router"
-            android:summary="Update Bypass File, Custom Direct, Proxy, Block."
-            android:key="@string/rule" />
 
-        <!--        <Preference-->
-        <!--            android:title="Rule"-->
-        <!--            android:icon="@drawable/router"-->
-        <!--            android:summary="Update Bypass File, Custom Direct, Proxy, Block."-->
-        <!--            android:key="@string/new_rule" />-->
+        <SwitchPreferenceCompat
+            android:icon="@drawable/router"
+            android:key="@string/sniff_key"
+            android:title="@string/sniff_title"
+            android:defaultValue="true"
+            android:layout_height="match_parent" />
 
         <SwitchPreferenceCompat
             android:icon="@drawable/auto_mode"

@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="yuhaiin_port_key">yuhaiin_port</string>
+    <string name="ports_key">ports_key</string>
+    <string name="http_server_port_key">http_server_port</string>
+    <string name="append_http_proxy_to_vpn_key">Append HTTP Proxy to VPN</string>
+    <string name="socks5_server_port_key">socks5_server_port</string>
+    <string name="ipv6_proxy_key">ipv6</string>
+    <string name="network_speed_key">network_speed</string>
+    <string name="allow_lan_key">allow_lan</string>
+    <string name="auth_userpw_key">auth_userpw</string>
+    <string name="auth_username_key">username</string>
+    <string name="auth_password_key">password</string>
+    <string name="adv_route_Key">route</string>
+    <string name="adv_route_all">All (Default)</string>
+    <string name="adv_route_non_chn">Non-Chinese IPs</string>
+    <string name="adv_route_non_local">Non-Local IPs</string>
+    <string-array name="adv_routes">
+        <item>@string/adv_route_all</item>
+        <item>@string/adv_route_non_local</item>
+        <item>@string/adv_route_non_chn</item>
+    </string-array>
+    <string name="adv_dns_Key">dns</string>
+    <string name="adv_fake_dns_cidr_key">fake_dns_cidr</string>
+    <string name="adv_dns_port_key">dns_port</string>
+    <string name="dns_hosts_key">hosts_key</string>
+    <string name="adv_fake_dnsv6_cidr_key">fake_dnsv6_cidr</string>
+    <string name="dns_hijacking">dns_hijacking</string>
+    <string name="remote_dns_category_key">remote_dns_category</string>
+    <string name="remote_dns_host_key">remote_dns_host</string>
+    <string name="remote_dns_type_key">remote_dns_type</string>
+    <string name="remote_dns_subnet_key">remote_dns_subnet</string>
+    <string name="remote_dns_tls_server_name_key">remote_dns_tls_server_name</string>
+    <string name="remote_dns_proxy_key">remote_dns_proxy</string>
+    <string name="remote_dns_resolve_domain_key">remote_dns_resolve_domain</string>
+    <string name="local_dns_host_key">local_dns_host</string>
+    <string name="local_dns_type_key">local_dns_type</string>
+    <string name="local_dns_subnet_key">local_dns_subnet</string>
+    <string name="local_dns_tls_server_name_key">local_dns_tls_server_name</string>
+    <string name="local_dns_proxy_key">local_dns_proxy</string>
+    <string name="bootstrap_dns_host_key">bootstrap_dns_host</string>
+    <string name="bootstrap_dns_type_key">bootstrap_dns_type</string>
+    <string name="bootstrap_dns_subnet_key">bootstrap_dns_subnet</string>
+    <string name="bootstrap_dns_tls_server_name_key">bootstrap_dns_tls_server_name</string>
+
+    <string name="dns_type_doudp_value">udp</string>
+    <string name="dns_type_dotcp_value">tcp</string>
+    <string name="dns_type_doh_value">doh</string>
+    <string name="dns_type_dot_value">dot</string>
+    <string name="dns_type_doq_value">doq</string>
+    <string name="dns_type_doh3_value">doh3</string>
+    <string-array name="dns_types_value">
+        <item>@string/dns_type_doudp_value</item>
+        <item>@string/dns_type_dotcp_value</item>
+        <item>@string/dns_type_doh_value</item>
+        <item>@string/dns_type_dot_value</item>
+        <item>@string/dns_type_doq_value</item>
+        <item>@string/dns_type_doh3_value</item>
+    </string-array>
+
+    <string name="bypass_tcp_key">TCP</string>
+    <string name="bypass_udp_key">UDP</string>
+    <string name="rule_update_bypass_file_key">Rule Update Bypass</string>
+    <string name="sniff_key">Sniff</string>
+    <string name="udp_proxy_fqdn_key">UDP proxy FQDN</string>
+    <string name="bypass_bypass_value">bypass</string>
+    <string name="bypass_direct_value">direct</string>
+    <string name="bypass_proxy_value">proxy</string>
+    <string name="bypass_block_value">block</string>
+    <string-array name="adv_bypass_mode_value">
+        <item>@string/bypass_bypass_value</item>
+        <item>@string/bypass_direct_value</item>
+        <item>@string/bypass_proxy_value</item>
+        <item>@string/bypass_block_value</item>
+    </string-array>
+    <string name="adv_tun_driver_key">Tun Driver</string>
+    <string name="tun_driver_fdbased_value">fdbased</string>
+    <string name="tun_driver_channel_value">channel</string>
+    <string name="tun_driver_system_gvisor_value">system_gvisor</string>
+    <string-array name="tun_drivers_value">
+        <item>@string/tun_driver_fdbased_value</item>
+        <item>@string/tun_driver_channel_value</item>
+        <item>@string/tun_driver_system_gvisor_value</item>
+    </string-array>
+    <string name="adv_auto_connect_key">auto_connect</string>
+    <string name="adv_per_app_key">per_app</string>
+    <string name="adv_app_bypass_key">app_bypass</string>
+    <string name="adv_app_list_key">app_list</string>
+    <string name="adv_new_app_list_key">new_app_list</string>
+
+    <string name="rule_block">Block</string>
+    <string name="rule_proxy">Proxy</string>
+    <string name="rule_direct">Direct</string>
+    <string name="log_level">Log Level</string>
+
+    <string name="save_logcat">save_logcat</string>
+
+    <string name="log_level_verbose">verbose</string>
+    <string name="log_level_debug">debug</string>
+    <string name="log_level_info">info</string>
+    <string name="log_level_warning">warning</string>
+    <string name="log_level_error">error</string>
+    <string name="log_level_fatal">fatal</string>
+    <string-array name="log_levels">
+        <item>@string/log_level_verbose</item>
+        <item>@string/log_level_debug</item>
+        <item>@string/log_level_info</item>
+        <item>@string/log_level_warning</item>
+        <item>@string/log_level_error</item>
+        <item>@string/log_level_fatal</item>
+    </string-array>
+
+    <string name="rule_list_key">rule_list_key</string>
+</resources>

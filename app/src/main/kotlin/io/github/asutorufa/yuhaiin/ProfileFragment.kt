@@ -63,12 +63,12 @@ class ProfileFragment : PreferenceFragmentCompat() {
 
 
     private fun initPreferences() {
-        findPreference<Preference>(resources.getString(R.string.rule))!!.also {
-            it.setOnPreferenceClickListener {
-                findNavController().navigate(ProfileFragmentDirections.actionProfileFragmentToRuleFragment())
-                true
-            }
-        }
+//        findPreference<Preference>(resources.getString(R.string.rule))!!.also {
+//            it.setOnPreferenceClickListener {
+//                findNavController().navigate(ProfileFragmentDirections.actionProfileFragmentToRuleFragment())
+//                true
+//            }
+//        }
 
 
         findPreference<Preference>(resources.getString(R.string.logcat))?.apply {

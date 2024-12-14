@@ -27,7 +27,7 @@ class HostsDialogFragment : DialogFragment() {
     private val mainActivity by lazy { requireActivity() as MainActivity }
 
     override fun onPause() {
-        Log.d("appListFragment", "onPause: ${adapter.hostsMap}")
+        Log.d("HostsDialogFragment", "onPause: ${adapter.hostsMap}")
         adapter.hostsMap.let {
             MainApplication.store.putStringMap("hosts", it)
         }
