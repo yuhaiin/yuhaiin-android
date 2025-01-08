@@ -16,7 +16,7 @@ fun getVersionCode(): Int {
             standardOutput = stdout
         }
         Integer.parseInt(stdout.toString().trim())
-    } catch (e: Exception) {
+    } catch (_: Exception) {
         5
     }
 }
@@ -29,7 +29,7 @@ fun getVersionName(): String {
             standardOutput = stdout
         }
         stdout.toString().trim()
-    } catch (e: Exception) {
+    } catch (_: Exception) {
         (((Date().time / 1000) - 1451606400) / 10).toString()
     }
 }
@@ -42,7 +42,7 @@ fun getCommit(): String {
             standardOutput = stdout
         }
         "-" + stdout.toString().trim()
-    } catch (e: Exception) {
+    } catch (_: Exception) {
         ""
     }
 }
