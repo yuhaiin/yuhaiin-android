@@ -9,9 +9,9 @@
         android:name="io.github.asutorufa.yuhaiin.ProfileFragment"
         android:transitionName="transtion_name_example"
         android:label="@string/yuhaiin">
-        <action
-            android:id="@+id/action_profileFragment_to_dnsFragment"
-            app:destination="@id/dnsFragment" />
+<!--        <action-->
+<!--            android:id="@+id/action_profileFragment_to_dnsFragment"-->
+<!--            app:destination="@id/dnsFragment" />-->
         <action
             android:id="@+id/action_profileFragment_to_appListFragment"
             app:destination="@+id/appListFragment" />
@@ -20,14 +20,14 @@
         <!--            app:destination="@+id/newRuleFragment" />-->
     </fragment>
 
-    <fragment
-        android:id="@+id/dnsFragment"
-        android:name="io.github.asutorufa.yuhaiin.DnsFragment"
-        android:label="@string/nav_dns_settings">
-        <action
-            android:id="@+id/action_dnsFragment_to_hostsListFragment"
-            app:destination="@+id/hostsListFragment" />
-    </fragment>
+<!--    <fragment-->
+<!--        android:id="@+id/dnsFragment"-->
+<!--        android:name="io.github.asutorufa.yuhaiin.DnsFragment"-->
+<!--        android:label="@string/nav_dns_settings">-->
+<!--        <action-->
+<!--            android:id="@+id/action_dnsFragment_to_hostsListFragment"-->
+<!--            app:destination="@+id/hostsListFragment" />-->
+<!--    </fragment>-->
     <fragment
         android:id="@+id/appListFragment"
         android:name="io.github.asutorufa.yuhaiin.AppListDialogFragment"

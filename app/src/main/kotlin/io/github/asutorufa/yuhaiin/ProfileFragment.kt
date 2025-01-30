@@ -95,12 +95,12 @@ class ProfileFragment : PreferenceFragmentCompat() {
             }
         }
 
-        findPreference<Preference>(resources.getString(R.string.adv_dns_Key))?.let {
-            it.setOnPreferenceClickListener {
-                findNavController().navigate(ProfileFragmentDirections.actionProfileFragmentToDnsFragment())
-                true
-            }
-        }
+//        findPreference<Preference>(resources.getString(R.string.adv_dns_Key))?.let {
+//            it.setOnPreferenceClickListener {
+//                findNavController().navigate(ProfileFragmentDirections.actionProfileFragmentToDnsFragment())
+//                true
+//            }
+//        }
 
         findPreference<Preference>(resources.getString(R.string.ports_key))?.let {
             it.setOnPreferenceClickListener {

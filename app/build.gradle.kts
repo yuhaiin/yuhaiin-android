@@ -10,12 +10,12 @@ plugins {
 
 fun getVersionCode(): Int {
     return try {
-        val stdout = ByteArrayOutputStream()
-        exec {
-            commandLine = listOf("git", "rev-list", "--first-parent", "--count", "main")
-            standardOutput = stdout
-        }
-        Integer.parseInt(stdout.toString().trim())
+        val processBuilder = ProcessBuilder("git", "rev-list", "--first-parent", "--count", "main")
+        val output = File.createTempFile("getGitVersionCode", "")
+        processBuilder.redirectOutput(output)
+        val process = processBuilder.start()
+        process.waitFor()
+        Integer.parseInt(output.readText().trim())
     } catch (_: Exception) {
         5
     }
@@ -23,12 +23,12 @@ fun getVersionCode(): Int {
 
 fun getVersionName(): String {
     return try {
-        val stdout = ByteArrayOutputStream()
-        exec {
-            commandLine = listOf("git", "describe", "--tags", "--dirty")
-            standardOutput = stdout
-        }
-        stdout.toString().trim()
+        val processBuilder = ProcessBuilder("git", "describe", "--tags", "--dirty")
+        val output = File.createTempFile("getGitVersionName", "")
+        processBuilder.redirectOutput(output)
+        val process = processBuilder.start()
+        process.waitFor()
+        output.readText().trim()
     } catch (_: Exception) {
         (((Date().time / 1000) - 1451606400) / 10).toString()
     }
@@ -36,12 +36,12 @@ fun getVersionName(): String {
 
 fun getCommit(): String {
     return try {
-        val stdout = ByteArrayOutputStream()
-        exec {
-            commandLine = listOf("git", "rev-parse", "--short", "HEAD")
-            standardOutput = stdout
-        }
-        "-" + stdout.toString().trim()
+        val processBuilder = ProcessBuilder("git", "rev-parse", "--short", "HEAD")
+        val output = File.createTempFile("getGitCommit", "")
+        processBuilder.redirectOutput(output)
+        val process = processBuilder.start()
+        process.waitFor()
+        "-" + output.readText().trim()
     } catch (_: Exception) {
         ""
     }

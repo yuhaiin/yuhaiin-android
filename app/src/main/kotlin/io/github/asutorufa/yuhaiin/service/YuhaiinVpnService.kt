@@ -278,8 +278,9 @@ class YuhaiinVpnService : VpnService() {
 
             addDnsServer(PRIVATE_VLAN4_PORTAL)
             addDnsServer(PRIVATE_VLAN6_PORTAL)
-            addRoute(MainApplication.store.getString(resources.getString(R.string.adv_fake_dns_cidr_key)))
-            addRoute(MainApplication.store.getString(resources.getString(R.string.adv_fake_dnsv6_cidr_key)))
+            Yuhaiin.addFakeDnsCidr{ ignore { addRoute(it.ip, it.mask) } }
+//            addRoute(MainApplication.store.getString(resources.getString(R.string.adv_fake_dns_cidr_key)))
+//            addRoute(MainApplication.store.getString(resources.getString(R.string.adv_fake_dnsv6_cidr_key)))
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P)
                 connectivity.requestNetwork(defaultNetworkRequest, defaultNetworkCallback)

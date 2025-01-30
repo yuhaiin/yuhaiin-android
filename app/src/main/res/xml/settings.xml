@@ -60,11 +60,11 @@
             app:useSimpleSummaryProvider="true"
             android:entryValues="@array/adv_routes" />
 
-        <Preference
-            android:title="@string/nav_dns_settings"
-            android:icon="@drawable/dns"
-            android:summary="DNS Port, Fake DNS, Remote DNS, Local DNS, Bootstrap DNS."
-            android:key="@string/adv_dns_Key" />
+<!--        <Preference-->
+<!--            android:title="@string/nav_dns_settings"-->
+<!--            android:icon="@drawable/dns"-->
+<!--            android:summary="DNS Port, Fake DNS, Remote DNS, Local DNS, Bootstrap DNS."-->
+<!--            android:key="@string/adv_dns_Key" />-->
 
 
         <SwitchPreferenceCompat
