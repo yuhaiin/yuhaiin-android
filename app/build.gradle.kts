@@ -28,7 +28,9 @@ fun getVersionName(): String {
         processBuilder.redirectOutput(output)
         val process = processBuilder.start()
         process.waitFor()
-        output.readText().trim()
+        val commit = getCommit()
+        val name = output.readText().trim()
+        return if (name.endsWith(commit)) name else "$name-$commit"
     } catch (_: Exception) {
         (((Date().time / 1000) - 1451606400) / 10).toString()
     }
@@ -41,14 +43,13 @@ fun getCommit(): String {
         processBuilder.redirectOutput(output)
         val process = processBuilder.start()
         process.waitFor()
-        "-" + output.readText().trim()
+        output.readText().trim()
     } catch (_: Exception) {
         ""
     }
 }
 
-tasks.withType<org.jetbrains.kotlin.gradle.internal.KaptWithoutKotlincTask>()
-    .configureEach {
+tasks.withType<org.jetbrains.kotlin.gradle.internal.KaptWithoutKotlincTask>().configureEach {
         kaptProcessJvmArgs.add("-Xmx512m")
     }
 
@@ -74,7 +75,7 @@ android {
         targetSdk = 35
 
         versionCode = 184
-        versionName = getVersionName() + getCommit()
+        versionName = getVersionName()
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner" // 追加
 
@@ -82,13 +83,12 @@ android {
     }
 
     signingConfigs {
-        if (System.getenv("KEYSTORE_PATH") != null)
-            create("releaseConfig") {
-                storeFile = file(System.getenv("KEYSTORE_PATH"))
-                keyAlias = System.getenv("KEY_ALIAS")
-                storePassword = System.getenv("KEYSTORE_PASSWORD")
-                keyPassword = System.getenv("KEY_PASSWORD")
-            }
+        if (System.getenv("KEYSTORE_PATH") != null) create("releaseConfig") {
+            storeFile = file(System.getenv("KEYSTORE_PATH"))
+            keyAlias = System.getenv("KEY_ALIAS")
+            storePassword = System.getenv("KEYSTORE_PASSWORD")
+            keyPassword = System.getenv("KEY_PASSWORD")
+        }
     }
 
     this.buildOutputs.all {
@@ -108,12 +108,11 @@ android {
             isShrinkResources = true
 
             proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
+                getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
             )
 
-            if (System.getenv("KEYSTORE_PATH") != null)
-                signingConfig = signingConfigs.getByName("releaseConfig")
+            if (System.getenv("KEYSTORE_PATH") != null) signingConfig =
+                signingConfigs.getByName("releaseConfig")
         }
     }
 
@@ -142,8 +141,7 @@ android {
             isIncludeAndroidResources = true
             all {
                 it.systemProperty(
-                    "robolectric.dependency.repo.url",
-                    "https://maven.aliyun.com/repository/public"
+                    "robolectric.dependency.repo.url", "https://maven.aliyun.com/repository/public"
                 )
                 it.systemProperty("robolectric.dependency.repo.id", "aliyunmaven")
             }
