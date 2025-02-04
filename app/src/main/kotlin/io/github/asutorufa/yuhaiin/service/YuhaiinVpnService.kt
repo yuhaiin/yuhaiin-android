@@ -30,11 +30,14 @@ import kotlinx.serialization.json.Json
 import yuhaiin.App
 import yuhaiin.Closer
 import yuhaiin.NotifySpped
+import yuhaiin.Interfaces
 import yuhaiin.Opts
 import yuhaiin.SocketProtect
 import yuhaiin.TUN
 import yuhaiin.Yuhaiin
 import java.net.InetSocketAddress
+import java.net.NetworkInterface
+import java.util.Locale
 
 
 class YuhaiinVpnService : VpnService() {
@@ -278,7 +281,7 @@ class YuhaiinVpnService : VpnService() {
 
             addDnsServer(PRIVATE_VLAN4_PORTAL)
             addDnsServer(PRIVATE_VLAN6_PORTAL)
-            Yuhaiin.addFakeDnsCidr{ ignore { addRoute(it.ip, it.mask) } }
+            Yuhaiin.addFakeDnsCidr { ignore { addRoute(it.ip, it.mask) } }
 //            addRoute(MainApplication.store.getString(resources.getString(R.string.adv_fake_dns_cidr_key)))
 //            addRoute(MainApplication.store.getString(resources.getString(R.string.adv_fake_dnsv6_cidr_key)))
 
@@ -306,6 +309,7 @@ class YuhaiinVpnService : VpnService() {
                 notificationBuilder(),
                 NotificationManagerCompat.from(this@YuhaiinVpnService)
             )
+            interfaces = GetInterfaces()
 
             tun = TUN().apply {
                 fd = mInterface!!.fd
@@ -336,6 +340,52 @@ class YuhaiinVpnService : VpnService() {
 
 
         startForeground(1, notificationBuilder().build())
+    }
+
+    inner class GetInterfaces : Interfaces {
+        override fun getInterfacesAsString(): String? {
+            val interfaces: ArrayList<NetworkInterface> =
+                java.util.Collections.list(NetworkInterface.getNetworkInterfaces())
+
+            val sb = StringBuilder()
+            for (nif in interfaces) {
+                try {
+                    sb.append(
+                        String.format(
+                            Locale.ROOT,
+                            "%s %d %d %b %b %b %b %b |",
+                            nif.name,
+                            nif.index,
+                            nif.mtu,
+                            nif.isUp,
+                            nif.supportsMulticast(),
+                            nif.isLoopback,
+                            nif.isPointToPoint,
+                            nif.supportsMulticast()
+                        )
+                    )
+
+                    for (ia in nif.interfaceAddresses) {
+                        val parts = ia.toString().split("/", limit = 0)
+                        if (parts.size > 1) {
+                            sb.append(
+                                String.format(
+                                    Locale.ROOT,
+                                    "%s/%d ",
+                                    parts[1],
+                                    ia.networkPrefixLength
+                                )
+                            )
+                        }
+                    }
+                } catch (e: Exception) {
+                    continue
+                }
+                sb.append("\n")
+            }
+
+            return sb.toString()
+        }
     }
 
     inner class SpeedNotifier(
