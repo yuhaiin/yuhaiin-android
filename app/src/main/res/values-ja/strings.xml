@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">ユハイ員</string>
-    <string name="profile_title">プロフィール</string>
     <string name="yuhaiin">ユハイ員</string>>
     <string name="yuhaiin_running">ユハイ員実行中</string>
     <string name="yuhaiin_port_title">ユハイ員ポート</string>
@@ -11,38 +10,15 @@
     <string name="socks5_server_port_title">Socks5ポート</string>
     <string name="append_http_proxy_to_vpn_title">HTTPプロキシをVPNに追加する</string>
     <string name="allow_lan_title">LAN接続を許可する</string>
-    <string name="authentication">認証</string>
-    <string name="auth_userpw_title">ユーザーネームとパスワード認証</string>
-    <string name="auth_username_title">ユーザーネーム</string>
-    <string name="auth_password_title">パスワード</string>
     <string name="advanced">アドバンスト</string>
     <string name="adv_route_title">ルート</string>
-    <string name="nav_dns_settings">DNS設定</string>
-    <string name="adv_dns_port_title">DNSポート</string>
-    <string name="adv_fake_dns_cidr_title">フェイクDNS CIDR</string>
-    <string name="dns_hosts_title">ホスト</string>
     <string name="dns_dns_hijacking_title">DNSハイジャック</string>
-    <string name="dns_remote_title">リモート</string>
-    <string name="dns_local_title">ローカル</string>
-    <string name="dns_bootstrap_title">ブートストラップ</string>
-    <string name="dns_host_title">ホスト</string>
-    <string name="dns_type_title">タイプ</string>
-    <string name="dns_subnet_title">サブネット</string>
-    <string name="dns_tls_server_name_title">TLSサーバー名</string>
-    <string name="dns_resolve_domain_title">ドメインを解決</string>
-    <string name="dns_hosts_add_from">追加元</string>
+    <string name="sniff_title">ドメインスニッフィング</string>
     <string name="adv_tun_driver_title">Tunドライバー</string>
     <string name="adv_auto_connect_title">起動時に接続</string>
     <string name="adv_per_app_title">アプリバイパス</string>
     <string name="adv_app_bypass_title">バイパスモード</string>
     <string name="adv_app_list_title">アプリ一覧</string>
-    <string name="prof_add">プロフィール追加</string>
-    <string name="prof_del">プロフィール削除</string>
-    <string name="rule_update_bypass_file_title">バイパスルールを更新する</string>
-    <string name="rule">ルール</string>
-    <string name="rule_block_title">ブロック</string>
-    <string name="rule_proxy_title">プロキシ</string>
-    <string name="rule_direct_title">ダイレクト</string>
     <string name="notify_msg">%sに接続されています</string>
     <string name="save_logcat_name">ログを保存</string>
     <string name="log_level_name">ログレベル</string>

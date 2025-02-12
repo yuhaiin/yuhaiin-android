@@ -75,6 +75,11 @@
             android:layout_height="match_parent" />
 
         <SwitchPreferenceCompat
+            android:title="@string/dns_dns_hijacking_title"
+            android:defaultValue="true"
+            android:key="@string/dns_hijacking" />
+
+        <SwitchPreferenceCompat
             android:icon="@drawable/auto_mode"
             android:key="@string/adv_auto_connect_key"
             android:defaultValue="false"
