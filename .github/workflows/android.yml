@@ -21,7 +21,7 @@ jobs:
       - name: get run id
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: echo "GITHUB_RUN_ID=$(gh run list -w Go -L 1 -R yuhaiin/yuhaiin -s success --json databaseId -q .[0].databaseId)" >> $GITHUB_ENV
+        run: echo "GITHUB_RUN_ID=$(gh run list -b main -w Go -L 1 -R yuhaiin/yuhaiin -s success --json databaseId -q .[0].databaseId)" >> $GITHUB_ENV
 
       - uses: actions/download-artifact@v4
         with:
