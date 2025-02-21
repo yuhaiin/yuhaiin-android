@@ -11,10 +11,7 @@
     <string name="http_server_port_title">HTTP Port</string>
     <string name="append_http_proxy_to_vpn_title">Append HTTP Proxy to VPN</string>
     <string name="socks5_server_port_title">Socks5 Port</string>
-    <string name="ipv6_proxy_title" translatable="false">IPv6</string>
-    <string name="ipv6_proxy_sum">Enable IPv6 forwarding. If the server supports IPv6, you can access IPv6 contents from
-        IPv4 network with this enabled.
-    </string>
+
     <string name="network_speed_title">Network Speed</string>
     <string name="network_speed_sum">Show network speed in notification.</string>
     <string name="allow_lan_title">Allow Lan Connect</string>

@@ -13,5 +13,4 @@ interface IYuhaiinVpnBinder {
 
             void stop();
             boolean isRunning();
-            String saveNewBypass(String url);
 }

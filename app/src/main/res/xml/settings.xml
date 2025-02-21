@@ -22,14 +22,6 @@
             android:layout_height="match_parent" />
 
         <SwitchPreferenceCompat
-            android:icon="@drawable/hub"
-            android:key="@string/ipv6_proxy_key"
-            android:title="@string/ipv6_proxy_title"
-            android:defaultValue="true"
-            android:summary="@string/ipv6_proxy_sum"
-            android:layout_height="match_parent" />
-
-        <SwitchPreferenceCompat
             android:icon="@drawable/speed_24px"
             android:key="@string/network_speed_key"
             android:title="@string/network_speed_title"
@@ -135,21 +127,6 @@
 <!--    </PreferenceCategory>-->
 
     <PreferenceCategory android:title="@string/debug">
-
-        <SwitchPreferenceCompat
-            android:icon="@drawable/save"
-            android:defaultValue="false"
-            android:key="@string/save_logcat"
-            android:title="@string/save_logcat_name"
-            android:summary="@string/save_logcat_summary" />
-
-        <ListPreference
-            android:key="@string/log_level"
-            android:title="@string/log_level_name"
-            android:defaultValue="@string/log_level_info"
-            android:entries="@array/log_levels"
-            app:useSimpleSummaryProvider="true"
-            android:entryValues="@array/log_levels" />
 
         <Preference
             android:icon="@drawable/adb"

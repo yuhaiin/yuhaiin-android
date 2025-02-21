@@ -5,7 +5,6 @@
     <string name="http_server_port_key">http_server_port</string>
     <string name="append_http_proxy_to_vpn_key">Append HTTP Proxy to VPN</string>
     <string name="socks5_server_port_key">socks5_server_port</string>
-    <string name="ipv6_proxy_key">ipv6</string>
     <string name="network_speed_key">network_speed</string>
     <string name="allow_lan_key">allow_lan</string>
     <string name="adv_route_Key">route</string>
@@ -35,23 +34,4 @@
     <string name="adv_app_bypass_key">app_bypass</string>
     <string name="adv_app_list_key">app_list</string>
     <string name="adv_new_app_list_key">new_app_list</string>
-
-    <string name="log_level">Log Level</string>
-
-    <string name="save_logcat">save_logcat</string>
-
-    <string name="log_level_verbose">verbose</string>
-    <string name="log_level_debug">debug</string>
-    <string name="log_level_info">info</string>
-    <string name="log_level_warning">warning</string>
-    <string name="log_level_error">error</string>
-    <string name="log_level_fatal">fatal</string>
-    <string-array name="log_levels">
-        <item>@string/log_level_verbose</item>
-        <item>@string/log_level_debug</item>
-        <item>@string/log_level_info</item>
-        <item>@string/log_level_warning</item>
-        <item>@string/log_level_error</item>
-        <item>@string/log_level_fatal</item>
-    </string-array>
 </resources>

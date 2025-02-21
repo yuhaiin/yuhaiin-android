@@ -85,8 +85,8 @@ class ProfileFragment : PreferenceFragmentCompat() {
                     ".*android added item .*",
                     ".*No package ID .* found for ID.*",
                     ".*eglMakeCurrent:.*",
-		    ".*NotificationManager: io.github.asutorufa.yuhaiin: notify.*",
-		    ".*InputEventReceiver_DOT: IER.scheduleInputVsync.*",
+                    ".*NotificationManager: io.github.asutorufa.yuhaiin: notify.*",
+                    ".*InputEventReceiver_DOT: IER.scheduleInputVsync.*",
                     ".*ViewRootImpl@.*[.*]: .*"
                 )
 
@@ -126,10 +126,10 @@ class ProfileFragment : PreferenceFragmentCompat() {
                     null
                 ) {
                     MainApplication.store.putInt("http_port", bind.http.text.toString().toInt())
-                    MainApplication.store.putInt(
-                        "yuhaiin_port",
-                        bind.yuhaiin.text.toString().toInt()
-                    )
+//                    MainApplication.store.putInt(
+//                        "yuhaiin_port",
+//                        bind.yuhaiin.text.toString().toInt()
+//                    )
                 }
                 true
             }
@@ -144,4 +144,5 @@ class ProfileFragment : PreferenceFragmentCompat() {
     }
 
     private fun reload() = refreshPreferences.forEach { it() }
+
 }

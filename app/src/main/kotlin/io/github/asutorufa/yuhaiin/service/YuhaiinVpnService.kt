@@ -11,7 +11,6 @@ import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
 import android.net.ProxyInfo
-import android.net.Uri
 import android.net.VpnService
 import android.os.Build
 import android.os.ParcelFileDescriptor
@@ -95,15 +94,6 @@ class YuhaiinVpnService : VpnService() {
     inner class VpnBinder : IYuhaiinVpnBinder.Stub() {
         override fun isRunning() = state == State.CONNECTED
         override fun stop() = this@YuhaiinVpnService.onRevoke()
-        override fun saveNewBypass(url: String): String {
-            Log.d(tag, "SaveNewBypass: $url")
-            return try {
-                app.saveNewBypass(Uri.parse(url).toString())
-                ""
-            } catch (e: Exception) {
-                e.message.toString()
-            }
-        }
     }
 
     inner class UidDumper : yuhaiin.UidDumper {
@@ -273,9 +263,7 @@ class YuhaiinVpnService : VpnService() {
 
                 else -> {
                     addRoute("0.0.0.0/0")
-                    if (MainApplication.store.getBoolean(resources.getString(R.string.ipv6_proxy_key))) addRoute(
-                        "::/0"
-                    )
+                    if (Yuhaiin.isIPv6()) addRoute("::/0")
                 }
             }
 

@@ -30,6 +30,9 @@ import com.google.android.material.snackbar.Snackbar
 import io.github.asutorufa.yuhaiin.databinding.MainActivityBinding
 import io.github.asutorufa.yuhaiin.service.YuhaiinVpnService
 import io.github.asutorufa.yuhaiin.service.YuhaiinVpnService.Companion.State
+import androidx.core.net.toUri
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 
 
 class MainActivity : AppCompatActivity() {
@@ -48,7 +51,7 @@ class MainActivity : AppCompatActivity() {
                     setColorScheme(CustomTabsIntent.COLOR_SCHEME_SYSTEM)
                 }.build().apply {
                     intent.data =
-                        Uri.parse("http://127.0.0.1:${MainApplication.store.getInt("yuhaiin_port")}")
+                        "http://127.0.0.1:${MainApplication.store.getInt("yuhaiin_port")}".toUri()
                     this@MainActivity.startActivity(intent)
                 }
             }
@@ -85,9 +88,10 @@ class MainActivity : AppCompatActivity() {
         setContentView(mainBinding.root)
 
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            window.setDecorFitsSystemWindows(true)
-        }
+        WindowInsetsControllerCompat(
+            window, mainBinding.root
+        ).show(WindowInsetsCompat.Type.systemBars())
+
 
         when (applicationContext.resources.configuration.uiMode.and(Configuration.UI_MODE_NIGHT_MASK)) {
             Configuration.UI_MODE_NIGHT_YES -> {}
@@ -174,7 +178,7 @@ class MainActivity : AppCompatActivity() {
         super.onStart()
 
         bindService(
-            Intent(this, YuhaiinVpnService::class.java), mConnection, Context.BIND_AUTO_CREATE
+            Intent(this, YuhaiinVpnService::class.java), mConnection, BIND_AUTO_CREATE
         )
 
         val intentFilter = IntentFilter().apply {
