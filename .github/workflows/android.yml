@@ -7,6 +7,9 @@ on:
   pull_request:
     branches: ["main"]
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -65,3 +68,22 @@ jobs:
         with:
           name: metadata.json
           path: app/build/outputs/apk/release/output-metadata.json
+
+      - id: generate-release-notes
+        run: |
+          git log $(git describe --tags --abbrev=0 --exclude=$(git describe --tags))..$(git describe --tags) --oneline > release_notes.txt
+
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          body_path: release_notes.txt
+          name: ${{ github.ref_type == 'tag' && github.ref_name || 'draft release' }}
+          draft: ${{ github.ref_type != 'tag' }}
+          make_latest: ${{ github.ref_type == 'tag' && !contains(github.ref_name, 'beta') && !contains(github.ref_name, 'alpha') }}
+          prerelease: ${{ contains(github.ref_name, 'beta') || contains(github.ref_name, 'alpha') }}
+          # see: https://github.com/softprops/action-gh-release/issues/79#issuecomment-930339070
+          files: |
+            release_notes.txt
+            app/build/outputs/apk/release/output-metadata.json
+            app/build/outputs/apk/release/yuhaiin-x86_64-release.apk
+            app/build/outputs/apk/release/yuhaiin-arm64-v8a-release.apk
