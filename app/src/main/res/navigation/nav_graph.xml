@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/profileFragment">
+
+    <fragment
+        android:id="@+id/profileFragment"
+        android:name="io.github.asutorufa.yuhaiin.ProfileFragment"
+        android:transitionName="transtion_name_example"
+        android:label="@string/yuhaiin">
+        <action
+            android:id="@+id/action_profileFragment_to_appListFragment"
+            app:destination="@+id/appListFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/appListFragment"
+        android:name="io.github.asutorufa.yuhaiin.AppListDialogFragment"
+        android:label="@string/adv_app_list_title" />
+</navigation>

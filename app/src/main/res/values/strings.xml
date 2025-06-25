@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">yuhaiin</string>
+
+    <string name="yuhaiin">Yuhaiin</string>
+    <string name="yuhaiin_running">Yuhaiin Running</string>
+    <string name="yuhaiin_port_title">Yuhaiin Port</string>
+
+    <string name="connection">Connection</string>
+    <string name="ports_title">Ports</string>
+    <string name="http_server_port_title">HTTP Port</string>
+    <string name="append_http_proxy_to_vpn_title">Append HTTP Proxy to VPN</string>
+    <string name="socks5_server_port_title">Socks5 Port</string>
+
+    <string name="network_speed_title">Network Speed</string>
+    <string name="network_speed_sum">Show network speed in notification.</string>
+    <string name="allow_lan_title">Allow Lan Connect</string>
+
+    <string name="advanced">Advanced</string>
+    <string name="adv_route_title">Route</string>
+
+    <string name="sniff_title">Sniff</string>
+
+    <string name="dns_dns_hijacking_title">DNS Hijacking</string>
+
+    <string name="adv_tun_driver_title">Tun Driver</string>
+    <string name="tun_driver_fdbased" translatable="false">gVisor Fdbased</string>
+    <string name="tun_driver_channel" translatable="false">gVisor Channel</string>
+    <string name="tun_driver_system_gvisor" translatable="false">System</string>
+    <string-array name="tun_drivers">
+        <item>@string/tun_driver_fdbased</item>
+        <item>@string/tun_driver_channel</item>
+        <item>@string/tun_driver_system_gvisor</item>
+    </string-array>
+
+
+    <string name="adv_auto_connect_title">Connect on Boot</string>
+
+    <string name="adv_per_app_title">Per-app Proxy</string>
+    <string name="adv_app_bypass_title">Bypass Mode</string>
+    <string name="adv_app_bypass_sum">Enable this option to bypass selected apps instead of proxying them</string>
+    <string name="adv_app_list_title">App List</string>
+    <string name="adv_app_list_sum">Select apps to apply or bypass the proxy</string>
+
+    <string name="notify_msg">Connected to %s</string>
+    <string name="channel_name">Proxy active</string>
+
+    <string name="debug">Debug</string>
+    <string name="logcat">Logcat</string>
+    <string name="logcat_name">Logcat</string>
+    <string name="save_logcat_name">Save Logcat</string>
+    <string name="save_logcat_summary">Save logcat to
+        Android/data/io.github.asutorufa.yuhaiin/files/yuhaiin/log.
+    </string>
+
+    <string name="log_level_name">Log Level</string>
+</resources>

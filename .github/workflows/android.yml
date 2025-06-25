@@ -1,0 +1,89 @@
+name: Android CI
+
+on:
+  push:
+    branches: ["main"]
+    tags: [v*]
+  pull_request:
+    branches: ["main"]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: "0"
+          fetch-tags: "true"
+          submodules: "recursive"
+
+      - name: get run id
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: echo "GITHUB_RUN_ID=$(gh run list -b main -w Go -L 1 -R yuhaiin/yuhaiin -s success --json databaseId -q .[0].databaseId)" >> $GITHUB_ENV
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: yuhaiin.aar
+          path: yuhaiin
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: yuhaiin/yuhaiin
+          run-id: ${{ env.GITHUB_RUN_ID }}
+
+      - name: set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: "17"
+          distribution: "temurin"
+          cache: gradle
+
+      - name: Build with Gradle
+        env:
+          KEYSTORE_PATH: ${{ github.workspace }}/release.keystore
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          KEYSTORE: ${{ secrets.KEYSTORE_BASE64 }}
+        run: |
+          echo ${KEYSTORE} | base64 -d > ${KEYSTORE_PATH}
+          chmod +x gradlew
+          ./gradlew app:assembleRelease --stacktrace
+
+      - name: upload_arm64-v8a
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-arm64-v8a-release
+          path: app/build/outputs/apk/release/yuhaiin-arm64-v8a-release.apk
+      - name: upload_x86_64
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-x86_64-release
+          path: app/build/outputs/apk/release/yuhaiin-x86_64-release.apk
+      - name: metadata.json
+        uses: actions/upload-artifact@v4
+        with:
+          name: metadata.json
+          path: app/build/outputs/apk/release/output-metadata.json
+
+      - id: generate-release-notes
+        run: |
+          git log $(git describe --tags --abbrev=0 --exclude=$(git describe --tags))..$(git describe --tags) --oneline > release_notes.txt
+
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          body_path: release_notes.txt
+          name: ${{ github.ref_type == 'tag' && github.ref_name || 'draft release' }}
+          draft: ${{ github.ref_type != 'tag' }}
+          make_latest: ${{ github.ref_type == 'tag' && !contains(github.ref_name, 'beta') && !contains(github.ref_name, 'alpha') }}
+          prerelease: ${{ contains(github.ref_name, 'beta') || contains(github.ref_name, 'alpha') }}
+          # see: https://github.com/softprops/action-gh-release/issues/79#issuecomment-930339070
+          files: |
+            release_notes.txt
+            app/build/outputs/apk/release/output-metadata.json
+            app/build/outputs/apk/release/yuhaiin-x86_64-release.apk
+            app/build/outputs/apk/release/yuhaiin-arm64-v8a-release.apk

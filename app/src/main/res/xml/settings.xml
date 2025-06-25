@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.preference.PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <PreferenceCategory android:title="@string/connection">
+
+        <Preference
+            android:icon="@drawable/vpn_lock"
+            android:title="@string/ports_title"
+            android:key="@string/ports_key" />
+
+        <SwitchPreferenceCompat
+            android:title="@string/append_http_proxy_to_vpn_title"
+            android:summary="HTTP proxy will be used directly from without going through the virtual NIC device(Android 10+)"
+            android:key="@string/append_http_proxy_to_vpn_key" />
+
+        <SwitchPreferenceCompat
+            android:icon="@drawable/lan"
+            android:key="@string/allow_lan_key"
+            android:title="@string/allow_lan_title"
+            android:defaultValue="false"
+            android:layout_height="match_parent" />
+
+        <SwitchPreferenceCompat
+            android:icon="@drawable/speed_24px"
+            android:key="@string/network_speed_key"
+            android:title="@string/network_speed_title"
+            android:defaultValue="false"
+            android:summary="@string/network_speed_sum"
+            android:layout_height="match_parent" />
+
+    </PreferenceCategory>
+
+
+    <PreferenceCategory android:title="@string/advanced">
+
+        <ListPreference
+            android:key="@string/adv_tun_driver_key"
+            android:title="@string/adv_tun_driver_title"
+            android:entries="@array/tun_drivers"
+            android:entryValues="@array/tun_drivers_value"
+            android:defaultValue="@string/tun_driver_system_gvisor_value"
+            app:useSimpleSummaryProvider="true"
+            android:icon="@drawable/handyman" />
+
+        <ListPreference
+            android:icon="@drawable/router"
+            android:key="@string/adv_route_Key"
+            android:title="@string/adv_route_title"
+            android:defaultValue="@string/adv_route_all"
+            android:entries="@array/adv_routes"
+            app:useSimpleSummaryProvider="true"
+            android:entryValues="@array/adv_routes" />
+
+<!--        <Preference-->
+<!--            android:title="@string/nav_dns_settings"-->
+<!--            android:icon="@drawable/dns"-->
+<!--            android:summary="DNS Port, Fake DNS, Remote DNS, Local DNS, Bootstrap DNS."-->
+<!--            android:key="@string/adv_dns_Key" />-->
+
+
+        <SwitchPreferenceCompat
+            android:icon="@drawable/router"
+            android:key="@string/sniff_key"
+            android:title="@string/sniff_title"
+            android:defaultValue="true"
+            android:layout_height="match_parent" />
+
+        <SwitchPreferenceCompat
+            android:title="@string/dns_dns_hijacking_title"
+            android:defaultValue="true"
+            android:key="@string/dns_hijacking" />
+
+        <SwitchPreferenceCompat
+            android:icon="@drawable/auto_mode"
+            android:key="@string/adv_auto_connect_key"
+            android:defaultValue="false"
+            android:title="@string/adv_auto_connect_title" />
+
+        <SwitchPreferenceCompat
+            android:key="@string/adv_per_app_key"
+            android:defaultValue="false"
+            android:icon="@drawable/settop_component"
+            android:title="@string/adv_per_app_title" />
+
+        <SwitchPreferenceCompat
+            android:key="@string/adv_app_bypass_key"
+            android:icon="@drawable/alt_route"
+            android:defaultValue="false"
+            android:title="@string/adv_app_bypass_title"
+            android:summary="@string/adv_app_bypass_sum"
+            android:dependency="@string/adv_per_app_key" />
+
+        <Preference
+            android:key="@string/adv_new_app_list_key"
+            android:icon="@drawable/apps"
+            android:title="@string/adv_app_list_title"
+            android:summary="@string/adv_app_list_sum"
+            android:dependency="@string/adv_per_app_key" />
+    </PreferenceCategory>
+
+
+<!--    <PreferenceCategory android:title="@string/authentication">-->
+
+<!--        <SwitchPreferenceCompat-->
+<!--            android:icon="@drawable/authenticator"-->
+<!--            android:key="@string/auth_userpw_key"-->
+<!--            android:title="@string/auth_userpw_title" />-->
+
+<!--        <EditTextPreference-->
+<!--            android:key="@string/auth_username_key"-->
+<!--            android:title="@string/auth_username_title"-->
+<!--            android:icon="@drawable/face"-->
+<!--            android:dependency="@string/auth_userpw_key"-->
+<!--            app:useSimpleSummaryProvider="true"-->
+<!--            android:singleLine="true" />-->
+
+<!--        <EditTextPreference-->
+<!--            android:key="@string/auth_password_key"-->
+<!--            android:title="@string/auth_password_title"-->
+<!--            android:icon="@drawable/password"-->
+<!--            android:inputType="textPassword"-->
+<!--            android:dependency="@string/auth_userpw_key"-->
+<!--            app:useSimpleSummaryProvider="true"-->
+<!--            android:singleLine="true" />-->
+
+<!--    </PreferenceCategory>-->
+
+    <PreferenceCategory android:title="@string/debug">
+
+        <Preference
+            android:icon="@drawable/adb"
+            android:key="@string/logcat"
+            android:title="@string/logcat_name"
+            android:singleLine="true" />
+
+    </PreferenceCategory>
+
+</androidx.preference.PreferenceScreen>

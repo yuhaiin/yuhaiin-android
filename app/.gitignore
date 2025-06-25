@@ -1,0 +1,5 @@
+/build
+/.idea
+/.gradle
+/app/src/lib.bak
+/app/src/jni

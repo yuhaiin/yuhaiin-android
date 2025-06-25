@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">ユハイ員</string>
+    <string name="yuhaiin">ユハイ員</string>>
+    <string name="yuhaiin_running">ユハイ員実行中</string>
+    <string name="yuhaiin_port_title">ユハイ員ポート</string>
+    <string name="ports_title">ポート</string>
+    <string name="connection">コネクション</string>
+    <string name="http_server_port_title">HTTPポート</string>
+    <string name="socks5_server_port_title">Socks5ポート</string>
+    <string name="append_http_proxy_to_vpn_title">HTTPプロキシをVPNに追加する</string>
+    <string name="allow_lan_title">LAN接続を許可する</string>
+    <string name="advanced">アドバンスト</string>
+    <string name="adv_route_title">ルート</string>
+    <string name="dns_dns_hijacking_title">DNSハイジャック</string>
+    <string name="sniff_title">ドメインスニッフィング</string>
+    <string name="adv_tun_driver_title">Tunドライバー</string>
+    <string name="adv_auto_connect_title">起動時に接続</string>
+    <string name="adv_per_app_title">アプリバイパス</string>
+    <string name="adv_app_bypass_title">バイパスモード</string>
+    <string name="adv_app_list_title">アプリ一覧</string>
+    <string name="notify_msg">%sに接続されています</string>
+    <string name="save_logcat_name">ログを保存</string>
+    <string name="log_level_name">ログレベル</string>
+    <string name="logcat_name">ログ</string>
+</resources>

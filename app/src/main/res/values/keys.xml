@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="yuhaiin_port_key">yuhaiin_port</string>
+    <string name="ports_key">ports_key</string>
+    <string name="http_server_port_key">http_server_port</string>
+    <string name="append_http_proxy_to_vpn_key">Append HTTP Proxy to VPN</string>
+    <string name="socks5_server_port_key">socks5_server_port</string>
+    <string name="network_speed_key">network_speed</string>
+    <string name="allow_lan_key">allow_lan</string>
+    <string name="adv_route_Key">route</string>
+    <string name="adv_route_all">All (Default)</string>
+    <string name="adv_route_non_chn">Non-Chinese IPs</string>
+    <string name="adv_route_non_local">Non-Local IPs</string>
+    <string-array name="adv_routes">
+        <item>@string/adv_route_all</item>
+        <item>@string/adv_route_non_local</item>
+        <item>@string/adv_route_non_chn</item>
+    </string-array>
+    <string name="dns_hijacking">dns_hijacking</string>
+
+
+    <string name="sniff_key">Sniff</string>
+    <string name="adv_tun_driver_key">Tun Driver</string>
+    <string name="tun_driver_fdbased_value">fdbased</string>
+    <string name="tun_driver_channel_value">channel</string>
+    <string name="tun_driver_system_gvisor_value">system_gvisor</string>
+    <string-array name="tun_drivers_value">
+        <item>@string/tun_driver_fdbased_value</item>
+        <item>@string/tun_driver_channel_value</item>
+        <item>@string/tun_driver_system_gvisor_value</item>
+    </string-array>
+    <string name="adv_auto_connect_key">auto_connect</string>
+    <string name="adv_per_app_key">per_app</string>
+    <string name="adv_app_bypass_key">app_bypass</string>
+    <string name="adv_app_list_key">app_list</string>
+    <string name="adv_new_app_list_key">new_app_list</string>
+</resources>
