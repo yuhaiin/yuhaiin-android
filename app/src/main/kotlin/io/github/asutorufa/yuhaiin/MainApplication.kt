@@ -12,9 +12,6 @@ open class MainApplication : Application() {
 
     companion object {
         lateinit var store: Store
-        fun changeStore(name: String) {
-            store = Yuhaiin.getStore(name)
-        }
     }
 
     override fun onCreate() {
@@ -22,7 +19,7 @@ open class MainApplication : Application() {
 
         Seq.setContext(this)
         Yuhaiin.initDB(getExternalFilesDir("yuhaiin").toString(),applicationInfo.dataDir)
-        store = Yuhaiin.getStore("Default")
+        store = Yuhaiin.getStore()
         DynamicColors.applyToActivitiesIfAvailable(this)
     }
 }
