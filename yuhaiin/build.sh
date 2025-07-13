@@ -4,12 +4,25 @@ if [ -d "${HOME}/.local/storage/Android/Sdk/" ]; then
   export ANDROID_HOME="${HOME}/.local/storage/Android/Sdk/"
 fi
 
+if [ -d "/Volumes/PSSD/Library/Android/Sdk" ]; then
+  export ANDROID_HOME="/Volumes/PSSD/Library/Android/Sdk"
+fi
+
 if [ -d "${HOME}/.local/storage/Android/android-ndk-r23c" ]; then
   export ANDROID_NDK_HOME="${HOME}/.local/storage/Android/android-ndk-r23c"
 fi
 
+if [ -d "/opt/android-ndk" ]; then
+  export ANDROID_NDK_HOME="/opt/android-ndk"
+fi
+
 
 export PATH=$PATH:"${HOME}/.local/share/JetBrains/Toolbox/apps/android-studio/jbr/bin"
+export PATH=$PATH:"/Volumes/PSSD/Applications/Android Studio.app/Contents/jbr/Contents/Home/bin"
+
+if [ -d "/Volumes/PSSD/Applications/Android Studio.app/Contents/jbr/Contents/Home" ]; then
+  export JAVA_HOME="/Volumes/PSSD/Applications/Android Studio.app/Contents/jbr/Contents/Home"
+fi
 
 #java="${HOME}/.local/share/JetBrains/Toolbox/apps/android-studio"
 #if [ -d "${java}" ]; then
@@ -22,5 +35,6 @@ export PATH=$PATH:"${HOME}/.local/share/JetBrains/Toolbox/apps/android-studio/jb
 #fi
 
 set -x && \
-cd "${current}"/code && \
-gomobile bind -ldflags='-s -w -buildid=' -trimpath -target="android/arm64,android/amd64" -androidapi 21 -o "${current}"/yuhaiin.aar -v ./cmd/android/
+  cd "${current}"/../../yuhaiin && \
+  make yuhaiin_android_aar && \
+  cp yuhaiin.aar "${current}"/yuhaiin.aar

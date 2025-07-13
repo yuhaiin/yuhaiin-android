@@ -4,7 +4,6 @@ import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
-import android.app.Service
 import android.content.Intent
 import android.net.ConnectivityManager
 import android.net.Network
@@ -29,14 +28,11 @@ import kotlinx.serialization.json.Json
 import yuhaiin.App
 import yuhaiin.Closer
 import yuhaiin.NotifySpped
-import yuhaiin.Interfaces
 import yuhaiin.Opts
 import yuhaiin.SocketProtect
 import yuhaiin.TUN
+import yuhaiin.TunAddress
 import yuhaiin.Yuhaiin
-import java.net.InetSocketAddress
-import java.net.NetworkInterface
-import java.util.Locale
 
 
 class YuhaiinVpnService : VpnService() {
@@ -67,9 +63,7 @@ class YuhaiinVpnService : VpnService() {
         }
 
     private var mInterface: ParcelFileDescriptor? = null
-    private val connectivity by lazy { application.getSystemService<ConnectivityManager>()!! }
     private val notification by lazy { application.getSystemService<NotificationManager>()!! }
-    private val uidDumper = UidDumper()
     private val app = App()
 
     private fun notificationBuilder(): NotificationCompat.Builder {
@@ -96,23 +90,6 @@ class YuhaiinVpnService : VpnService() {
         override fun stop() = this@YuhaiinVpnService.onRevoke()
     }
 
-    inner class UidDumper : yuhaiin.UidDumper {
-        @RequiresApi(Build.VERSION_CODES.Q)
-        override fun dumpUid(
-            p0: Int,
-            srcIp: String?,
-            srcPort: Int,
-            destIp: String?,
-            destPort: Int
-        ): Int =
-            connectivity.getConnectionOwnerUid(
-                p0,
-                InetSocketAddress(srcIp, srcPort),
-                InetSocketAddress(destIp, destPort)
-            )
-
-        override fun getUidInfo(p0: Int): String = packageManager.getNameForUid(p0) ?: "unknown"
-    }
 
     private val defaultNetworkRequest by lazy {
         NetworkRequest.Builder()
@@ -149,13 +126,15 @@ class YuhaiinVpnService : VpnService() {
 
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N)
-                stopForeground(Service.STOP_FOREGROUND_REMOVE)
+                stopForeground(STOP_FOREGROUND_REMOVE)
             else stopForeground(true)
 
             mInterface?.close()
             app.stop()
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                connectivity.unregisterNetworkCallback(defaultNetworkCallback)
+                (application as MainApplication).connectivity.unregisterNetworkCallback(
+                    defaultNetworkCallback
+                )
             }
             state = State.DISCONNECTED
         } catch (e: Exception) {
@@ -179,9 +158,12 @@ class YuhaiinVpnService : VpnService() {
         state = State.CONNECTING
 
         try {
-            configure()
+            val tunAddress = Yuhaiin.getTunAddress()
+
+            configure(tunAddress)
             startNotification()
-            start()
+            start(tunAddress)
+
 
             state = State.CONNECTED
         } catch (e: Exception) {
@@ -214,10 +196,11 @@ class YuhaiinVpnService : VpnService() {
         Yuhaiin.addRulesCidrv2 { ignore { addRoute(it.ip, it.mask) } }
     }
 
-    private fun configure() {
+    private fun configure(tunAddress: TunAddress) {
         Builder().apply {
             setMtu(VPN_MTU)
             setSession("Default")
+
 
             val appListString = MainApplication.store.getString("app_list")
             Log.d(tag, "configure: $appListString")
@@ -242,12 +225,12 @@ class YuhaiinVpnService : VpnService() {
                 }
             }
 
-            addAddress(PRIVATE_VLAN4_ADDRESS, 24).addRoute(PRIVATE_VLAN4_PORTAL, 32)
+            addAddress(tunAddress.iPv4Address, 24).addRoute(tunAddress.iPv4, 24)
 
             // Route all IPv6 traffic
-            addAddress(PRIVATE_VLAN6_ADDRESS, 64)
+            addAddress(tunAddress.iPv6Address, 64)
                 .addRoute("2000::", 3) // https://issuetracker.google.com/issues/149636790
-                .addRoute(PRIVATE_VLAN6_PORTAL, 128)
+                .addRoute(tunAddress.iPv6, 64)
 
             when (MainApplication.store.getString(resources.getString(R.string.adv_route_Key))) {
                 resources.getString(R.string.adv_route_non_chn) -> {
@@ -267,14 +250,17 @@ class YuhaiinVpnService : VpnService() {
                 }
             }
 
-            addDnsServer(PRIVATE_VLAN4_PORTAL)
-            addDnsServer(PRIVATE_VLAN6_PORTAL)
+            addDnsServer(tunAddress.iPv4Portal)
+            addDnsServer(tunAddress.iPv6Portal)
             Yuhaiin.addFakeDnsCidr { ignore { addRoute(it.ip, it.mask) } }
 //            addRoute(MainApplication.store.getString(resources.getString(R.string.adv_fake_dns_cidr_key)))
 //            addRoute(MainApplication.store.getString(resources.getString(R.string.adv_fake_dnsv6_cidr_key)))
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P)
-                connectivity.requestNetwork(defaultNetworkRequest, defaultNetworkCallback)
+                (application as MainApplication).connectivity.requestNetwork(
+                    defaultNetworkRequest,
+                    defaultNetworkCallback
+                )
 
             val httpProxy = MainApplication.store.getInt("http_port")
 
@@ -290,23 +276,20 @@ class YuhaiinVpnService : VpnService() {
         }
     }
 
-    private fun start() {
+    private fun start(tunAddress: TunAddress) {
         app.start(Opts().apply {
-            savepath = getExternalFilesDir("yuhaiin").toString()
             notifySpped = SpeedNotifier(
                 notificationBuilder(),
                 NotificationManagerCompat.from(this@YuhaiinVpnService)
             )
-            interfaces = GetInterfaces()
 
             tun = TUN().apply {
                 fd = mInterface!!.fd
                 mtu = VPN_MTU
-                portal = "$PRIVATE_VLAN4_ADDRESS/24"
-                portalV6 = "$PRIVATE_VLAN6_ADDRESS/64"
+                portal = "${tunAddress.iPv4Address}/24"
+                portalV6 = "${tunAddress.iPv6Address}/64"
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
-                    uidDumper = this@YuhaiinVpnService.uidDumper
-                socketProtect = SocketProtect { return@SocketProtect protect(it) }
+                    socketProtect = SocketProtect { return@SocketProtect protect(it) }
             }
 
             closeFallback = Closer { stop() }
@@ -328,52 +311,6 @@ class YuhaiinVpnService : VpnService() {
 
 
         startForeground(1, notificationBuilder().build())
-    }
-
-    inner class GetInterfaces : Interfaces {
-        override fun getInterfacesAsString(): String? {
-            val interfaces: ArrayList<NetworkInterface> =
-                java.util.Collections.list(NetworkInterface.getNetworkInterfaces())
-
-            val sb = StringBuilder()
-            for (nif in interfaces) {
-                try {
-                    sb.append(
-                        String.format(
-                            Locale.ROOT,
-                            "%s %d %d %b %b %b %b %b |",
-                            nif.name,
-                            nif.index,
-                            nif.mtu,
-                            nif.isUp,
-                            nif.supportsMulticast(),
-                            nif.isLoopback,
-                            nif.isPointToPoint,
-                            nif.supportsMulticast()
-                        )
-                    )
-
-                    for (ia in nif.interfaceAddresses) {
-                        val parts = ia.toString().split("/", limit = 0)
-                        if (parts.size > 1) {
-                            sb.append(
-                                String.format(
-                                    Locale.ROOT,
-                                    "%s/%d ",
-                                    parts[1],
-                                    ia.networkPrefixLength
-                                )
-                            )
-                        }
-                    }
-                } catch (e: Exception) {
-                    continue
-                }
-                sb.append("\n")
-            }
-
-            return sb.toString()
-        }
     }
 
     inner class SpeedNotifier(

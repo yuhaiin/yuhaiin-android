@@ -8,20 +8,28 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
+
+    <androidx.appcompat.widget.LinearLayoutCompat
+        android:id="@+id/main_view"
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+
     <com.google.android.material.appbar.AppBarLayout
         android:id="@+id/appBarLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:fitsSystemWindows="true"
         app:layout_constraintTop_toTopOf="parent"
+        android:background="?attr/colorSurfaceVariant"
         app:liftOnScroll="true">
 
         <com.google.android.material.appbar.MaterialToolbar
             android:id="@+id/toolbar"
             app:title="Logcat"
             android:layout_width="match_parent"
-            android:layout_height="?actionBarSize"
-            android:background="?attr/colorSurfaceVariant"
+            android:layout_height="match_parent"
             app:navigationIcon="?attr/homeAsUpIndicator" />
 
     </com.google.android.material.appbar.AppBarLayout>
@@ -30,9 +38,9 @@
         android:id="@+id/list"
         android:layout_width="match_parent"
         app:layout_behavior="@string/appbar_scrolling_view_behavior"
-        android:layout_marginTop="?attr/actionBarSize"
         tools:listitem="@layout/logcat_viewer_item_logcat"
         android:layout_height="match_parent" />
+    </androidx.appcompat.widget.LinearLayoutCompat>
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/floatingActionButton"
