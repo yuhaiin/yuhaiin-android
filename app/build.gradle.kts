@@ -199,6 +199,6 @@ dependencies {
     testImplementation("junit:junit:4.13.2")
     testImplementation("androidx.test.espresso:espresso-core:3.7.0")
     testImplementation("androidx.test.ext:junit-ktx:1.3.0")
-    androidTestUtil("androidx.test:orchestrator:1.6.0")
+    androidTestUtil("androidx.test:orchestrator:1.6.1")
     testImplementation("org.robolectric:robolectric:4.15.1")
 }
