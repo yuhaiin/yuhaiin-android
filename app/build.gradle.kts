@@ -1,4 +1,3 @@
-import java.io.ByteArrayOutputStream
 import java.util.Date
 
 plugins {
@@ -50,8 +49,8 @@ fun getCommit(): String {
 }
 
 tasks.withType<org.jetbrains.kotlin.gradle.internal.KaptWithoutKotlincTask>().configureEach {
-        kaptProcessJvmArgs.add("-Xmx512m")
-    }
+    kaptProcessJvmArgs.add("-Xmx512m")
+}
 
 android {
     compileSdk = 36
@@ -139,12 +138,6 @@ android {
 
         unitTests.apply {
             isIncludeAndroidResources = true
-            all {
-                it.systemProperty(
-                    "robolectric.dependency.repo.url", "https://maven.aliyun.com/repository/public"
-                )
-                it.systemProperty("robolectric.dependency.repo.id", "aliyunmaven")
-            }
         }
 
         namespace = "io.github.asutorufa.yuhaiin"

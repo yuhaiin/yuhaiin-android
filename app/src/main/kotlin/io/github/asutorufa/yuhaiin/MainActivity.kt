@@ -1,13 +1,16 @@
 package io.github.asutorufa.yuhaiin
 
 import android.Manifest
-import android.app.Activity
-import android.content.*
+import android.content.BroadcastReceiver
+import android.content.ComponentName
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.content.ServiceConnection
 import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.graphics.RenderEffect
 import android.graphics.Shader
-import android.net.Uri
 import android.net.VpnService
 import android.os.Build
 import android.os.Bundle
@@ -19,9 +22,11 @@ import androidx.activity.addCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.content.res.AppCompatResources
-import androidx.browser.customtabs.CustomTabsIntent
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
+import androidx.navigation.findNavController
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.ui.setupWithNavController
@@ -30,30 +35,32 @@ import com.google.android.material.snackbar.Snackbar
 import io.github.asutorufa.yuhaiin.databinding.MainActivityBinding
 import io.github.asutorufa.yuhaiin.service.YuhaiinVpnService
 import io.github.asutorufa.yuhaiin.service.YuhaiinVpnService.Companion.State
-import androidx.core.net.toUri
-import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.WindowInsetsControllerCompat
 
 
 class MainActivity : AppCompatActivity() {
     val tag: String = this.javaClass.simpleName
     val dataStore = BBoltDataStore()
+    var mainApplication: MainApplication? = null
 
     private val mainBinding: MainActivityBinding by lazy {
         MainActivityBinding.inflate(layoutInflater).apply {
             floatingActionButton.setOnClickListener {
-                if (mBinder != null && mBinder!!.isRunning) mBinder!!.stop()
+                if (mainApplication?.vpnBinder?.isRunning == true)
+                    mainApplication?.vpnBinder?.stop()
                 else startService()
             }
 
             floatingActionButtonOpen.setOnClickListener {
-                CustomTabsIntent.Builder().apply {
-                    setColorScheme(CustomTabsIntent.COLOR_SCHEME_SYSTEM)
-                }.build().apply {
-                    intent.data =
-                        "http://127.0.0.1:${MainApplication.store.getInt("yuhaiin_port")}".toUri()
-                    this@MainActivity.startActivity(intent)
-                }
+                isFabVisible = false
+                findNavController(R.id.fragment_container).navigate(ProfileFragmentDirections.actionProfileFragmentToWebViewFragment())
+
+//                CustomTabsIntent.Builder().apply {
+//                    setColorScheme(CustomTabsIntent.COLOR_SCHEME_SYSTEM)
+//                }.build().apply {
+//                    intent.data =
+//                        "http://127.0.0.1:${MainApplication.store.getInt("yuhaiin_port")}".toUri()
+//                    this@MainActivity.startActivity(intent)
+//                }
             }
 
 
@@ -85,6 +92,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        mainApplication = applicationContext as MainApplication
         setContentView(mainBinding.root)
 
 
@@ -110,9 +118,6 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
-
-    // floating action button
-    var mBinder: IYuhaiinVpnBinder? = null
 
 
     private val blurEffect by lazy {
@@ -140,12 +145,13 @@ class MainActivity : AppCompatActivity() {
                             icon =
                                 AppCompatResources.getDrawable(this@MainActivity, R.drawable.close)
                         }
+
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                             mainView.setRenderEffect(blurEffect)
                         }
                         floatingButtonBackground.visibility = View.VISIBLE
 
-                        if (mBinder?.isRunning == true) floatingActionButtonOpen.show()
+                        if (mainApplication?.vpnBinder?.isRunning == true) floatingActionButtonOpen.show()
                         floatingActionButton.show()
                     }
 
@@ -207,13 +213,14 @@ class MainActivity : AppCompatActivity() {
 
     private val mConnection: ServiceConnection = object : ServiceConnection {
         override fun onServiceConnected(p1: ComponentName, binder: IBinder) {
-            mBinder = IYuhaiinVpnBinder.Stub.asInterface(binder).also {
-                onYuhaiinStatusChanged(it.isRunning)
-            }
+            mainApplication?.vpnBinder =
+                IYuhaiinVpnBinder.Stub.asInterface(binder).also {
+                    onYuhaiinStatusChanged(it.isRunning)
+                }
         }
 
         override fun onServiceDisconnected(p1: ComponentName) {
-            mBinder = null
+            mainApplication?.vpnBinder = null
         }
     }
 
@@ -224,12 +231,14 @@ class MainActivity : AppCompatActivity() {
             when (intent.action) {
                 State.DISCONNECTED.toString(), State.CONNECTED.toString() -> {
                     mainBinding.floatingActionButton.isEnabled = true
+                    mainBinding.loadingIndicator.visibility = View.GONE
 
                     onYuhaiinStatusChanged(intent.action == State.CONNECTED.toString())
                 }
 
                 State.CONNECTING.toString(), State.DISCONNECTING.toString() -> {
                     mainBinding.floatingActionButton.isEnabled = false
+                    mainBinding.loadingIndicator.visibility = View.VISIBLE
                 }
 
                 State.ERROR.toString() -> {

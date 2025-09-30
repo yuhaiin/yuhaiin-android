@@ -45,6 +45,10 @@ open class MainApplication : Application() {
         override fun getUidInfo(p0: Int): String = packageManager.getNameForUid(p0) ?: "unknown"
     }
 
+
+    // floating action button
+    var vpnBinder: IYuhaiinVpnBinder? = null
+
     private val uidDumper = UidDumper()
 
     override fun onCreate() {
