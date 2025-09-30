@@ -23,4 +23,5 @@
     <string name="save_logcat_name">ログを保存</string>
     <string name="log_level_name">ログレベル</string>
     <string name="logcat_name">ログ</string>
+    <string name="refresh">再読み込み</string>
 </resources>

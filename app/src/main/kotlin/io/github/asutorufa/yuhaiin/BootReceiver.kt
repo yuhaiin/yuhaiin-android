@@ -7,7 +7,6 @@ import android.net.VpnService
 import android.util.Log
 import androidx.core.content.ContextCompat
 import io.github.asutorufa.yuhaiin.service.YuhaiinVpnService
-import yuhaiin.Yuhaiin
 
 class BootReceiver : BroadcastReceiver() {
     private val tag = this.javaClass.simpleName
@@ -18,6 +17,7 @@ class BootReceiver : BroadcastReceiver() {
             Intent.ACTION_BOOT_COMPLETED == intent.action
             && autoConnect
             && VpnService.prepare(context) == null
+            && (context.applicationContext as MainApplication).vpnBinder?.isRunning() != true
         ) {
             Log.d(tag, "starting VPN service on boot")
             ContextCompat.startForegroundService(

@@ -1,4 +1,3 @@
-import java.io.ByteArrayOutputStream
 import java.util.Date
 
 plugins {
@@ -50,8 +49,8 @@ fun getCommit(): String {
 }
 
 tasks.withType<org.jetbrains.kotlin.gradle.internal.KaptWithoutKotlincTask>().configureEach {
-        kaptProcessJvmArgs.add("-Xmx512m")
-    }
+    kaptProcessJvmArgs.add("-Xmx512m")
+}
 
 android {
     compileSdk = 36
@@ -167,6 +166,7 @@ dependencies {
     implementation(fileTree(mapOf("include" to listOf("*.aar", "*.jar"), "dir" to "libs")))
     implementation("androidx.appcompat:appcompat:1.7.1")
     implementation("androidx.preference:preference-ktx:1.2.1")
+    implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
     implementation("com.google.android.material:material:1.13.0")
     implementation("androidx.browser:browser:1.9.0")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
