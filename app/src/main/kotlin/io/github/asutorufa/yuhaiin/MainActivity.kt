@@ -22,7 +22,6 @@ import androidx.activity.addCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.content.res.AppCompatResources
-import androidx.browser.customtabs.CustomTabsIntent
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.view.WindowInsetsCompat
@@ -52,15 +51,16 @@ class MainActivity : AppCompatActivity() {
             }
 
             floatingActionButtonOpen.setOnClickListener {
-                CustomTabsIntent.Builder().apply {
-                    setColorScheme(CustomTabsIntent.COLOR_SCHEME_SYSTEM)
-                }.build().apply {
-                    findNavController(R.id.fragment_container).navigate(ProfileFragmentDirections.actionProfileFragmentToWebViewFragment())
-                    isFabVisible = false
+                isFabVisible = false
+                findNavController(R.id.fragment_container).navigate(ProfileFragmentDirections.actionProfileFragmentToWebViewFragment())
+
+//                CustomTabsIntent.Builder().apply {
+//                    setColorScheme(CustomTabsIntent.COLOR_SCHEME_SYSTEM)
+//                }.build().apply {
 //                    intent.data =
 //                        "http://127.0.0.1:${MainApplication.store.getInt("yuhaiin_port")}".toUri()
 //                    this@MainActivity.startActivity(intent)
-                }
+//                }
             }
 
 
