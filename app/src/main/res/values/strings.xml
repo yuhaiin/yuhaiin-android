@@ -54,4 +54,5 @@
     </string>
 
     <string name="log_level_name">Log Level</string>
+    <string name="refresh">Refresh</string>
 </resources>
