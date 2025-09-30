@@ -46,8 +46,8 @@ class MainActivity : AppCompatActivity() {
     private val mainBinding: MainActivityBinding by lazy {
         MainActivityBinding.inflate(layoutInflater).apply {
             floatingActionButton.setOnClickListener {
-                if (mainApplication?.vpnBinder != null && mainApplication?.vpnBinder!!.isRunning)
-                    mainApplication?.vpnBinder!!.stop()
+                if (mainApplication?.vpnBinder?.isRunning == true)
+                    mainApplication?.vpnBinder?.stop()
                 else startService()
             }
 
