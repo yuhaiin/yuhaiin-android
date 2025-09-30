@@ -7,13 +7,20 @@
     <fragment
         android:id="@+id/profileFragment"
         android:name="io.github.asutorufa.yuhaiin.ProfileFragment"
-        android:transitionName="transtion_name_example"
-        android:label="@string/yuhaiin">
+        android:label="@string/yuhaiin"
+        android:transitionName="transtion_name_example">
         <action
             android:id="@+id/action_profileFragment_to_appListFragment"
             app:destination="@+id/appListFragment" />
+        <action
+            android:id="@+id/action_profileFragment_to_webViewFragment"
+            app:destination="@+id/webViewFragment" />
     </fragment>
 
+    <fragment
+        android:id="@+id/webViewFragment"
+        android:name="io.github.asutorufa.yuhaiin.WebviewFragment"
+        android:label="Yuhaiin" />
     <fragment
         android:id="@+id/appListFragment"
         android:name="io.github.asutorufa.yuhaiin.AppListDialogFragment"
