@@ -173,7 +173,11 @@ class MainActivity : AppCompatActivity() {
 
                 NavHost(navController, "FAB") {
                     composable("APPLIST") { AppListFragmentCompose() }
-                    composable("WebView") { WebViewComponent(navController) }
+                    composable("WebView") {
+                        WebViewComponent(
+                            navController
+                        ) { MainApplication.store.getInt("yuhaiin_port") }
+                    }
 
                     composable("FAB") {
                         Box(modifier = Modifier.fillMaxSize()) {
