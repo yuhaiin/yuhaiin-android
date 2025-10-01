@@ -22,7 +22,6 @@ open class MainApplication : Application() {
 
     companion object {
         lateinit var store: Store
-
     }
 
     val connectivity by lazy { this.getSystemService<ConnectivityManager>()!! }
@@ -44,6 +43,10 @@ open class MainApplication : Application() {
 
         override fun getUidInfo(p0: Int): String = packageManager.getNameForUid(p0) ?: "unknown"
     }
+
+
+    // floating action button
+    var vpnBinder: IYuhaiinVpnBinder? = null
 
     private val uidDumper = UidDumper()
 

@@ -2,15 +2,14 @@ package io.github.asutorufa.yuhaiin
 
 import android.os.Bundle
 import android.view.View
-import androidx.navigation.fragment.findNavController
 import androidx.preference.EditTextPreference
 import androidx.preference.ListPreference
 import androidx.preference.MultiSelectListPreference
 import androidx.preference.Preference
+import androidx.preference.PreferenceDataStore
 import androidx.preference.PreferenceFragmentCompat
 import com.github.logviewer.LogcatActivity
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.google.android.material.transition.platform.MaterialSharedAxis
 import io.github.asutorufa.yuhaiin.databinding.PortsDialogBinding
 import java.util.Locale
 
@@ -18,22 +17,17 @@ class ProfileFragment : PreferenceFragmentCompat() {
     private val refreshPreferences = ArrayList<() -> Unit>()
 
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
-        preferenceManager.preferenceDataStore = (activity as MainActivity).dataStore
+        preferenceManager.preferenceDataStore = BBoltDataStore()
         setPreferencesFromResource(R.xml.settings, rootKey)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        exitTransition = MaterialSharedAxis(MaterialSharedAxis.Y, true)
-        reenterTransition = MaterialSharedAxis(MaterialSharedAxis.Y, false)
-
         initPreferences()
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        view.transitionName = "transition_common"
         reload()
     }
 
@@ -63,14 +57,6 @@ class ProfileFragment : PreferenceFragmentCompat() {
 
 
     private fun initPreferences() {
-//        findPreference<Preference>(resources.getString(R.string.rule))!!.also {
-//            it.setOnPreferenceClickListener {
-//                findNavController().navigate(ProfileFragmentDirections.actionProfileFragmentToRuleFragment())
-//                true
-//            }
-//        }
-
-
         findPreference<Preference>(resources.getString(R.string.logcat))?.apply {
             setOnPreferenceClickListener {
                 val logcatExcludeRules = arrayListOf(
@@ -94,13 +80,6 @@ class ProfileFragment : PreferenceFragmentCompat() {
                 true
             }
         }
-
-//        findPreference<Preference>(resources.getString(R.string.adv_dns_Key))?.let {
-//            it.setOnPreferenceClickListener {
-//                findNavController().navigate(ProfileFragmentDirections.actionProfileFragmentToDnsFragment())
-//                true
-//            }
-//        }
 
         findPreference<Preference>(resources.getString(R.string.ports_key))?.let {
             it.setOnPreferenceClickListener {
@@ -126,18 +105,7 @@ class ProfileFragment : PreferenceFragmentCompat() {
                     null
                 ) {
                     MainApplication.store.putInt("http_port", bind.http.text.toString().toInt())
-//                    MainApplication.store.putInt(
-//                        "yuhaiin_port",
-//                        bind.yuhaiin.text.toString().toInt()
-//                    )
                 }
-                true
-            }
-        }
-
-        findPreference<Preference>(resources.getString(R.string.adv_new_app_list_key))?.let {
-            it.setOnPreferenceClickListener {
-                findNavController().navigate(ProfileFragmentDirections.actionProfileFragmentToAppListFragment())
                 true
             }
         }
@@ -145,4 +113,38 @@ class ProfileFragment : PreferenceFragmentCompat() {
 
     private fun reload() = refreshPreferences.forEach { it() }
 
+
+    inner class BBoltDataStore : PreferenceDataStore() {
+        override fun putString(key: String?, value: String?) =
+            MainApplication.store.putString(key, value)
+
+        override fun putStringSet(key: String?, values: Set<String?>?) =
+            MainApplication.store.putStringSet(key, values)
+
+        override fun putInt(key: String?, value: Int) = MainApplication.store.putInt(key, value)
+        override fun putLong(key: String?, value: Long) = MainApplication.store.putLong(key, value)
+
+        override fun putFloat(key: String?, value: Float) =
+            MainApplication.store.putFloat(key, value)
+
+        override fun putBoolean(key: String?, value: Boolean) =
+            MainApplication.store.putBoolean(key, value)
+
+        override fun getString(key: String?, defValue: String?): String =
+            MainApplication.store.getString(key)
+
+        override fun getStringSet(key: String?, defValues: Set<String?>?): Set<String> =
+            MainApplication.store.getStringSet(key)
+
+        override fun getInt(key: String?, defValue: Int): Int = MainApplication.store.getInt(key)
+
+        override fun getLong(key: String?, defValue: Long): Long =
+            MainApplication.store.getLong(key)
+
+        override fun getFloat(key: String?, defValue: Float): Float =
+            MainApplication.store.getFloat(key)
+
+        override fun getBoolean(key: String?, defValue: Boolean): Boolean =
+            MainApplication.store.getBoolean(key)
+    }
 }

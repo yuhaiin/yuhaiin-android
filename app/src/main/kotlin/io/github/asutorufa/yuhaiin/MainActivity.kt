@@ -1,263 +1,371 @@
 package io.github.asutorufa.yuhaiin
 
 import android.Manifest
-import android.app.Activity
-import android.content.*
+import android.annotation.SuppressLint
+import android.content.ComponentName
+import android.content.Context
+import android.content.Intent
+import android.content.ServiceConnection
 import android.content.pm.PackageManager
-import android.content.res.Configuration
 import android.graphics.RenderEffect
 import android.graphics.Shader
-import android.net.Uri
 import android.net.VpnService
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
+import android.util.AttributeSet
 import android.util.Log
 import android.view.View
-import android.view.WindowInsetsController
-import androidx.activity.addCallback
+import androidx.activity.SystemBarStyle
+import androidx.activity.compose.BackHandler
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.content.res.AppCompatResources
-import androidx.browser.customtabs.CustomTabsIntent
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.ContainedLoadingIndicator
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FloatingActionButtonMenu
+import androidx.compose.material3.FloatingActionButtonMenuItem
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.ToggleFloatingActionButton
+import androidx.compose.material3.ToggleFloatingActionButtonDefaults.animateIcon
+import androidx.compose.material3.animateFloatingActionButton
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.dynamicDarkColorScheme
+import androidx.compose.material3.dynamicLightColorScheme
+import androidx.compose.material3.lightColorScheme
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asComposeRenderEffect
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.isTraversalGroup
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.traversalIndex
+import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.navigation.fragment.NavHostFragment
-import androidx.navigation.fragment.findNavController
-import androidx.navigation.ui.setupWithNavController
-import androidx.preference.PreferenceDataStore
-import com.google.android.material.snackbar.Snackbar
-import io.github.asutorufa.yuhaiin.databinding.MainActivityBinding
+import androidx.fragment.compose.AndroidFragment
+import androidx.fragment.compose.rememberFragmentState
+import androidx.navigation.NavController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import androidx.preference.Preference
 import io.github.asutorufa.yuhaiin.service.YuhaiinVpnService
 import io.github.asutorufa.yuhaiin.service.YuhaiinVpnService.Companion.State
-import androidx.core.net.toUri
-import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.WindowInsetsControllerCompat
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 
 
+@SuppressLint("RememberInComposition", "RestrictedApi")
 class MainActivity : AppCompatActivity() {
-    val tag: String = this.javaClass.simpleName
-    val dataStore = BBoltDataStore()
+    var mainApplication: MainApplication? = null
 
-    private val mainBinding: MainActivityBinding by lazy {
-        MainActivityBinding.inflate(layoutInflater).apply {
-            floatingActionButton.setOnClickListener {
-                if (mBinder != null && mBinder!!.isRunning) mBinder!!.stop()
-                else startService()
-            }
-
-            floatingActionButtonOpen.setOnClickListener {
-                CustomTabsIntent.Builder().apply {
-                    setColorScheme(CustomTabsIntent.COLOR_SCHEME_SYSTEM)
-                }.build().apply {
-                    intent.data =
-                        "http://127.0.0.1:${MainApplication.store.getInt("yuhaiin_port")}".toUri()
-                    this@MainActivity.startActivity(intent)
-                }
-            }
+    private val _state = MutableStateFlow(State.DISCONNECTED)
+    val state: StateFlow<State> = _state
+    private var currentState: State
+        get() = _state.value
+        set(value) {
+            _state.value = value
+            Log.d("VpnService", "state changed $value")
+        }
 
 
-            extendedFloatingButton.apply {
-                setOnClickListener { isFabVisible = !isFabVisible }
-                shrink()
-            }
-
-            floatingButtonBackground.apply {
-                setOnClickListener {
-                    isFabVisible = false
-                }
-
-                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
-                    setBackgroundColor(com.google.android.material.R.attr.backgroundColor)
-                    alpha = 0.5f
-                }
-            }
-
-            toolbar.let {
-                setSupportActionBar(it)
-                it.setupWithNavController(
-                    fragmentContainer.getFragment<NavHostFragment>().findNavController()
+    @Composable
+    private fun ChangeSystemBarsTheme(lightTheme: Boolean) {
+        val barColor = MaterialTheme.colorScheme.background.toArgb()
+        LaunchedEffect(lightTheme) {
+            if (lightTheme) {
+                enableEdgeToEdge(
+                    statusBarStyle = SystemBarStyle.light(
+                        barColor, barColor,
+                    ),
+                    navigationBarStyle = SystemBarStyle.light(
+                        barColor, barColor,
+                    ),
+                )
+            } else {
+                enableEdgeToEdge(
+                    statusBarStyle = SystemBarStyle.dark(
+                        barColor,
+                    ),
+                    navigationBarStyle = SystemBarStyle.dark(
+                        barColor,
+                    ),
                 )
             }
         }
     }
 
+//                CustomTabsIntent.Builder().apply {
+//                    setColorScheme(CustomTabsIntent.COLOR_SCHEME_SYSTEM)
+//                }.build().apply {
+//                    intent.data =
+//                        "http://127.0.0.1:${MainApplication.store.getInt("yuhaiin_port")}".toUri()
+//                    this@MainActivity.startActivity(intent)
+//                }
+//            }
+
+
+    override fun onCreateView(name: String, context: Context, attrs: AttributeSet): View? {
+        return super.onCreateView(name, context, attrs)
+    }
+
+    @OptIn(ExperimentalMaterial3ExpressiveApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        setContentView(mainBinding.root)
+        mainApplication = applicationContext as MainApplication
 
+        setContent {
 
-        WindowInsetsControllerCompat(
-            window, mainBinding.root
-        ).show(WindowInsetsCompat.Type.systemBars())
+            val blurEffect by lazy {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) RenderEffect.createBlurEffect(
+                    20f, 20f, Shader.TileMode.CLAMP
+                )
+                else null
+            }
 
+            val colorScheme = when {
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
+                    val context = LocalContext.current
+                    if (isSystemInDarkTheme()) dynamicDarkColorScheme(context)
+                    else dynamicLightColorScheme(context)
+                }
 
-        when (applicationContext.resources.configuration.uiMode.and(Configuration.UI_MODE_NIGHT_MASK)) {
-            Configuration.UI_MODE_NIGHT_YES -> {}
+                isSystemInDarkTheme() -> darkColorScheme()
+                else -> lightColorScheme()
+            }
 
-            Configuration.UI_MODE_NIGHT_NO -> {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                    window.insetsController?.setSystemBarsAppearance(
-                        WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS,
-                        WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
-                    )
-                    window.insetsController?.setSystemBarsAppearance(
-                        WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS,
-                        WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS
-                    )
+            MaterialTheme(
+                colorScheme = colorScheme
+            ) {
+                ChangeSystemBarsTheme(!isSystemInDarkTheme())
+                val navController = rememberNavController()
+
+                NavHost(navController, "FAB") {
+                    composable("APPLIST") { AppListFragmentCompose() }
+                    composable("WebView") { WebViewComponent(navController) }
+
+                    composable("FAB") {
+                        Box(modifier = Modifier.fillMaxSize()) {
+                            val focusRequester = FocusRequester()
+                            var fabMenuExpanded by rememberSaveable { mutableStateOf(false) }
+                            BackHandler(fabMenuExpanded) { fabMenuExpanded = false }
+
+                            ProfileFragmentCompose(
+                                navController = navController,
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .systemBarsPadding()
+                                    .then(
+                                        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+                                            Modifier.background(Color.Black.copy(alpha = 0.5f))
+                                        } else {
+                                            Modifier
+                                        }
+                                    )
+                                    .clickable(
+                                        indication = null,
+                                        interactionSource = remember { MutableInteractionSource() }
+                                    ) {
+                                        fabMenuExpanded = false
+                                    }
+                                    .graphicsLayer {
+                                        renderEffect =
+                                            if (fabMenuExpanded) blurEffect?.asComposeRenderEffect() else null
+                                    }
+                            )
+
+                            if (fabMenuExpanded) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .then(
+                                            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+                                                Modifier.background(
+                                                    Color.Black.copy(
+                                                        alpha = 0.5f
+                                                    )
+                                                )
+                                            } else {
+                                                Modifier
+                                            }
+                                        )
+                                        .clickable(
+                                            indication = null,
+                                            interactionSource = remember { MutableInteractionSource() }
+                                        ) {
+                                            fabMenuExpanded = false
+                                        }
+                                )
+                            }
+
+                            FloatingActionButtonMenu(
+                                modifier = Modifier.align(Alignment.BottomEnd),
+                                expanded = fabMenuExpanded,
+                                button = {
+                                    ToggleFloatingActionButton(
+                                        modifier = Modifier
+                                            .semantics { traversalIndex = -1f }
+                                            .animateFloatingActionButton(
+                                                visible = true,
+                                                alignment = Alignment.BottomEnd,
+                                            )
+                                            .focusRequester(focusRequester),
+                                        checked = fabMenuExpanded,
+                                        onCheckedChange = {
+                                            fabMenuExpanded = !fabMenuExpanded
+                                        }
+                                    ) {
+                                        val imageVector by remember {
+                                            derivedStateOf {
+                                                if (checkedProgress > 0.5f) Icons.Filled.Close else Icons.Filled.Add
+                                            }
+                                        }
+                                        Icon(
+                                            painter = rememberVectorPainter(imageVector),
+                                            contentDescription = null,
+                                            modifier = Modifier.animateIcon({ checkedProgress }),
+                                        )
+                                    }
+                                }
+                            ) {
+
+                                val vpnState by state.collectAsState()
+
+                                val rotation by animateFloatAsState(targetValue = if (vpnState == State.CONNECTED) 90f else 0f)
+
+                                if (vpnState == State.CONNECTED) {
+                                    FloatingActionButtonMenuItem(
+                                        modifier = Modifier.semantics {
+                                            isTraversalGroup = true
+                                        },
+                                        onClick = {
+                                            navController.navigate("WebView")
+                                        },
+                                        text = { Text(text = "Open") },
+                                        icon = {
+                                            Icon(
+                                                painter = painterResource(id = R.drawable.open_in_browser),
+                                                contentDescription = null,
+                                                modifier = Modifier.size(24.dp)
+                                            )
+                                        },
+                                    )
+                                }
+
+                                if (vpnState == State.CONNECTED || vpnState == State.DISCONNECTED)
+                                    FloatingActionButtonMenuItem(
+                                        modifier = Modifier.semantics {
+                                            isTraversalGroup = true
+                                        },
+                                        onClick = {
+                                            if (vpnState == State.DISCONNECTED) startService()
+                                            else mainApplication?.vpnBinder?.stop()
+                                        },
+                                        text = {
+                                            Icon(
+                                                painter = painterResource(
+                                                    if (vpnState == State.CONNECTED)
+                                                        R.drawable.stop else R.drawable.play_arrow
+                                                ),
+                                                contentDescription = null,
+                                                modifier = Modifier
+                                                    .size(30.dp)
+                                                    .rotate(rotation)
+                                            )
+                                            Text(
+                                                text = if (vpnState == State.CONNECTED) "Stop" else "Start"
+                                            )
+
+                                        },
+                                        icon = {}
+                                    )
+                                else ContainedLoadingIndicator(
+                                    modifier = Modifier.size(50.dp)
+                                )
+                            }
+                        }
+                    }
+
                 }
             }
         }
     }
-
-    // floating action button
-    var mBinder: IYuhaiinVpnBinder? = null
-
-
-    private val blurEffect by lazy {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) RenderEffect.createBlurEffect(
-            20f, 20f, Shader.TileMode.CLAMP
-        )
-        else null
-    }
-
-    private val onBackPressedCallback by lazy {
-        onBackPressedDispatcher.addCallback {
-            isFabVisible = false
-        }
-    }
-
-    private var isFabVisible: Boolean = false
-        set(value) {
-            if (field == value) return
-
-            when (value) {
-                true -> {
-                    mainBinding.apply {
-                        extendedFloatingButton.apply {
-                            extend()
-                            icon =
-                                AppCompatResources.getDrawable(this@MainActivity, R.drawable.close)
-                        }
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                            mainView.setRenderEffect(blurEffect)
-                        }
-                        floatingButtonBackground.visibility = View.VISIBLE
-
-                        if (mBinder?.isRunning == true) floatingActionButtonOpen.show()
-                        floatingActionButton.show()
-                    }
-
-                    onBackPressedCallback.isEnabled = true
-                }
-
-                false -> {
-                    mainBinding.apply {
-                        floatingActionButtonOpen.hide()
-                        floatingActionButton.hide()
-
-                        extendedFloatingButton.shrink()
-                        extendedFloatingButton.icon =
-                            AppCompatResources.getDrawable(this@MainActivity, R.drawable.add_48)
-                        floatingButtonBackground.visibility = View.GONE
-
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                            mainView.setRenderEffect(null)
-                        }
-                    }
-                    onBackPressedCallback.isEnabled = false
-                }
-            }
-
-            field = value
-        }
 
 
     override fun onStart() {
         super.onStart()
-
         bindService(
             Intent(this, YuhaiinVpnService::class.java), mConnection, BIND_AUTO_CREATE
         )
-
-        val intentFilter = IntentFilter().apply {
-            addAction(State.CONNECTING.toString())
-            addAction(State.CONNECTED.toString())
-            addAction(State.DISCONNECTING.toString())
-            addAction(State.DISCONNECTED.toString())
-            addAction(State.ERROR.toString())
-        }
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) registerReceiver(
-            bReceiver, intentFilter, RECEIVER_EXPORTED
-        )
-        else registerReceiver(bReceiver, intentFilter)
     }
 
     override fun onDestroy() {
         super.onDestroy()
         try {
-            unregisterReceiver(bReceiver)
+            mainApplication?.vpnBinder?.unregisterCallback(vpnCallback)
             unbindService(mConnection)
         } catch (e: Exception) {
             e.printStackTrace()
         }
     }
 
+    val vpnCallback = VpnCallback()
+
+    inner class VpnCallback : IYuhaiinVpnCallback.Stub() {
+        override fun onStateChanged(state: Int) {
+            currentState = State.entries[state]
+        }
+    }
+
     private val mConnection: ServiceConnection = object : ServiceConnection {
         override fun onServiceConnected(p1: ComponentName, binder: IBinder) {
-            mBinder = IYuhaiinVpnBinder.Stub.asInterface(binder).also {
-                onYuhaiinStatusChanged(it.isRunning)
+            mainApplication?.vpnBinder = IYuhaiinVpnBinder.Stub.asInterface(binder).also {
+                if (it.isRunning)
+                    currentState = State.CONNECTED
+                it.registerCallback(vpnCallback)
             }
         }
 
         override fun onServiceDisconnected(p1: ComponentName) {
-            mBinder = null
+            mainApplication?.vpnBinder?.unregisterCallback(vpnCallback)
+            mainApplication?.vpnBinder = null
         }
     }
 
-    private val bReceiver: BroadcastReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context, intent: Intent) {
-            Log.d(tag, "onReceive: ${intent.action}")
-
-            when (intent.action) {
-                State.DISCONNECTED.toString(), State.CONNECTED.toString() -> {
-                    mainBinding.floatingActionButton.isEnabled = true
-
-                    onYuhaiinStatusChanged(intent.action == State.CONNECTED.toString())
-                }
-
-                State.CONNECTING.toString(), State.DISCONNECTING.toString() -> {
-                    mainBinding.floatingActionButton.isEnabled = false
-                }
-
-                State.ERROR.toString() -> {
-                    intent.getStringExtra("message")?.let { showSnackBar(it) }
-                }
-            }
-        }
-    }
-
-    fun onYuhaiinStatusChanged(connected: Boolean) {
-        if (connected) {
-            mainBinding.floatingActionButton.setImageResource(R.drawable.stop)
-            if (isFabVisible) mainBinding.floatingActionButtonOpen.show()
-        } else {
-            mainBinding.floatingActionButton.setImageResource(R.drawable.play_arrow)
-            if (isFabVisible) mainBinding.floatingActionButtonOpen.hide()
-        }
-    }
-
-    fun showSnackBar(message: String) {
-        Snackbar.make(
-            findViewById(android.R.id.content), message, Snackbar.LENGTH_SHORT
-        ).apply {
-            anchorView =
-                if (isFabVisible) mainBinding.floatingActionButtonOpen else mainBinding.extendedFloatingButton
-            show()
-        }
-    }
 
     private val vpnPermissionDialogLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -283,38 +391,40 @@ class MainActivity : AppCompatActivity() {
             vpnPermissionDialogLauncher.launch(this)
         } ?: startService(Intent(this, YuhaiinVpnService::class.java))
     }
+}
 
-    inner class BBoltDataStore : PreferenceDataStore() {
-        override fun putString(key: String?, value: String?) =
-            MainApplication.store.putString(key, value)
+@Composable
+fun ProfileFragmentCompose(
+    navController: NavController,
+    modifier: Modifier
+) {
+    val state = rememberFragmentState()
 
-        override fun putStringSet(key: String?, values: Set<String?>?) =
-            MainApplication.store.putStringSet(key, values)
+    AndroidFragment<ProfileFragment>(
+        modifier = modifier,
+        fragmentState = state
+    ) { fragment ->
 
-        override fun putInt(key: String?, value: Int) = MainApplication.store.putInt(key, value)
-        override fun putLong(key: String?, value: Long) = MainApplication.store.putLong(key, value)
+        fragment.findPreference<Preference>(fragment.resources.getString(R.string.adv_new_app_list_key))
+            ?.let {
+                it.setOnPreferenceClickListener {
+                    navController.navigate("APPLIST")
+                    true
+                }
+            }
+    }
+}
 
-        override fun putFloat(key: String?, value: Float) =
-            MainApplication.store.putFloat(key, value)
+@Composable
+fun AppListFragmentCompose() {
+    val state = rememberFragmentState()
 
-        override fun putBoolean(key: String?, value: Boolean) =
-            MainApplication.store.putBoolean(key, value)
+    AndroidFragment<AppListDialogFragment>(
+        modifier = Modifier
+            .fillMaxSize()
+            .systemBarsPadding(),
+        fragmentState = state
+    ) { fragment ->
 
-        override fun getString(key: String?, defValue: String?): String =
-            MainApplication.store.getString(key)
-
-        override fun getStringSet(key: String?, defValues: Set<String?>?): Set<String> =
-            MainApplication.store.getStringSet(key)
-
-        override fun getInt(key: String?, defValue: Int): Int = MainApplication.store.getInt(key)
-
-        override fun getLong(key: String?, defValue: Long): Long =
-            MainApplication.store.getLong(key)
-
-        override fun getFloat(key: String?, defValue: Float): Float =
-            MainApplication.store.getFloat(key)
-
-        override fun getBoolean(key: String?, defValue: Boolean): Boolean =
-            MainApplication.store.getBoolean(key)
     }
 }
