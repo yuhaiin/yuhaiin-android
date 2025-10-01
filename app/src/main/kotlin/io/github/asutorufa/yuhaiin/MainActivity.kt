@@ -90,7 +90,7 @@ import kotlinx.coroutines.flow.StateFlow
 
 @SuppressLint("RememberInComposition", "RestrictedApi")
 class MainActivity : AppCompatActivity() {
-    var mainApplication: MainApplication? = null
+    private var vpnBinder: IYuhaiinVpnBinder? = null
 
     private val _state = MutableStateFlow(State.DISCONNECTED)
     val state: StateFlow<State> = _state
@@ -146,11 +146,8 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        mainApplication = applicationContext as MainApplication
-
         setContent {
-
-            val blurEffect by lazy {
+            val blurEffect = remember {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) RenderEffect.createBlurEffect(
                     20f, 20f, Shader.TileMode.CLAMP
                 )
@@ -185,16 +182,18 @@ class MainActivity : AppCompatActivity() {
                             BackHandler(fabMenuExpanded) { fabMenuExpanded = false }
 
                             ProfileFragmentCompose(
-                                navController = navController,
-                                modifier = Modifier
+                                navController,
+                                Modifier
                                     .fillMaxSize()
                                     .systemBarsPadding()
                                     .then(
-                                        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
-                                            Modifier.background(Color.Black.copy(alpha = 0.5f))
-                                        } else {
-                                            Modifier
-                                        }
+                                        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S)
+                                            Modifier.background(
+                                                Color.Black.copy(
+                                                    alpha = if (fabMenuExpanded) 0.5f else 0f
+                                                )
+                                            )
+                                        else Modifier
                                     )
                                     .clickable(
                                         indication = null,
@@ -212,17 +211,6 @@ class MainActivity : AppCompatActivity() {
                                 Box(
                                     modifier = Modifier
                                         .fillMaxSize()
-                                        .then(
-                                            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
-                                                Modifier.background(
-                                                    Color.Black.copy(
-                                                        alpha = 0.5f
-                                                    )
-                                                )
-                                            } else {
-                                                Modifier
-                                            }
-                                        )
                                         .clickable(
                                             indication = null,
                                             interactionSource = remember { MutableInteractionSource() }
@@ -293,7 +281,7 @@ class MainActivity : AppCompatActivity() {
                                         },
                                         onClick = {
                                             if (vpnState == State.DISCONNECTED) startService()
-                                            else mainApplication?.vpnBinder?.stop()
+                                            else vpnBinder?.stop()
                                         },
                                         text = {
                                             Icon(
@@ -336,7 +324,7 @@ class MainActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         try {
-            mainApplication?.vpnBinder?.unregisterCallback(vpnCallback)
+            vpnBinder?.unregisterCallback(vpnCallback)
             unbindService(mConnection)
         } catch (e: Exception) {
             e.printStackTrace()
@@ -349,23 +337,25 @@ class MainActivity : AppCompatActivity() {
         override fun onStateChanged(state: Int) {
             currentState = State.entries[state]
         }
+
+        override fun onMsg(msg: String?) {
+            Log.i("yuhaiin vpn service", "onMsg: $msg")
+        }
     }
 
     private val mConnection: ServiceConnection = object : ServiceConnection {
         override fun onServiceConnected(p1: ComponentName, binder: IBinder) {
-            mainApplication?.vpnBinder = IYuhaiinVpnBinder.Stub.asInterface(binder).also {
-                if (it.isRunning)
-                    currentState = State.CONNECTED
+            vpnBinder = IYuhaiinVpnBinder.Stub.asInterface(binder).also {
+                currentState = State.entries[it.state()]
                 it.registerCallback(vpnCallback)
             }
         }
 
         override fun onServiceDisconnected(p1: ComponentName) {
-            mainApplication?.vpnBinder?.unregisterCallback(vpnCallback)
-            mainApplication?.vpnBinder = null
+            vpnBinder?.unregisterCallback(vpnCallback)
+            vpnBinder = null
         }
     }
-
 
     private val vpnPermissionDialogLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -394,15 +384,12 @@ class MainActivity : AppCompatActivity() {
 }
 
 @Composable
-fun ProfileFragmentCompose(
-    navController: NavController,
-    modifier: Modifier
-) {
+fun ProfileFragmentCompose(navController: NavController, modifier: Modifier) {
     val state = rememberFragmentState()
 
     AndroidFragment<ProfileFragment>(
-        modifier = modifier,
-        fragmentState = state
+        fragmentState = state,
+        modifier = modifier
     ) { fragment ->
 
         fragment.findPreference<Preference>(fragment.resources.getString(R.string.adv_new_app_list_key))

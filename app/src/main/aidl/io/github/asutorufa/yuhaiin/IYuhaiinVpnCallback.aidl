@@ -9,4 +9,5 @@ interface IYuhaiinVpnCallback {
      * and return values in AIDL.
      */
     void onStateChanged(int state);
+    void onMsg(String msg);
 }

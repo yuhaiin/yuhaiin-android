@@ -45,9 +45,6 @@ open class MainApplication : Application() {
     }
 
 
-    // floating action button
-    var vpnBinder: IYuhaiinVpnBinder? = null
-
     private val uidDumper = UidDumper()
 
     override fun onCreate() {

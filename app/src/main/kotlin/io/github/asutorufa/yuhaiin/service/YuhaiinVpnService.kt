@@ -26,8 +26,6 @@ import io.github.asutorufa.yuhaiin.IYuhaiinVpnCallback
 import io.github.asutorufa.yuhaiin.MainActivity
 import io.github.asutorufa.yuhaiin.MainApplication
 import io.github.asutorufa.yuhaiin.R
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.serialization.json.Json
 import yuhaiin.App
 import yuhaiin.Closer
@@ -72,13 +70,23 @@ class YuhaiinVpnService : VpnService() {
         finishBroadcast()
     }
 
+    private fun RemoteCallbackList<IYuhaiinVpnCallback>.sendMsg(msg: String) {
+        val n = beginBroadcast()
+        for (i in 0 until n) {
+            try {
+                getBroadcastItem(i).onMsg(msg)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+        finishBroadcast()
+    }
+
     private val mBinder = VpnBinder()
     private val tag = this.javaClass.simpleName
     private var state = State.DISCONNECTED
         set(value) {
             field = value
-            Log.d("VpnService", "send broadcast $value")
-            applicationContext.sendBroadcast(Intent(value.toString()))
             callbacks.broadcast(value)
         }
 
@@ -106,11 +114,6 @@ class YuhaiinVpnService : VpnService() {
     }
 
     inner class VpnBinder : IYuhaiinVpnBinder.Stub() {
-        private val _isRunning = MutableStateFlow(false)
-        val isRunningFlow: StateFlow<Boolean> = _isRunning
-
-
-        override fun isRunning() = state == State.CONNECTED
         override fun registerCallback(cb: IYuhaiinVpnCallback?) {
             if (cb != null) callbacks.register(cb)
         }
@@ -120,6 +123,9 @@ class YuhaiinVpnService : VpnService() {
         }
 
         override fun stop() = this@YuhaiinVpnService.onRevoke()
+        override fun state(): Int {
+            return state.ordinal
+        }
     }
 
 
@@ -181,7 +187,7 @@ class YuhaiinVpnService : VpnService() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Log.d(tag, "starting")
-        if (state == State.CONNECTED || state == State.CONNECTING || app.running()) {
+        if (state != State.DISCONNECTED) {
             Log.d(tag, "already running")
             return START_STICKY
         }
@@ -190,22 +196,15 @@ class YuhaiinVpnService : VpnService() {
 
         try {
             val tunAddress = Yuhaiin.getTunAddress()
-
             configure(tunAddress)
             startNotification()
             start(tunAddress)
-
 
             state = State.CONNECTED
         } catch (e: Exception) {
             e.printStackTrace()
             state = State.DISCONNECTED
-            applicationContext.sendBroadcast(Intent(State.ERROR.toString()).also {
-                it.putExtra(
-                    "message",
-                    e.toString()
-                )
-            })
+            callbacks.sendMsg(e.toString())
             onRevoke()
         }
 
@@ -362,6 +361,5 @@ class YuhaiinVpnService : VpnService() {
                         .build()
                 )
         }
-
     }
 }
