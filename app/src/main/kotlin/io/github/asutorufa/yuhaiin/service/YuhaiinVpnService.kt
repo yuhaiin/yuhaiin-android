@@ -13,17 +13,20 @@ import android.net.ProxyInfo
 import android.net.VpnService
 import android.os.Build
 import android.os.ParcelFileDescriptor
+import android.os.RemoteCallbackList
 import android.util.Log
-import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.getSystemService
 import com.github.logviewer.ReadLogcat.Companion.ignore
 import io.github.asutorufa.yuhaiin.BuildConfig
 import io.github.asutorufa.yuhaiin.IYuhaiinVpnBinder
+import io.github.asutorufa.yuhaiin.IYuhaiinVpnCallback
 import io.github.asutorufa.yuhaiin.MainActivity
 import io.github.asutorufa.yuhaiin.MainApplication
 import io.github.asutorufa.yuhaiin.R
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.serialization.json.Json
 import yuhaiin.App
 import yuhaiin.Closer
@@ -53,6 +56,20 @@ class YuhaiinVpnService : VpnService() {
     }
 
 
+    private val callbacks = RemoteCallbackList<IYuhaiinVpnCallback>()
+
+    private fun RemoteCallbackList<IYuhaiinVpnCallback>.broadcast(state: State) {
+        val n = beginBroadcast()
+        for (i in 0 until n) {
+            try {
+                getBroadcastItem(i).onStateChanged(state.ordinal)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+        finishBroadcast()
+    }
+
     private val mBinder = VpnBinder()
     private val tag = this.javaClass.simpleName
     private var state = State.DISCONNECTED
@@ -60,6 +77,7 @@ class YuhaiinVpnService : VpnService() {
             field = value
             Log.d("VpnService", "send broadcast $value")
             applicationContext.sendBroadcast(Intent(value.toString()))
+            callbacks.broadcast(value)
         }
 
     private var mInterface: ParcelFileDescriptor? = null
@@ -86,7 +104,19 @@ class YuhaiinVpnService : VpnService() {
     }
 
     inner class VpnBinder : IYuhaiinVpnBinder.Stub() {
+        private val _isRunning = MutableStateFlow(false)
+        val isRunningFlow: StateFlow<Boolean> = _isRunning
+
+
         override fun isRunning() = state == State.CONNECTED
+        override fun registerCallback(cb: IYuhaiinVpnCallback?) {
+            if (cb != null) callbacks.register(cb)
+        }
+
+        override fun unregisterCallback(cb: IYuhaiinVpnCallback?) {
+            if (cb != null) callbacks.unregister(cb)
+        }
+
         override fun stop() = this@YuhaiinVpnService.onRevoke()
     }
 
@@ -98,7 +128,6 @@ class YuhaiinVpnService : VpnService() {
             .build()
     }
 
-    @RequiresApi(Build.VERSION_CODES.LOLLIPOP_MR1)
     private val defaultNetworkCallback: ConnectivityManager.NetworkCallback =
         object : ConnectivityManager.NetworkCallback() {
             override fun onAvailable(network: Network) {
