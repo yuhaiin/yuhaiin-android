@@ -14,7 +14,7 @@ interface IYuhaiinVpnBinder {
 //            double aDouble, String aString);
 
             void stop();
-            boolean isRunning();
+            int state();
             void registerCallback(IYuhaiinVpnCallback cb);
             void unregisterCallback(IYuhaiinVpnCallback cb);
 }
