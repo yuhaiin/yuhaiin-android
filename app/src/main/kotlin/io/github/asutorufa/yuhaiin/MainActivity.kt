@@ -172,7 +172,7 @@ class MainActivity : AppCompatActivity() {
                 val navController = rememberNavController()
 
                 NavHost(navController, "FAB") {
-                    composable("APPLIST") { AppListFragmentCompose() }
+                    composable("APPLIST") { AppListComponent(applicationContext.packageManager) }
                     composable("WebView") {
                         WebViewComponent(
                             navController
@@ -403,19 +403,5 @@ fun ProfileFragmentCompose(navController: NavController, modifier: Modifier) {
                     true
                 }
             }
-    }
-}
-
-@Composable
-fun AppListFragmentCompose() {
-    val state = rememberFragmentState()
-
-    AndroidFragment<AppListDialogFragment>(
-        modifier = Modifier
-            .fillMaxSize()
-            .systemBarsPadding(),
-        fragmentState = state
-    ) { fragment ->
-
     }
 }
