@@ -30,6 +30,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.net.toUri
 import androidx.navigation.NavController
 
 @SuppressLint("SetJavaScriptEnabled")
@@ -37,6 +38,15 @@ import androidx.navigation.NavController
 @Composable
 fun WebViewComponent(navController: NavController) {
     var isLoading by remember { mutableStateOf(true) }
+
+    fun getHost() = "127.0.0.1:${MainApplication.store.getInt("yuhaiin_port")}"
+
+    fun onRefresh(webView: WebView) {
+        val currentUrl = webView.url ?: return
+        val uri = currentUrl.toUri()
+        val newUri = uri.buildUpon().encodedAuthority(getHost()).build()
+        webView.loadUrl(newUri.toString())
+    }
 
     Scaffold(
         topBar = {
@@ -62,7 +72,6 @@ fun WebViewComponent(navController: NavController) {
 
                 val webView = remember {
                     WebView(context).apply {
-
                         addJavascriptInterface(object {
                             @JavascriptInterface
                             fun setRefreshEnabled(enabled: Boolean) {
@@ -87,9 +96,10 @@ fun WebViewComponent(navController: NavController) {
 
                         settings.javaScriptEnabled = true
                         settings.domStorageEnabled = true
-                        loadUrl("http://127.0.0.1:${MainApplication.store.getInt("yuhaiin_port")}")
+                        loadUrl("http://${getHost()}")
                     }
                 }
+
 
                 BackHandler(enabled = true) {
                     if (webView.canGoBack()) {
