@@ -36,10 +36,10 @@ import androidx.navigation.NavController
 @SuppressLint("SetJavaScriptEnabled")
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-fun WebViewComponent(navController: NavController) {
+fun WebViewComponent(navController: NavController, getPort: () -> Int) {
     var isLoading by remember { mutableStateOf(true) }
 
-    fun getHost() = "127.0.0.1:${MainApplication.store.getInt("yuhaiin_port")}"
+    fun getHost() = "127.0.0.1:${getPort()}"
 
     fun onRefresh(webView: WebView) {
         val currentUrl = webView.url ?: return
