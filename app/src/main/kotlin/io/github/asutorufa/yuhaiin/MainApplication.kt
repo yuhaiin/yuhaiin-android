@@ -48,9 +48,7 @@ open class MainApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
-
         Seq.setContext(this)
-
         Yuhaiin.setSavePath(getExternalFilesDir("yuhaiin").toString())
         Yuhaiin.setDataDir(applicationInfo.dataDir)
         Yuhaiin.setInterfaces(GetInterfaces())

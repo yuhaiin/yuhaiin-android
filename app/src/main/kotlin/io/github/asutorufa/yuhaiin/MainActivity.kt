@@ -16,6 +16,8 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
@@ -26,6 +28,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.app.ActivityCompat
@@ -86,11 +89,13 @@ class MainActivity : AppCompatActivity() {
 //                }
 //            }
 
-    @OptIn(ExperimentalMaterial3ExpressiveApi::class)
+    @OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         setContent {
+            val vpnState by state.collectAsState()
+
             val colorScheme = when {
                 Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
                     val context = LocalContext.current
@@ -105,14 +110,16 @@ class MainActivity : AppCompatActivity() {
             MaterialTheme(
                 colorScheme = colorScheme
             ) {
-                ChangeSystemBarsTheme(!isSystemInDarkTheme())
                 val navController = rememberNavController()
+                
+                ChangeSystemBarsTheme(!isSystemInDarkTheme())
 
-                NavHost(navController, "io.github.asutorufa.yuhaiin.Home") {
+                NavHost(navController, "Home") {
+                    composable("Home") {
 
-                    composable("io.github.asutorufa.yuhaiin.Home") {
-                        val vpnState by state.collectAsState()
                         Home(
+                            modifier = Modifier
+                                .fillMaxSize(),
                             navController, vpnState,
                             { vpnBinder?.stop() },
                             { startService() },
@@ -125,6 +132,7 @@ class MainActivity : AppCompatActivity() {
                             applicationContext.packageManager
                         )
                     }
+
                     composable("WebView") {
                         WebViewComponent(navController) {
                             MainApplication.store.getInt("yuhaiin_port")
