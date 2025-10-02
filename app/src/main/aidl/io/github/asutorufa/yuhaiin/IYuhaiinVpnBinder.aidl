@@ -3,6 +3,8 @@ package io.github.asutorufa.yuhaiin;
 
 // Declare any non-default types here with import statements
 
+import io.github.asutorufa.yuhaiin.IYuhaiinVpnCallback;
+
 interface IYuhaiinVpnBinder {
     /**
      * Demonstrates some basic types that you can use as parameters
@@ -12,5 +14,7 @@ interface IYuhaiinVpnBinder {
 //            double aDouble, String aString);
 
             void stop();
-            boolean isRunning();
+            int state();
+            void registerCallback(IYuhaiinVpnCallback cb);
+            void unregisterCallback(IYuhaiinVpnCallback cb);
 }

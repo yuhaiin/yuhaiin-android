@@ -5,7 +5,6 @@ import android.net.ConnectivityManager
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.core.content.getSystemService
-import com.google.android.material.color.DynamicColors
 import go.Seq
 import kotlinx.serialization.json.Json
 import yuhaiin.AddressIter
@@ -22,7 +21,6 @@ open class MainApplication : Application() {
 
     companion object {
         lateinit var store: Store
-
     }
 
     val connectivity by lazy { this.getSystemService<ConnectivityManager>()!! }
@@ -46,22 +44,16 @@ open class MainApplication : Application() {
     }
 
 
-    // floating action button
-    var vpnBinder: IYuhaiinVpnBinder? = null
-
     private val uidDumper = UidDumper()
 
     override fun onCreate() {
         super.onCreate()
-
         Seq.setContext(this)
-
         Yuhaiin.setSavePath(getExternalFilesDir("yuhaiin").toString())
         Yuhaiin.setDataDir(applicationInfo.dataDir)
         Yuhaiin.setInterfaces(GetInterfaces())
         Yuhaiin.setProcessDumper(uidDumper)
         store = Yuhaiin.getStore()
-        DynamicColors.applyToActivitiesIfAvailable(this)
     }
 
     class InterfaceIterImpl(

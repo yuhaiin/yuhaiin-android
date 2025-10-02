@@ -15,6 +15,7 @@ buildscript {
         // NOTE: Do not place your application dependencies here; they belong
         // in the individual module build.gradle files
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+        classpath 'org.jetbrains.kotlin:compose-compiler-gradle-plugin:2.2.20'
 
         def nav_version = "2.9.5"
         classpath "androidx.navigation:navigation-safe-args-gradle-plugin:$nav_version"
