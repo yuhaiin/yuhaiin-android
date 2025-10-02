@@ -145,15 +145,9 @@ android {
     }
 
     buildFeatures {
-        dataBinding = false
-        viewBinding = true
         compose = true
         buildConfig = true
         aidl = true
-    }
-
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.15"
     }
 }
 

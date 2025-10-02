@@ -7,13 +7,17 @@ import android.graphics.drawable.Drawable
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -46,19 +50,27 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateSetOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.snapshots.SnapshotStateSet
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.asComposeRenderEffect
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import androidx.core.graphics.drawable.toBitmap
 import androidx.core.graphics.drawable.toDrawable
 import androidx.navigation.NavController
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 
@@ -110,7 +122,10 @@ fun AppListComponent(navController: NavController, packageManager: PackageManage
 
     val textFieldState = rememberTextFieldState()
     val searchBarState = rememberSearchBarState()
+    val scope = rememberCoroutineScope()
     val scrollBehavior = SearchBarDefaults.enterAlwaysSearchBarScrollBehavior()
+
+    val isKeyboardOpen = WindowInsets.ime.getBottom(LocalDensity.current) > 0
 
     val inputField =
         @Composable {
@@ -119,23 +134,26 @@ fun AppListComponent(navController: NavController, packageManager: PackageManage
                 searchBarState = searchBarState,
                 textFieldState = textFieldState,
                 onSearch = {},
-                placeholder = {
-                    if (searchBarState.currentValue == SearchBarValue.Collapsed) {
-                        Text(
-                            modifier = Modifier.fillMaxWidth(),
-                            text = "Filter",
-                            textAlign = TextAlign.Center,
-                        )
-                    }
-                },
                 leadingIcon = {
                     Icon(Icons.Default.Search, contentDescription = null)
                 },
             )
         }
 
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val focusManager = LocalFocusManager.current
+
     Scaffold(
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        modifier = Modifier
+            .nestedScroll(scrollBehavior.nestedScrollConnection)
+            .pointerInput(Unit) {
+                detectVerticalDragGestures { _, _ ->
+                    if (searchBarState.currentValue == SearchBarValue.Expanded)
+                        scope.launch { searchBarState.animateToCollapsed() }
+
+                    keyboardController?.hide()
+                }
+            },
         topBar = {
             AppBarWithSearch(
                 state = searchBarState,
@@ -150,7 +168,12 @@ fun AppListComponent(navController: NavController, packageManager: PackageManage
                         tooltip = { PlainTooltip { Text("Back") } },
                         state = rememberTooltipState(),
                     ) {
-                        IconButton(onClick = { navController.popBackStack() }) {
+                        IconButton(onClick = {
+                            if (isKeyboardOpen) {
+                                focusManager.clearFocus()
+                                keyboardController?.hide()
+                            } else navController.popBackStack()
+                        }) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Default.ArrowBack,
                                 contentDescription = "Back"
@@ -161,10 +184,33 @@ fun AppListComponent(navController: NavController, packageManager: PackageManage
             )
         },
         content = { padding ->
+
+            if (isKeyboardOpen) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clickable(
+                            indication = null,
+                            interactionSource = remember { MutableInteractionSource() },
+                        ) {
+                            focusManager.clearFocus()
+                            keyboardController?.hide()
+                        }
+                        .zIndex(1f)
+                )
+            }
+
+            val blur = blurEffect()
+
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(padding)
+
+                    .graphicsLayer {
+                        renderEffect =
+                            if (isKeyboardOpen) blur?.asComposeRenderEffect() else null
+                    }
             ) {
                 if (data == null) {
                     LoadingIndicator(
@@ -173,7 +219,11 @@ fun AppListComponent(navController: NavController, packageManager: PackageManage
                             .size(55.dp)
                     )
                 } else
-                    AppList(apps = data!!, checkedApps = checkedApps, filter = textFieldState.text)
+                    AppList(
+                        apps = data!!,
+                        checkedApps = checkedApps,
+                        filter = textFieldState.text
+                    )
             }
         }
     )
