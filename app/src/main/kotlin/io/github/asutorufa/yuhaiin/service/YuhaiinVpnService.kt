@@ -19,7 +19,6 @@ import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.getSystemService
-import com.github.logviewer.ReadLogcat.Companion.ignore
 import io.github.asutorufa.yuhaiin.BuildConfig
 import io.github.asutorufa.yuhaiin.IYuhaiinVpnBinder
 import io.github.asutorufa.yuhaiin.IYuhaiinVpnCallback
@@ -223,7 +222,13 @@ class YuhaiinVpnService : VpnService() {
     }
 
     private fun Builder.addRuleRoute() {
-        Yuhaiin.addRulesCidrv2 { ignore { addRoute(it.ip, it.mask) } }
+        Yuhaiin.addRulesCidrv2 {
+            try {
+                addRoute(it.ip, it.mask)
+            } catch (e: Exception) {
+                Log.w("vpn service", "addRuleRoute: $e")
+            }
+        }
     }
 
     private fun configure(tunAddress: TunAddress) {
@@ -282,7 +287,13 @@ class YuhaiinVpnService : VpnService() {
 
             addDnsServer(tunAddress.iPv4Portal)
             addDnsServer(tunAddress.iPv6Portal)
-            Yuhaiin.addFakeDnsCidr { ignore { addRoute(it.ip, it.mask) } }
+            Yuhaiin.addFakeDnsCidr {
+                try {
+                    addRoute(it.ip, it.mask)
+                } catch (e: Exception) {
+                    Log.w("vpn service", "configure: $e")
+                }
+            }
 //            addRoute(MainApplication.store.getString(resources.getString(R.string.adv_fake_dns_cidr_key)))
 //            addRoute(MainApplication.store.getString(resources.getString(R.string.adv_fake_dnsv6_cidr_key)))
 
