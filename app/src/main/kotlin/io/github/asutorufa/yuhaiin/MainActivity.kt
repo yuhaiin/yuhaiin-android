@@ -15,6 +15,8 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -89,7 +91,10 @@ class MainActivity : AppCompatActivity() {
 //                }
 //            }
 
-    @OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
+    @OptIn(
+        ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class,
+        ExperimentalSharedTransitionApi::class
+    )
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -110,36 +115,38 @@ class MainActivity : AppCompatActivity() {
             MaterialTheme(
                 colorScheme = colorScheme
             ) {
-                val navController = rememberNavController()
-                
+
                 ChangeSystemBarsTheme(!isSystemInDarkTheme())
 
-                NavHost(navController, "Home") {
-                    composable("Home") {
+                SharedTransitionLayout {
+                    val navController = rememberNavController()
 
-                        Home(
-                            modifier = Modifier
-                                .fillMaxSize(),
-                            navController, vpnState,
-                            { vpnBinder?.stop() },
-                            { startService() },
-                        )
-                    }
+                    NavHost(navController, "Home") {
+                        composable("Home") {
+                            Home(
+                                modifier = Modifier
+                                    .fillMaxSize(),
+                                navController, vpnState,
+                                { vpnBinder?.stop() },
+                                { startService() },
+                                animatedContentScope = this@composable,
+                            )
+                        }
 
-                    composable("APPLIST") {
-                        AppListComponent(
-                            navController,
-                            applicationContext.packageManager
-                        )
-                    }
+                        composable("APPLIST") {
+                            AppListComponent(
+                                navController,
+                                applicationContext.packageManager,
+                                animatedVisibilityScope = this@composable,
+                            )
+                        }
 
-                    composable("WebView") {
-                        WebViewComponent(navController) {
-                            MainApplication.store.getInt("yuhaiin_port")
+                        composable("WebView") {
+                            WebViewComponent(this@composable, navController) {
+                                MainApplication.store.getInt("yuhaiin_port")
+                            }
                         }
                     }
-
-
                 }
             }
         }

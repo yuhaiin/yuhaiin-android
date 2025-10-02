@@ -3,6 +3,11 @@ package com.github.logviewer
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -43,6 +48,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
@@ -55,6 +61,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
@@ -105,10 +112,13 @@ fun LogcatScreen(
     var infoLog by remember { mutableStateOf<LogEntry?>(null) }
     var showDialog by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
+
 
     Scaffold(
         topBar = {
             TopAppBar(
+                scrollBehavior = scrollBehavior,
                 title = { Text("Logcat") },
                 navigationIcon = {
                     IconButton(onClick = { context?.finish() }) {
@@ -217,7 +227,8 @@ fun LogcatScreen(
             LazyColumn(
                 modifier = modifier
                     .fillMaxSize()
-                    .padding(padding),
+                    .padding(padding)
+                    .nestedScroll(scrollBehavior.nestedScrollConnection),
                 state = listState,
                 verticalArrangement = Arrangement.Top,
                 contentPadding = PaddingValues(bottom = 16.dp)
@@ -236,8 +247,16 @@ fun LogcatScreen(
                 }
             }
 
-            if (showDialog) {
+            AnimatedVisibility(
+                visible = showDialog,
+                enter = scaleIn(initialScale = 0.8f) + fadeIn(),
+                exit = scaleOut(targetScale = 0.8f) + fadeOut()
+            ) {
                 AlertDialog(
+                    modifier = Modifier.animateEnterExit(
+                        enter = fadeIn() + scaleIn(),
+                        exit = fadeOut() + scaleOut()
+                    ),
                     onDismissRequest = { showDialog = false },
                     confirmButton = {
                         TextButton(onClick = { showDialog = false }) {
