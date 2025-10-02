@@ -172,11 +172,16 @@ class MainActivity : AppCompatActivity() {
                 val navController = rememberNavController()
 
                 NavHost(navController, "FAB") {
-                    composable("APPLIST") { AppListComponent(applicationContext.packageManager) }
+                    composable("APPLIST") {
+                        AppListComponent(
+                            navController,
+                            applicationContext.packageManager
+                        )
+                    }
                     composable("WebView") {
-                        WebViewComponent(
-                            navController
-                        ) { MainApplication.store.getInt("yuhaiin_port") }
+                        WebViewComponent(navController) {
+                            MainApplication.store.getInt("yuhaiin_port")
+                        }
                     }
 
                     composable("FAB") {
