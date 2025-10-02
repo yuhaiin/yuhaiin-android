@@ -5,7 +5,6 @@ import android.net.ConnectivityManager
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.core.content.getSystemService
-import com.google.android.material.color.DynamicColors
 import go.Seq
 import kotlinx.serialization.json.Json
 import yuhaiin.AddressIter
@@ -57,7 +56,6 @@ open class MainApplication : Application() {
         Yuhaiin.setInterfaces(GetInterfaces())
         Yuhaiin.setProcessDumper(uidDumper)
         store = Yuhaiin.getStore()
-        DynamicColors.applyToActivitiesIfAvailable(this)
     }
 
     class InterfaceIterImpl(

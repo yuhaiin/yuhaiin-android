@@ -3,7 +3,6 @@ package io.github.asutorufa.yuhaiin
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.ComponentName
-import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
 import android.content.pm.PackageManager
@@ -13,9 +12,7 @@ import android.net.VpnService
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
-import android.util.AttributeSet
 import android.util.Log
-import android.view.View
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
@@ -75,20 +72,15 @@ import androidx.compose.ui.semantics.traversalIndex
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.fragment.compose.AndroidFragment
-import androidx.fragment.compose.rememberFragmentState
 import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import androidx.preference.Preference
 import io.github.asutorufa.yuhaiin.service.YuhaiinVpnService
 import io.github.asutorufa.yuhaiin.service.YuhaiinVpnService.Companion.State
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
-
-@SuppressLint("RememberInComposition", "RestrictedApi")
 class MainActivity : AppCompatActivity() {
     private var vpnBinder: IYuhaiinVpnBinder? = null
 
@@ -128,7 +120,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-//                CustomTabsIntent.Builder().apply {
+    //                CustomTabsIntent.Builder().apply {
 //                    setColorScheme(CustomTabsIntent.COLOR_SCHEME_SYSTEM)
 //                }.build().apply {
 //                    intent.data =
@@ -137,23 +129,11 @@ class MainActivity : AppCompatActivity() {
 //                }
 //            }
 
-
-    override fun onCreateView(name: String, context: Context, attrs: AttributeSet): View? {
-        return super.onCreateView(name, context, attrs)
-    }
-
     @OptIn(ExperimentalMaterial3ExpressiveApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         setContent {
-            val blurEffect = remember {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) RenderEffect.createBlurEffect(
-                    20f, 20f, Shader.TileMode.CLAMP
-                )
-                else null
-            }
-
             val colorScheme = when {
                 Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
                     val context = LocalContext.current
@@ -171,7 +151,17 @@ class MainActivity : AppCompatActivity() {
                 ChangeSystemBarsTheme(!isSystemInDarkTheme())
                 val navController = rememberNavController()
 
-                NavHost(navController, "FAB") {
+                NavHost(navController, "Home") {
+
+                    composable("Home") {
+                        val vpnState by state.collectAsState()
+                        Home(
+                            navController, vpnState,
+                            { vpnBinder?.stop() },
+                            { startService() },
+                        )
+                    }
+
                     composable("APPLIST") {
                         AppListComponent(
                             navController,
@@ -184,138 +174,6 @@ class MainActivity : AppCompatActivity() {
                         }
                     }
 
-                    composable("FAB") {
-                        Box(modifier = Modifier.fillMaxSize()) {
-                            val focusRequester = FocusRequester()
-                            var fabMenuExpanded by rememberSaveable { mutableStateOf(false) }
-                            BackHandler(fabMenuExpanded) { fabMenuExpanded = false }
-
-                            ProfileFragmentCompose(
-                                navController,
-                                Modifier
-                                    .fillMaxSize()
-                                    .systemBarsPadding()
-                                    .then(
-                                        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S)
-                                            Modifier.background(
-                                                Color.Black.copy(
-                                                    alpha = if (fabMenuExpanded) 0.5f else 0f
-                                                )
-                                            )
-                                        else Modifier
-                                    )
-                                    .clickable(
-                                        indication = null,
-                                        interactionSource = remember { MutableInteractionSource() }
-                                    ) {
-                                        fabMenuExpanded = false
-                                    }
-                                    .graphicsLayer {
-                                        renderEffect =
-                                            if (fabMenuExpanded) blurEffect?.asComposeRenderEffect() else null
-                                    }
-                            )
-
-                            if (fabMenuExpanded) {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .clickable(
-                                            indication = null,
-                                            interactionSource = remember { MutableInteractionSource() }
-                                        ) {
-                                            fabMenuExpanded = false
-                                        }
-                                )
-                            }
-
-                            FloatingActionButtonMenu(
-                                modifier = Modifier.align(Alignment.BottomEnd),
-                                expanded = fabMenuExpanded,
-                                button = {
-                                    ToggleFloatingActionButton(
-                                        modifier = Modifier
-                                            .semantics { traversalIndex = -1f }
-                                            .animateFloatingActionButton(
-                                                visible = true,
-                                                alignment = Alignment.BottomEnd,
-                                            )
-                                            .focusRequester(focusRequester),
-                                        checked = fabMenuExpanded,
-                                        onCheckedChange = {
-                                            fabMenuExpanded = !fabMenuExpanded
-                                        }
-                                    ) {
-                                        val imageVector by remember {
-                                            derivedStateOf {
-                                                if (checkedProgress > 0.5f) Icons.Filled.Close else Icons.Filled.Add
-                                            }
-                                        }
-                                        Icon(
-                                            painter = rememberVectorPainter(imageVector),
-                                            contentDescription = null,
-                                            modifier = Modifier.animateIcon({ checkedProgress }),
-                                        )
-                                    }
-                                }
-                            ) {
-
-                                val vpnState by state.collectAsState()
-
-                                val rotation by animateFloatAsState(targetValue = if (vpnState == State.CONNECTED) 90f else 0f)
-
-                                if (vpnState == State.CONNECTED) {
-                                    FloatingActionButtonMenuItem(
-                                        modifier = Modifier.semantics {
-                                            isTraversalGroup = true
-                                        },
-                                        onClick = {
-                                            navController.navigate("WebView")
-                                        },
-                                        text = { Text(text = "Open") },
-                                        icon = {
-                                            Icon(
-                                                painter = painterResource(id = R.drawable.open_in_browser),
-                                                contentDescription = null,
-                                                modifier = Modifier.size(24.dp)
-                                            )
-                                        },
-                                    )
-                                }
-
-                                if (vpnState == State.CONNECTED || vpnState == State.DISCONNECTED)
-                                    FloatingActionButtonMenuItem(
-                                        modifier = Modifier.semantics {
-                                            isTraversalGroup = true
-                                        },
-                                        onClick = {
-                                            if (vpnState == State.DISCONNECTED) startService()
-                                            else vpnBinder?.stop()
-                                        },
-                                        text = {
-                                            Icon(
-                                                painter = painterResource(
-                                                    if (vpnState == State.CONNECTED)
-                                                        R.drawable.stop else R.drawable.play_arrow
-                                                ),
-                                                contentDescription = null,
-                                                modifier = Modifier
-                                                    .size(30.dp)
-                                                    .rotate(rotation)
-                                            )
-                                            Text(
-                                                text = if (vpnState == State.CONNECTED) "Stop" else "Start"
-                                            )
-
-                                        },
-                                        icon = {}
-                                    )
-                                else ContainedLoadingIndicator(
-                                    modifier = Modifier.size(50.dp)
-                                )
-                            }
-                        }
-                    }
 
                 }
             }
@@ -392,21 +250,155 @@ class MainActivity : AppCompatActivity() {
     }
 }
 
+
+@SuppressLint("RememberInComposition")
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-fun ProfileFragmentCompose(navController: NavController, modifier: Modifier) {
-    val state = rememberFragmentState()
+fun Home(
+    navController: NavController,
+    vpnState: State,
+    stopService: () -> Unit,
+    startService: () -> Unit
+) {
+    val blurEffect = remember {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) RenderEffect.createBlurEffect(
+            20f, 20f, Shader.TileMode.CLAMP
+        )
+        else null
+    }
 
-    AndroidFragment<ProfileFragment>(
-        fragmentState = state,
-        modifier = modifier
-    ) { fragment ->
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .systemBarsPadding()
+    ) {
+        val focusRequester = FocusRequester()
+        var fabMenuExpanded by rememberSaveable { mutableStateOf(false) }
+        BackHandler(fabMenuExpanded) { fabMenuExpanded = false }
 
-        fragment.findPreference<Preference>(fragment.resources.getString(R.string.adv_new_app_list_key))
-            ?.let {
-                it.setOnPreferenceClickListener {
-                    navController.navigate("APPLIST")
-                    true
+        SettingCompose(
+            modifier = Modifier
+                .fillMaxSize()
+                .systemBarsPadding()
+                .then(
+                    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S)
+                        Modifier.background(
+                            Color.Black.copy(
+                                alpha = if (fabMenuExpanded) 0.5f else 0f
+                            )
+                        )
+                    else Modifier
+                )
+                .clickable(
+                    indication = null,
+                    interactionSource = remember { MutableInteractionSource() }
+                ) {
+                    fabMenuExpanded = false
+                }
+                .graphicsLayer {
+                    renderEffect =
+                        if (fabMenuExpanded) blurEffect?.asComposeRenderEffect() else null
+                },
+            navController = navController,
+            store = MainApplication.store
+        )
+
+
+        if (fabMenuExpanded) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clickable(
+                        indication = null,
+                        interactionSource = remember { MutableInteractionSource() }
+                    ) {
+                        fabMenuExpanded = false
+                    }
+            )
+        }
+
+        FloatingActionButtonMenu(
+            modifier = Modifier.align(Alignment.BottomEnd),
+            expanded = fabMenuExpanded,
+            button = {
+                ToggleFloatingActionButton(
+                    modifier = Modifier
+                        .semantics { traversalIndex = -1f }
+                        .animateFloatingActionButton(
+                            visible = true,
+                            alignment = Alignment.BottomEnd,
+                        )
+                        .focusRequester(focusRequester),
+                    checked = fabMenuExpanded,
+                    onCheckedChange = {
+                        fabMenuExpanded = !fabMenuExpanded
+                    }
+                ) {
+                    val imageVector by remember {
+                        derivedStateOf {
+                            if (checkedProgress > 0.5f) Icons.Filled.Close else Icons.Filled.Add
+                        }
+                    }
+                    Icon(
+                        painter = rememberVectorPainter(imageVector),
+                        contentDescription = null,
+                        modifier = Modifier.animateIcon({ checkedProgress }),
+                    )
                 }
             }
+        ) {
+
+            val rotation by animateFloatAsState(targetValue = if (vpnState == State.CONNECTED) 90f else 0f)
+
+            if (vpnState == State.CONNECTED) {
+                FloatingActionButtonMenuItem(
+                    modifier = Modifier.semantics {
+                        isTraversalGroup = true
+                    },
+                    onClick = {
+                        navController.navigate("WebView")
+                    },
+                    text = { Text(text = "Open") },
+                    icon = {
+                        Icon(
+                            painter = painterResource(id = R.drawable.open_in_browser),
+                            contentDescription = null,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    },
+                )
+            }
+
+            if (vpnState == State.CONNECTED || vpnState == State.DISCONNECTED)
+                FloatingActionButtonMenuItem(
+                    modifier = Modifier.semantics {
+                        isTraversalGroup = true
+                    },
+                    onClick = {
+                        if (vpnState == State.DISCONNECTED) startService()
+                        else stopService()
+                    },
+                    text = {
+                        Icon(
+                            painter = painterResource(
+                                if (vpnState == State.CONNECTED)
+                                    R.drawable.stop else R.drawable.play_arrow
+                            ),
+                            contentDescription = null,
+                            modifier = Modifier
+                                .size(30.dp)
+                                .rotate(rotation)
+                        )
+                        Text(
+                            text = if (vpnState == State.CONNECTED) "Stop" else "Start"
+                        )
+
+                    },
+                    icon = {}
+                )
+            else ContainedLoadingIndicator(
+                modifier = Modifier.size(50.dp)
+            )
+        }
     }
 }

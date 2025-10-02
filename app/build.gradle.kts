@@ -160,17 +160,7 @@ android {
 dependencies {
     implementation(fileTree(mapOf("include" to listOf("*.aar", "*.jar"), "dir" to "libs")))
     implementation("androidx.appcompat:appcompat:1.7.1")
-    implementation("androidx.preference:preference-ktx:1.2.1")
-    implementation("com.google.android.material:material:1.13.0")
-    implementation("androidx.browser:browser:1.9.0")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
-    implementation("androidx.activity:activity:1.11.0")
-    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.9.4")
-    implementation("androidx.compose.ui:ui-graphics")
-    implementation("androidx.compose.ui:ui-text:1.9.2")
-    androidTestImplementation(platform("androidx.compose:compose-bom:2025.09.01"))
-    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
-    debugImplementation("androidx.compose.ui:ui-test-manifest")
 
     // nav
     val navVersion = "2.9.5"
@@ -182,21 +172,18 @@ dependencies {
 
     val composeBom = platform("androidx.compose:compose-bom:2025.09.01")
     implementation(composeBom)
+    androidTestImplementation(composeBom)
+    implementation("androidx.compose.ui:ui-graphics")
+    implementation("androidx.compose.ui:ui-text:1.9.2")
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+    debugImplementation("androidx.compose.ui:ui-test-manifest")
     implementation("androidx.compose.material3:material3:1.5.0-alpha04")
     implementation("androidx.compose.ui:ui-tooling-preview")
+    implementation("androidx.compose.foundation:foundation:1.9.2")
     debugImplementation("androidx.compose.ui:ui-tooling")
     implementation("androidx.compose.ui:ui:1.10.0-alpha04")
     implementation("androidx.activity:activity-compose:1.12.0-alpha09")
     implementation("androidx.fragment:fragment-compose:1.8.9")
     implementation("androidx.compose.material:material-navigation:1.10.0-alpha04")
     implementation("androidx.compose.material:material-icons-core:1.7.8")
-    /*
-    // Animations
-    implementation("androidx.compose.animation:animation:$composeVersion")
-    // Integration with ViewModels
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.5.1")
-    // Compose Material Design
-    implementation("androidx.compose.material3:material3:1.0.0-alpha16")
-    implementation("androidx.compose.material3:material3-window-size-class:1.0.0-alpha16")
-    */
 }
