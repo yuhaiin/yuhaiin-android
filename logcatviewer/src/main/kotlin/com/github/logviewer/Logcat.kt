@@ -63,10 +63,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
 import androidx.navigation.NavController
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
 import java.util.regex.Pattern
@@ -107,6 +108,7 @@ fun LogcatScreen(
     val coroutineScope = rememberCoroutineScope()
     var infoLog by remember { mutableStateOf<LogEntry?>(null) }
     var showDialog by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
 
 
     Scaffold(
@@ -155,7 +157,7 @@ fun LogcatScreen(
                                 mainMenuExpanded = false
                             })
                             DropdownMenuItem(text = { Text("Export...") }, onClick = {
-                                if (context != null) exportLogFile(context)
+                                if (context != null) exportLogFile(context, scope)
                                 mainMenuExpanded = false
                             })
                         }
@@ -311,29 +313,30 @@ fun LogItem(
 }
 
 
-@DelicateCoroutinesApi
-fun exportLogFile(context: Context) {
-    GlobalScope.launch(Dispatchers.IO) {
-        File(context.externalCacheDir, "yuhaiin.log").apply {
-            writeText("Yuhaiin Logcat:\n")
-            Runtime.getRuntime()
-                .exec(arrayOf("logcat", "-d")).inputStream.use { input ->
-                    FileOutputStream(this, true).use {
-                        input.copyTo(it)
+fun exportLogFile(context: Context, scope: CoroutineScope) {
+    scope.launch {
+        withContext(Dispatchers.IO) {
+            File(context.externalCacheDir, "yuhaiin.log").apply {
+                writeText("Yuhaiin Logcat:\n")
+                Runtime.getRuntime()
+                    .exec(arrayOf("logcat", "-d")).inputStream.use { input ->
+                        FileOutputStream(this, true).use {
+                            input.copyTo(it)
+                        }
                     }
-                }
 
-            val authority = "${context.packageName}.logcat_fileprovider"
-            val uri = FileProvider.getUriForFile(context, authority, this)
-            context.startActivity(
-                Intent.createChooser(
-                    Intent(Intent.ACTION_SEND)
-                        .setType("text/plain")
-                        .setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                        .putExtra(Intent.EXTRA_STREAM, uri),
-                    "Export Logcat"
-                ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            )
+                val authority = "${context.packageName}.logcat_fileprovider"
+                val uri = FileProvider.getUriForFile(context, authority, this)
+                context.startActivity(
+                    Intent.createChooser(
+                        Intent(Intent.ACTION_SEND)
+                            .setType("text/plain")
+                            .setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                            .putExtra(Intent.EXTRA_STREAM, uri),
+                        "Export Logcat"
+                    ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                )
+            }
         }
     }
 }

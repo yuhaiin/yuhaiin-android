@@ -200,19 +200,19 @@ fun AppList(
     ),
     filter: CharSequence? = null
 ) {
+    val filteredApps = remember(apps, filter) {
+        if (filter.isNullOrBlank()) {
+            apps
+        } else {
+            apps.filter { app ->
+                app.packageName.contains(filter, ignoreCase = true) ||
+                        app.appName.contains(filter, ignoreCase = true)
+            }
+        }
+    }
 
     LazyColumn(modifier = modifier) {
-        items(apps) { app ->
-            if (filter != null &&
-                filter != "" &&
-                !app.packageName.contains(filter) &&
-                !app.appName.contains(
-                    filter
-                )
-            ) {
-                return@items
-            }
-
+        items(filteredApps) { app ->
             AppListItem(app, onClick = {
                 if (checkedApps.contains(app.packageName)) checkedApps.remove(app.packageName)
                 else checkedApps.add(app.packageName)
@@ -238,11 +238,13 @@ fun AppListItem(
             .fillMaxWidth()
             .clickable { onClick() }
             .background(MaterialTheme.colorScheme.surface)
-            .heightIn(min = 48.dp), // 对应 minTouchTargetSize
+            .heightIn(min = 48.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Image(
-            bitmap = app.appIcon.toBitmap(height = 60, width = 60).asImageBitmap(),
+            bitmap = remember(app.appIcon) {
+                app.appIcon.toBitmap(height = 60, width = 60).asImageBitmap()
+            },
             contentDescription = null,
             modifier = Modifier
                 .size(60.dp)
