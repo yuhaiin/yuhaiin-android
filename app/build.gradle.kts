@@ -5,6 +5,7 @@ plugins {
     kotlin("android")
     id("androidx.navigation.safeargs.kotlin")
     kotlin("plugin.serialization") version "2.2.20"
+    id("org.jetbrains.kotlin.plugin.compose")
 }
 
 fun getVersionCode(): Int {
@@ -69,8 +70,8 @@ android {
         manifestPlaceholders["documentsAuthority"] = documentsAuthorityValue
         // Now we can use BuildConfig.DOCUMENTS_AUTHORITY in our code
         buildConfigField("String", "DOCUMENTS_AUTHORITY", "\"$documentsAuthorityValue\"")
-
-        minSdk = 21
+        minSdk = 23
+        // uses-sdk:minSdkVersion 21 cannot be smaller than version 23 declared in library [androidx.compose.material3:material3-android:1.5.0-alpha04]
         targetSdk = 36
 
         versionCode = 184
@@ -144,54 +145,39 @@ android {
     }
 
     buildFeatures {
-        dataBinding = false
-        viewBinding = true
-        compose = false
+        compose = true
         buildConfig = true
         aidl = true
-    }
-
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.15"
     }
 }
 
 dependencies {
     implementation(fileTree(mapOf("include" to listOf("*.aar", "*.jar"), "dir" to "libs")))
     implementation("androidx.appcompat:appcompat:1.7.1")
-    implementation("androidx.preference:preference-ktx:1.2.1")
-    implementation("com.google.android.material:material:1.13.0")
-    implementation("androidx.browser:browser:1.9.0")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
+    implementation("com.google.android.material:material:1.13.0")
 
     // nav
     val navVersion = "2.9.5"
-    implementation("androidx.navigation:navigation-fragment-ktx:$navVersion")
-    implementation("androidx.navigation:navigation-ui-ktx:$navVersion")
+    implementation("androidx.navigation:navigation-compose:${navVersion}")
 
     implementation(project(":yuhaiin"))
     implementation(project(":logcatviewer"))
 
-    /*
-    //compose
-    val composeVersion = "1.2.1"
-    implementation("androidx.activity:activity-compose:1.6.0")
-    debugImplementation("androidx.compose.ui:ui-tooling:$composeVersion")
-    implementation("androidx.compose.ui:ui-tooling-preview:$composeVersion")
-    // Animations
-    implementation("androidx.compose.animation:animation:$composeVersion")
-    // Integration with ViewModels
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.5.1")
-    // Compose Material Design
-    implementation("androidx.compose.material3:material3:1.0.0-alpha16")
-    implementation("androidx.compose.material3:material3-window-size-class:1.0.0-alpha16")
-    */
-
-    testImplementation("androidx.test:core:1.7.0")
-    testImplementation("androidx.test:runner:1.7.0")
-    testImplementation("junit:junit:4.13.2")
-    testImplementation("androidx.test.espresso:espresso-core:3.7.0")
-    testImplementation("androidx.test.ext:junit-ktx:1.3.0")
-    androidTestUtil("androidx.test:orchestrator:1.6.1")
-    testImplementation("org.robolectric:robolectric:4.16")
+    val composeBom = platform("androidx.compose:compose-bom:2025.09.01")
+    implementation(composeBom)
+    androidTestImplementation(composeBom)
+    implementation("androidx.compose.ui:ui-graphics")
+    implementation("androidx.compose.ui:ui-text:1.9.2")
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+    debugImplementation("androidx.compose.ui:ui-test-manifest")
+    implementation("androidx.compose.material3:material3:1.5.0-alpha04")
+    implementation("androidx.compose.ui:ui-tooling-preview")
+    implementation("androidx.compose.foundation:foundation:1.9.2")
+    debugImplementation("androidx.compose.ui:ui-tooling")
+    implementation("androidx.compose.ui:ui:1.10.0-alpha04")
+    implementation("androidx.activity:activity-compose:1.12.0-alpha09")
+    implementation("androidx.fragment:fragment-compose:1.8.9")
+    implementation("androidx.compose.material:material-navigation:1.10.0-alpha04")
+    implementation("androidx.compose.material:material-icons-core:1.7.8")
 }
