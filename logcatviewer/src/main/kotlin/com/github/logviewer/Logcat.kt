@@ -3,11 +3,6 @@ package com.github.logviewer
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -19,18 +14,23 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -56,13 +56,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
-import androidx.navigation.NavController
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
@@ -87,7 +87,6 @@ fun isLevelEnabled(filter: LogLevel, logLevel: LogLevel): Boolean {
 @Preview
 fun LogcatScreen(
     modifier: Modifier = Modifier,
-    onFabClick: () -> Unit = {},
     logs: SnapshotStateList<LogEntry> = remember {
         mutableStateListOf(
             LogEntry(
@@ -97,18 +96,15 @@ fun LogcatScreen(
             )
         )
     },
-    navController: NavController? = null,
 ) {
     var filterMenuExpanded by remember { mutableStateOf(false) }
     var mainMenuExpanded by remember { mutableStateOf(false) }
     var filter by remember { mutableStateOf(LogLevel.DEBUG) }
     val context = LocalContext.current as? Activity
     val listState = rememberLazyListState()
-    val coroutineScope = rememberCoroutineScope()
     var infoLog by remember { mutableStateOf<LogEntry?>(null) }
     var showDialog by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
-
 
     Scaffold(
         topBar = {
@@ -125,7 +121,10 @@ fun LogcatScreen(
                 actions = {
                     Box {
                         IconButton(onClick = { filterMenuExpanded = true }) {
-                            Text("Filter")
+                            Icon(
+                                painter = painterResource(R.drawable.sort),
+                                contentDescription = "Filter",
+                            )
                         }
                         DropdownMenu(
                             expanded = filterMenuExpanded,
@@ -133,6 +132,24 @@ fun LogcatScreen(
                         ) {
                             LogLevel.entries.forEach { level ->
                                 DropdownMenuItem(
+                                    leadingIcon = {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(20.dp)
+                                                .background(
+                                                    level.bgColor,
+                                                    shape = MaterialTheme.shapes.small
+                                                ),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text(
+                                                text = level.tag.first().toString(),
+                                                fontSize = 12.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = Color.White
+                                            )
+                                        }
+                                    },
                                     text = { Text(level.tag) },
                                     onClick = {
                                         filter = level
@@ -151,14 +168,31 @@ fun LogcatScreen(
                             expanded = mainMenuExpanded,
                             onDismissRequest = { mainMenuExpanded = false }
                         ) {
-                            DropdownMenuItem(text = { Text("Clear all") }, onClick = {
-                                logs.clear()
-                                mainMenuExpanded = false
-                            })
-                            DropdownMenuItem(text = { Text("Export...") }, onClick = {
-                                if (context != null) exportLogFile(context, scope)
-                                mainMenuExpanded = false
-                            })
+                            DropdownMenuItem(
+                                leadingIcon = {
+                                    Icon(
+                                        painter = rememberVectorPainter(Icons.Filled.Clear),
+                                        contentDescription = "Export"
+                                    )
+                                },
+                                text = { Text("Clear all") },
+                                onClick = {
+                                    logs.clear()
+                                    mainMenuExpanded = false
+                                })
+                            DropdownMenuItem(
+                                leadingIcon = {
+                                    Icon(
+                                        painter = rememberVectorPainter(Icons.Filled.Share),
+                                        contentDescription = "Export"
+                                    )
+                                },
+                                text = {
+                                    Text("Export...")
+                                }, onClick = {
+                                    if (context != null) exportLogFile(context, scope)
+                                    mainMenuExpanded = false
+                                })
                         }
                     }
                 },
@@ -167,7 +201,7 @@ fun LogcatScreen(
         floatingActionButton = {
             FloatingActionButton(
                 onClick = {
-                    coroutineScope.launch {
+                    scope.launch {
                         listState.animateScrollToItem(logs.lastIndex)
                     }
                 },
@@ -202,11 +236,7 @@ fun LogcatScreen(
                 }
             }
 
-            AnimatedVisibility(
-                visible = showDialog,
-                enter = fadeIn() + scaleIn(initialScale = 0.8f),
-                exit = fadeOut() + scaleOut(targetScale = 0.8f)
-            ) {
+            if (showDialog) {
                 AlertDialog(
                     onDismissRequest = { showDialog = false },
                     confirmButton = {
@@ -216,13 +246,8 @@ fun LogcatScreen(
                     },
                     title = { Text("Log Detail") },
                     text = {
-                        SelectionContainer {
-                            Text(
-                                "Level: ${infoLog?.level?.tag}\n" +
-                                        "Time: ${infoLog?.time}\n" +
-                                        "Message:\n${infoLog?.content}"
-                            )
-                        }
+                        if (infoLog != null) LogDetail(infoLog!!)
+                        else Text("Log is not exist")
                     }
                 )
             }
@@ -230,11 +255,77 @@ fun LogcatScreen(
     )
 }
 
-// 数据类示例
+@Composable
+@Preview
+fun LogDetail(infoLog: LogEntry = LogEntry(LogLevel.INFO, "2025.08.10", "Test Content")) {
+    SelectionContainer {
+        Column(
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(bottom = 8.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(20.dp)
+                        .background(
+                            infoLog.level.bgColor,
+                            shape = MaterialTheme.shapes.small
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = infoLog.level.tag.first().toString(),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    text = infoLog.tag ?: "",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            Text(
+                text = "${infoLog.time}   PID:${infoLog.pid}  TID:${infoLog.tid}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 100.dp, max = 300.dp)
+                    .verticalScroll(rememberScrollState())
+                    .background(
+                        MaterialTheme.colorScheme.surfaceVariant,
+                        shape = MaterialTheme.shapes.medium
+                    )
+                    .padding(8.dp)
+            ) {
+                Text(
+                    text = infoLog.content,
+                    fontFamily = FontFamily.Monospace,
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+        }
+    }
+}
+
 data class LogEntry(
     val level: LogLevel,
-    val time: String,
-    val content: String
+    val time: String = "",
+    val content: String = "",
+    val tag: String? = "",
+    val pid: Int? = 0,
+    val tid: Int? = 0,
 )
 
 private val sLogcatPattern = Pattern.compile(
@@ -245,9 +336,9 @@ fun parseLog(line: String): LogEntry {
     val matcher = sLogcatPattern.matcher(line)
     check(matcher.find()) { "logcat pattern not match: $line" }
 
-    val time = matcher.group(1)
-    val pid = matcher.group(2)?.apply { toInt() }
-    val tid = matcher.group(3)?.apply { toInt() }
+    val time = matcher.group(1) ?: ""
+    val pid = matcher.group(2)?.toInt()
+    val tid = matcher.group(3)?.toInt()
     val level = when (matcher.group(4)) {
         "V" -> LogLevel.DEBUG
         "D" -> LogLevel.DEBUG
@@ -258,10 +349,17 @@ fun parseLog(line: String): LogEntry {
         else -> LogLevel.INFO
     }
     val tag = matcher.group(5)
-    val content = matcher.group(6)
+    val content = matcher.group(6) ?: ""
 
 
-    return LogEntry(level, time ?: "", content ?: "")
+    return LogEntry(
+        level,
+        time,
+        content,
+        tag,
+        pid,
+        tid
+    )
 }
 
 @Composable
@@ -280,16 +378,23 @@ fun LogItem(
             .padding(4.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = level.tag,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.White,
-                textAlign = TextAlign.Center,
+            Box(
                 modifier = Modifier
-                    .size(16.dp)
-                    .background(color = level.bgColor, shape = RoundedCornerShape(2.dp))
-            )
+                    .size(20.dp)
+                    .background(
+                        level.bgColor,
+                        shape = MaterialTheme.shapes.small
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = level.tag.first().toString(),
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                    modifier = Modifier.offset(y = (-1.5).dp)
+                )
+            }
 
             Spacer(modifier = Modifier.width(4.dp))
 

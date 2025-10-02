@@ -48,6 +48,17 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import io.github.asutorufa.yuhaiin.service.YuhaiinVpnService.Companion.State
 
+@SuppressLint("RememberReturnType")
+@Composable
+fun blurEffect(): RenderEffect? {
+    return remember {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) RenderEffect.createBlurEffect(
+            20f, 20f, Shader.TileMode.CLAMP
+        )
+        else null
+    }
+}
+
 @SuppressLint("RememberInComposition")
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -58,12 +69,7 @@ fun Home(
     stopService: () -> Unit,
     startService: () -> Unit,
 ) {
-    val blurEffect = remember {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) RenderEffect.createBlurEffect(
-            20f, 20f, Shader.TileMode.CLAMP
-        )
-        else null
-    }
+
 
     Box(
         modifier = modifier
@@ -71,6 +77,7 @@ fun Home(
         val focusRequester = FocusRequester()
         var fabMenuExpanded by rememberSaveable { mutableStateOf(false) }
         BackHandler(fabMenuExpanded) { fabMenuExpanded = false }
+        val blur = blurEffect()
 
         SettingCompose(
             modifier = Modifier
@@ -92,7 +99,7 @@ fun Home(
                 }
                 .graphicsLayer {
                     renderEffect =
-                        if (fabMenuExpanded) blurEffect?.asComposeRenderEffect() else null
+                        if (fabMenuExpanded) blur?.asComposeRenderEffect() else null
                 },
             navController = navController,
             store = MainApplication.store
