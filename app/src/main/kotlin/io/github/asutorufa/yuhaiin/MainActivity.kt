@@ -38,6 +38,7 @@ import androidx.core.content.ContextCompat
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import io.github.asutorufa.logviewer.LogcatCompose
 import io.github.asutorufa.yuhaiin.service.YuhaiinVpnService
 import io.github.asutorufa.yuhaiin.service.YuhaiinVpnService.Companion.State
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -115,7 +116,6 @@ class MainActivity : AppCompatActivity() {
             MaterialTheme(
                 colorScheme = colorScheme
             ) {
-
                 ChangeSystemBarsTheme(!isSystemInDarkTheme())
 
                 SharedTransitionLayout {
@@ -146,6 +146,34 @@ class MainActivity : AppCompatActivity() {
                                 MainApplication.store.getInt("yuhaiin_port")
                             }
                         }
+
+                        composable("LOGCAT") {
+                            val logcatExcludeRules = arrayListOf(
+                                ".*]: processMotionEvent MotionEvent \\{ action=ACTION_.*",
+                                ".*]: dispatchPointerEvent handled=true, event=MotionEvent \\{ action=ACTION_.*",
+                                ".*Davey! duration=.*",
+                                // android popup window select text debug log
+                                ".*Attempted to finish an input event but the input event receiver has already been disposed.*",
+                                ".*endAllActiveAnimators on .* with handle.*",
+                                ".*Initializing SystemTextClassifier,.*",
+                                ".*TextClassifier called on main thread.*",
+                                ".*android added item .*",
+                                ".*No package ID .* found for ID.*",
+                                ".*eglMakeCurrent:.*",
+                                ".*NotificationManager: io.github.asutorufa.yuhaiin: notify.*",
+                                ".*InputEventReceiver_DOT: IER.scheduleInputVsync.*",
+                                ".*ViewRootImpl@.*[.*]: .*"
+                            )
+
+                            LogcatCompose(
+                                topBarModifier = Modifier.sharedElement(
+                                    sharedContentState = rememberSharedContentState("OPEN_LOGCAT"),
+                                    animatedVisibilityScope = this@composable,
+                                ),
+                                excludeList = logcatExcludeRules,
+                                navController = navController,
+                            )
+                        }
                     }
                 }
             }
@@ -170,9 +198,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    val vpnCallback = VpnCallback()
-
-    inner class VpnCallback : IYuhaiinVpnCallback.Stub() {
+    val vpnCallback = object : IYuhaiinVpnCallback.Stub() {
         override fun onStateChanged(state: Int) {
             currentState = State.entries[state]
         }

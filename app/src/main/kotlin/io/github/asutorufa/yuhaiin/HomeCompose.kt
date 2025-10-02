@@ -108,7 +108,6 @@ fun SharedTransitionScope.Home(
             store = MainApplication.store
         )
 
-
         if (fabMenuExpanded) {
             Box(
                 modifier = Modifier

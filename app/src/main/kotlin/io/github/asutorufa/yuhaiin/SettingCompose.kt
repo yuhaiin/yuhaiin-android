@@ -1,7 +1,6 @@
 package io.github.asutorufa.yuhaiin
 
 import android.annotation.SuppressLint
-import android.app.Activity
 import androidx.compose.animation.AnimatedContentScope
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalSharedTransitionApi
@@ -47,14 +46,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.github.logviewer.LogcatActivity
 import yuhaiin.Store
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
@@ -65,10 +62,8 @@ fun SharedTransitionScope.SettingCompose(
     modifier: Modifier = Modifier,
     navController: NavController? = null,
     store: Store? = null,
-    animatedContentScope: AnimatedContentScope,
+    animatedContentScope: AnimatedContentScope? = null,
 ) {
-    val context = LocalContext.current as Activity
-
     var appendHttpProxy by rememberSaveable {
         mutableStateOf(store?.getBoolean("append_http_proxy_to_vpn") ?: false)
     }
@@ -261,14 +256,14 @@ fun SharedTransitionScope.SettingCompose(
                     }
                     item {
                         SettingsItem(
-                            textModifier = Modifier.sharedBounds(
+                            textModifier = if (animatedContentScope != null) Modifier.sharedBounds(
                                 sharedContentState = rememberSharedContentState("OPEN_APP_LIST_TITLE"),
                                 animatedVisibilityScope = animatedContentScope,
-                            ),
-                            iconModifier = Modifier.sharedBounds(
+                            ) else Modifier,
+                            iconModifier = if (animatedContentScope != null) Modifier.sharedBounds(
                                 sharedContentState = rememberSharedContentState("OPEN_APP_LIST_APP"),
                                 animatedVisibilityScope = animatedContentScope,
-                            ),
+                            ) else Modifier,
                             title = stringResource(R.string.adv_app_list_title),
                             summary = stringResource(R.string.adv_app_list_sum),
                             icon = painterResource(R.drawable.apps),
@@ -288,29 +283,13 @@ fun SharedTransitionScope.SettingCompose(
                 }
                 item {
                     SettingsItem(
+                        modifier = if (animatedContentScope != null) Modifier.sharedElement(
+                            sharedContentState = rememberSharedContentState("OPEN_LOGCAT"),
+                            animatedVisibilityScope = animatedContentScope,
+                        ) else Modifier,
                         title = stringResource(R.string.logcat_name),
                         icon = painterResource(R.drawable.adb),
-                        onClick = {
-                            val logcatExcludeRules = arrayListOf(
-                                ".*]: processMotionEvent MotionEvent \\{ action=ACTION_.*",
-                                ".*]: dispatchPointerEvent handled=true, event=MotionEvent \\{ action=ACTION_.*",
-                                ".*Davey! duration=.*",
-                                // android popup window select text debug log
-                                ".*Attempted to finish an input event but the input event receiver has already been disposed.*",
-                                ".*endAllActiveAnimators on .* with handle.*",
-                                ".*Initializing SystemTextClassifier,.*",
-                                ".*TextClassifier called on main thread.*",
-                                ".*android added item .*",
-                                ".*No package ID .* found for ID.*",
-                                ".*eglMakeCurrent:.*",
-                                ".*NotificationManager: io.github.asutorufa.yuhaiin: notify.*",
-                                ".*InputEventReceiver_DOT: IER.scheduleInputVsync.*",
-                                ".*ViewRootImpl@.*[.*]: .*"
-                            )
-                            context.startActivity(
-                                LogcatActivity.intent(logcatExcludeRules, context)
-                            )
-                        }
+                        onClick = { navController?.navigate("LOGCAT") }
                     )
                 }
             }

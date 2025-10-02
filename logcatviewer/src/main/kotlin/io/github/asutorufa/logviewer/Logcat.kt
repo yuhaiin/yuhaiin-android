@@ -1,8 +1,9 @@
-package com.github.logviewer
+package io.github.asutorufa.logviewer
 
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -50,6 +51,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -70,12 +72,14 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
+import androidx.navigation.NavController
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileOutputStream
+import java.util.Date
 import java.util.regex.Pattern
 
 enum class LogLevel(val tag: String, val bgColor: Color, val priority: Int) {
@@ -94,6 +98,7 @@ fun isLevelEnabled(filter: LogLevel, logLevel: LogLevel): Boolean {
 @Preview
 fun LogcatScreen(
     modifier: Modifier = Modifier,
+    topBarModifier: Modifier = Modifier,
     logs: SnapshotStateList<LogEntry> = remember {
         mutableStateListOf(
             LogEntry(
@@ -103,6 +108,7 @@ fun LogcatScreen(
             )
         )
     },
+    navController: NavController? = null,
 ) {
     var filterMenuExpanded by remember { mutableStateOf(false) }
     var mainMenuExpanded by remember { mutableStateOf(false) }
@@ -114,14 +120,17 @@ fun LogcatScreen(
     val scope = rememberCoroutineScope()
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
 
-
     Scaffold(
         topBar = {
             TopAppBar(
+                modifier = topBarModifier,
                 scrollBehavior = scrollBehavior,
                 title = { Text("Logcat") },
                 navigationIcon = {
-                    IconButton(onClick = { context?.finish() }) {
+                    IconButton(onClick = {
+                        if (navController != null) navController.popBackStack()
+                        else context?.finish()
+                    }) {
                         Icon(
                             painter = rememberVectorPainter(Icons.AutoMirrored.Filled.ArrowBack),
                             contentDescription = "Back"
@@ -459,4 +468,83 @@ fun exportLogFile(context: Context, scope: CoroutineScope) {
             )
         }
     }
+}
+
+
+private fun skip(mExcludeList: List<Pattern>, line: String): Boolean {
+    for (pattern in mExcludeList) if (pattern.matcher(line).matches()) return true
+    return false
+}
+
+fun runLogcat(
+    scope: CoroutineScope,
+    excludeList: MutableList<Pattern>,
+    pushLogs: (LogEntry) -> Unit
+): Process {
+    val process = ProcessBuilder(listOf("logcat", "-v", "threadtime")).start()
+
+    scope.launch(Dispatchers.IO) {
+        process.inputStream.bufferedReader().use {
+            while (true) {
+                try {
+                    it.readLine()?.let { line ->
+                        try {
+                            if (skip(excludeList, line))
+                                return@let
+                            pushLogs(parseLog(line))
+                        } catch (e: Exception) {
+                            Log.w("parse log failed", "$e: log: $line")
+                            pushLogs(LogEntry(LogLevel.INFO, Date().toString(), line))
+                        }
+                    } ?: break
+                } catch (e: Exception) {
+                    Log.w("read log failed", "$e")
+                    break
+                }
+            }
+        }
+
+        Log.i("logcat process", "stop read logcat")
+        process.destroy()
+    }
+
+    return process
+}
+
+@Composable
+fun LogcatCompose(
+    modifier: Modifier = Modifier,
+    topBarModifier: Modifier = Modifier,
+    excludeList: ArrayList<String>? = null,
+    navController: NavController? = null,
+) {
+    val excludeList = remember {
+        val mExcludeList: MutableList<Pattern> = ArrayList()
+        excludeList?.forEach {
+            try {
+                mExcludeList.add(Pattern.compile(it))
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+
+        mExcludeList
+    }
+
+    val logs = remember { mutableStateListOf<LogEntry>() }
+    val scope = rememberCoroutineScope()
+    val process = runLogcat(scope, excludeList) { logs.add(it) }
+    DisposableEffect(Unit) {
+        onDispose {
+            logs.add(LogEntry(LogLevel.INFO, "", "stop read logcat"))
+            process.destroy()
+        }
+    }
+
+    LogcatScreen(
+        modifier,
+        logs = logs,
+        navController = navController,
+        topBarModifier = topBarModifier
+    )
 }
