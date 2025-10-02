@@ -172,8 +172,10 @@ fun SettingCompose(
                     ListPreferenceSetting(
                         title = stringResource(R.string.adv_tun_driver_title),
                         icon = painterResource(R.drawable.handyman),
-                        entries = stringArrayResource(R.array.tun_drivers),
-                        selected = tunDriver ?: stringResource(R.string.tun_driver_fdbased),
+                        entries = stringArrayResource(R.array.tun_drivers_value).zip(
+                            stringArrayResource(R.array.tun_drivers)
+                        ).toMap(),
+                        selected = tunDriver ?: stringResource(R.string.tun_driver_fdbased_value),
                         onSelectedChange = {
                             tunDriver = it
                             store?.putString("Tun Driver", it)
@@ -184,7 +186,7 @@ fun SettingCompose(
                     ListPreferenceSetting(
                         title = stringResource(R.string.adv_route_title),
                         icon = painterResource(R.drawable.router),
-                        entries = stringArrayResource(R.array.adv_routes),
+                        entries = stringArrayResource(R.array.adv_routes).associateWith { it },
                         selected = route ?: stringResource(R.string.adv_route_all),
                         onSelectedChange = {
                             route = it
@@ -394,9 +396,11 @@ fun ListPreferenceSetting(
     title: String = "Preview Title",
     summary: String? = null,
     icon: Painter? = null,
-    entries: Array<String> = Array(5) { i ->
-        return@Array "Preview Entries $i"
-    },
+    entries: Map<String, String> = hashMapOf(
+        "one" to "1",
+        "two" to "2",
+        "three" to "3"
+    ),
     selected: String = "",
     onSelectedChange: (String) -> Unit = {}
 ) {
@@ -404,10 +408,11 @@ fun ListPreferenceSetting(
 
     SettingsItem(
         title = title,
-        summary = summary ?: selected,
+        summary = summary ?: entries[selected],
         icon = icon,
         onClick = { showDialog = true }
     )
+
 
     if (showDialog) {
         AlertDialog(
@@ -422,23 +427,23 @@ fun ListPreferenceSetting(
             title = { Text(title) },
             text = {
                 Column {
-                    entries.forEachIndexed { index, entry ->
+                    for ((key, value) in entries) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable {
-                                    onSelectedChange(entry)
+                                    onSelectedChange(key)
                                     showDialog = false
                                 }
                         ) {
                             RadioButton(
-                                selected = entry == selected,
+                                selected = key == selected,
                                 onClick = {}
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                entry,
+                                value,
                                 style = MaterialTheme.typography.bodyLarge,
                             )
                         }

@@ -243,7 +243,7 @@ fun AppListItem(
     ) {
         Image(
             bitmap = remember(app.appIcon) {
-                app.appIcon.toBitmap(height = 60, width = 60).asImageBitmap()
+                app.appIcon.toBitmap(height = 128, width = 128).asImageBitmap()
             },
             contentDescription = null,
             modifier = Modifier
