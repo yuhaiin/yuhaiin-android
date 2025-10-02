@@ -67,7 +67,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
 import java.util.regex.Pattern
@@ -312,31 +311,28 @@ fun LogItem(
     }
 }
 
-
 fun exportLogFile(context: Context, scope: CoroutineScope) {
-    scope.launch {
-        withContext(Dispatchers.IO) {
-            File(context.externalCacheDir, "yuhaiin.log").apply {
-                writeText("Yuhaiin Logcat:\n")
-                Runtime.getRuntime()
-                    .exec(arrayOf("logcat", "-d")).inputStream.use { input ->
-                        FileOutputStream(this, true).use {
-                            input.copyTo(it)
-                        }
+    scope.launch(Dispatchers.IO) {
+        File(context.externalCacheDir, "yuhaiin.log").apply {
+            writeText("Yuhaiin Logcat:\n")
+            Runtime.getRuntime()
+                .exec(arrayOf("logcat", "-d")).inputStream.use { input ->
+                    FileOutputStream(this, true).use {
+                        input.copyTo(it)
                     }
+                }
 
-                val authority = "${context.packageName}.logcat_fileprovider"
-                val uri = FileProvider.getUriForFile(context, authority, this)
-                context.startActivity(
-                    Intent.createChooser(
-                        Intent(Intent.ACTION_SEND)
-                            .setType("text/plain")
-                            .setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                            .putExtra(Intent.EXTRA_STREAM, uri),
-                        "Export Logcat"
-                    ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                )
-            }
+            val authority = "${context.packageName}.logcat_fileprovider"
+            val uri = FileProvider.getUriForFile(context, authority, this)
+            context.startActivity(
+                Intent.createChooser(
+                    Intent(Intent.ACTION_SEND)
+                        .setType("text/plain")
+                        .setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        .putExtra(Intent.EXTRA_STREAM, uri),
+                    "Export Logcat"
+                ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            )
         }
     }
 }
