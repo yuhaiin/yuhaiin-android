@@ -9,11 +9,6 @@
     </queries>
 
     <application>
-        <activity
-            android:name="com.github.logviewer.LogcatActivity"
-            android:launchMode="singleTask"
-            android:theme="@style/Theme.Material3.DayNight.NoActionBar" />
-
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.logcat_fileprovider"
