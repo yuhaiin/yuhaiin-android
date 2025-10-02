@@ -12,7 +12,6 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
@@ -53,10 +52,11 @@ import io.github.asutorufa.yuhaiin.service.YuhaiinVpnService.Companion.State
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun Home(
+    modifier: Modifier,
     navController: NavController,
     vpnState: State,
     stopService: () -> Unit,
-    startService: () -> Unit
+    startService: () -> Unit,
 ) {
     val blurEffect = remember {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) RenderEffect.createBlurEffect(
@@ -66,9 +66,7 @@ fun Home(
     }
 
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .systemBarsPadding()
+        modifier = modifier
     ) {
         val focusRequester = FocusRequester()
         var fabMenuExpanded by rememberSaveable { mutableStateOf(false) }
@@ -77,7 +75,6 @@ fun Home(
         SettingCompose(
             modifier = Modifier
                 .fillMaxSize()
-                .systemBarsPadding()
                 .then(
                     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S)
                         Modifier.background(
@@ -116,7 +113,8 @@ fun Home(
         }
 
         FloatingActionButtonMenu(
-            modifier = Modifier.align(Alignment.BottomEnd),
+            modifier = Modifier
+                .align(Alignment.BottomEnd),
             expanded = fabMenuExpanded,
             button = {
                 ToggleFloatingActionButton(
@@ -145,7 +143,6 @@ fun Home(
                 }
             }
         ) {
-
             val rotation by animateFloatAsState(targetValue = if (vpnState == State.CONNECTED) 90f else 0f)
 
             if (vpnState == State.CONNECTED) {

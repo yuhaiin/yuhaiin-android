@@ -16,14 +16,18 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -34,6 +38,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringArrayResource
@@ -44,6 +49,7 @@ import androidx.navigation.NavController
 import com.github.logviewer.LogcatActivity
 import yuhaiin.Store
 
+@OptIn(ExperimentalMaterial3Api::class)
 @SuppressLint("ContextCastToActivity")
 @Composable
 @Preview
@@ -86,194 +92,211 @@ fun SettingCompose(
     var yuhaiinPort by rememberSaveable { mutableIntStateOf(store?.getInt("yuhaiin_port") ?: 0) }
 
 
-    LazyColumn(modifier = modifier.fillMaxSize()) {
-        // ---- Connection ----
-        item {
-            Text(
-                text = stringResource(R.string.connection),
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(16.dp),
-                color = MaterialTheme.colorScheme.onSurface
-            )
-        }
-        item {
-            PortsInputForm(httpProxyPort, yuhaiinPort) {
-                httpProxyPort = it
-                store?.putInt("http_port", it)
-            }
-        }
-        item {
-            SwitchSetting(
-                title = stringResource(R.string.append_http_proxy_to_vpn_title),
-                summary = "HTTP proxy will be used directly from without going through the virtual NIC device(Android 10+)",
-                checked = appendHttpProxy,
-                onCheckedChange = {
-                    appendHttpProxy = it
-                    store?.putBoolean("append_http_proxy_to_vpn", it)
-                }
-            )
-        }
-        item {
-            SwitchSetting(
-                title = stringResource(R.string.allow_lan_title),
-                icon = painterResource(R.drawable.lan),
-                checked = allowLan,
-                onCheckedChange = {
-                    allowLan = it
-                    store?.putBoolean("allow_lan", it)
-                }
-            )
-        }
-        item {
-            SwitchSetting(
-                title = stringResource(R.string.network_speed_title),
-                summary = stringResource(R.string.network_speed_sum),
-                icon = painterResource(R.drawable.speed_24px),
-                checked = networkSpeed,
-                onCheckedChange = {
-                    networkSpeed = it
-                    store?.putBoolean("network_speed", it)
-                }
-            )
-        }
+    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
 
-        // ---- Advanced ----
-        item {
-            Text(
-                text = stringResource(R.string.advanced),
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(16.dp),
-                color = MaterialTheme.colorScheme.onSurface
-            )
-        }
-        item {
-            ListPreferenceSetting(
-                title = stringResource(R.string.adv_tun_driver_title),
-                icon = painterResource(R.drawable.handyman),
-                entries = stringArrayResource(R.array.tun_drivers),
-                selected = tunDriver ?: stringResource(R.string.tun_driver_fdbased),
-                onSelectedChange = {
-                    tunDriver = it
-                    store?.putString("Tun Driver", it)
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                scrollBehavior = scrollBehavior,
+                title = {
+                    Text(stringResource(R.string.yuhaiin))
                 }
             )
-        }
-        item {
-            ListPreferenceSetting(
-                title = stringResource(R.string.adv_route_title),
-                icon = painterResource(R.drawable.router),
-                entries = stringArrayResource(R.array.adv_routes),
-                selected = route ?: stringResource(R.string.adv_route_all),
-                onSelectedChange = {
-                    route = it
-                    store?.putString("route", it)
-                }
-            )
-        }
-        item {
-            SwitchSetting(
-                title = stringResource(R.string.sniff_title),
-                icon = painterResource(R.drawable.router),
-                checked = sniff,
-                onCheckedChange = {
-                    sniff = it
-                    store?.putBoolean("Sniff", it)
-                }
-            )
-        }
-        item {
-            SwitchSetting(
-                title = stringResource(R.string.dns_dns_hijacking_title),
-                checked = dnsHijacking,
-                onCheckedChange = {
-                    dnsHijacking = it
-                    store?.putBoolean("dns_hijacking", it)
-                }
-            )
-        }
-        item {
-            SwitchSetting(
-                title = stringResource(R.string.adv_auto_connect_title),
-                icon = painterResource(R.drawable.auto_mode),
-                checked = autoConnect,
-                onCheckedChange = {
-                    autoConnect = it
-                    store?.putBoolean("auto_connect", it)
-                }
-            )
-        }
-        item {
-            SwitchSetting(
-                title = stringResource(R.string.adv_per_app_title),
-                icon = painterResource(R.drawable.settop_component),
-                checked = perApp,
-                onCheckedChange = {
-                    perApp = it
-                    store?.putBoolean("per_app", it)
-                }
-            )
-        }
-        if (perApp) {
-            item {
-                SwitchSetting(
-                    title = stringResource(R.string.adv_app_bypass_title),
-                    summary = stringResource(R.string.adv_app_bypass_sum),
-                    icon = painterResource(R.drawable.alt_route),
-                    checked = appBypass,
-                    onCheckedChange = {
-                        appBypass = it
-                        store?.putBoolean("app_bypass", it)
+        },
+        content = { padding ->
+            LazyColumn(
+                modifier = modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .nestedScroll(scrollBehavior.nestedScrollConnection)
+            ) {
+                item {
+                    Row(modifier = Modifier.fillMaxWidth()) {
+                        Text(
+                            text = stringResource(R.string.connection),
+                            style = MaterialTheme.typography.titleMedium,
+                            modifier = Modifier.padding(16.dp),
+                        )
                     }
-                )
-            }
-            item {
-                SettingsItem(
-                    title = stringResource(R.string.adv_app_list_title),
-                    summary = stringResource(R.string.adv_app_list_sum),
-                    icon = painterResource(R.drawable.apps),
-                    onClick = { navController?.navigate("APPLIST") }
-                )
-            }
-        }
-
-        // ---- Debug ----
-        item {
-            Text(
-                text = stringResource(R.string.debug),
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(16.dp),
-                color = MaterialTheme.colorScheme.onSurface
-            )
-        }
-        item {
-            SettingsItem(
-                title = stringResource(R.string.logcat_name),
-                icon = painterResource(R.drawable.adb),
-                onClick = {
-
-                    val logcatExcludeRules = arrayListOf(
-                        ".*]: processMotionEvent MotionEvent \\{ action=ACTION_.*",
-                        ".*]: dispatchPointerEvent handled=true, event=MotionEvent \\{ action=ACTION_.*",
-                        ".*Davey! duration=.*",
-                        // android popup window select text debug log
-                        ".*Attempted to finish an input event but the input event receiver has already been disposed.*",
-                        ".*endAllActiveAnimators on .* with handle.*",
-                        ".*Initializing SystemTextClassifier,.*",
-                        ".*TextClassifier called on main thread.*",
-                        ".*android added item .*",
-                        ".*No package ID .* found for ID.*",
-                        ".*eglMakeCurrent:.*",
-                        ".*NotificationManager: io.github.asutorufa.yuhaiin: notify.*",
-                        ".*InputEventReceiver_DOT: IER.scheduleInputVsync.*",
-                        ".*ViewRootImpl@.*[.*]: .*"
-                    )
-                    context.startActivity(
-                        LogcatActivity.intent(logcatExcludeRules, context)
+                }
+                item {
+                    PortsInputForm(httpProxyPort, yuhaiinPort) {
+                        httpProxyPort = it
+                        store?.putInt("http_port", it)
+                    }
+                }
+                item {
+                    SwitchSetting(
+                        title = stringResource(R.string.append_http_proxy_to_vpn_title),
+                        summary = "HTTP proxy will be used directly from without going through the virtual NIC device(Android 10+)",
+                        checked = appendHttpProxy,
+                        onCheckedChange = {
+                            appendHttpProxy = it
+                            store?.putBoolean("append_http_proxy_to_vpn", it)
+                        }
                     )
                 }
-            )
-        }
-    }
+                item {
+                    SwitchSetting(
+                        title = stringResource(R.string.allow_lan_title),
+                        icon = painterResource(R.drawable.lan),
+                        checked = allowLan,
+                        onCheckedChange = {
+                            allowLan = it
+                            store?.putBoolean("allow_lan", it)
+                        }
+                    )
+                }
+                item {
+                    SwitchSetting(
+                        title = stringResource(R.string.network_speed_title),
+                        summary = stringResource(R.string.network_speed_sum),
+                        icon = painterResource(R.drawable.speed_24px),
+                        checked = networkSpeed,
+                        onCheckedChange = {
+                            networkSpeed = it
+                            store?.putBoolean("network_speed", it)
+                        }
+                    )
+                }
+
+                item {
+                    Text(
+                        text = stringResource(R.string.advanced),
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.padding(16.dp),
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+                item {
+                    ListPreferenceSetting(
+                        title = stringResource(R.string.adv_tun_driver_title),
+                        icon = painterResource(R.drawable.handyman),
+                        entries = stringArrayResource(R.array.tun_drivers),
+                        selected = tunDriver ?: stringResource(R.string.tun_driver_fdbased),
+                        onSelectedChange = {
+                            tunDriver = it
+                            store?.putString("Tun Driver", it)
+                        }
+                    )
+                }
+                item {
+                    ListPreferenceSetting(
+                        title = stringResource(R.string.adv_route_title),
+                        icon = painterResource(R.drawable.router),
+                        entries = stringArrayResource(R.array.adv_routes),
+                        selected = route ?: stringResource(R.string.adv_route_all),
+                        onSelectedChange = {
+                            route = it
+                            store?.putString("route", it)
+                        }
+                    )
+                }
+                item {
+                    SwitchSetting(
+                        title = stringResource(R.string.sniff_title),
+                        icon = painterResource(R.drawable.router),
+                        checked = sniff,
+                        onCheckedChange = {
+                            sniff = it
+                            store?.putBoolean("Sniff", it)
+                        }
+                    )
+                }
+                item {
+                    SwitchSetting(
+                        title = stringResource(R.string.dns_dns_hijacking_title),
+                        checked = dnsHijacking,
+                        onCheckedChange = {
+                            dnsHijacking = it
+                            store?.putBoolean("dns_hijacking", it)
+                        }
+                    )
+                }
+                item {
+                    SwitchSetting(
+                        title = stringResource(R.string.adv_auto_connect_title),
+                        icon = painterResource(R.drawable.auto_mode),
+                        checked = autoConnect,
+                        onCheckedChange = {
+                            autoConnect = it
+                            store?.putBoolean("auto_connect", it)
+                        }
+                    )
+                }
+                item {
+                    SwitchSetting(
+                        title = stringResource(R.string.adv_per_app_title),
+                        icon = painterResource(R.drawable.settop_component),
+                        checked = perApp,
+                        onCheckedChange = {
+                            perApp = it
+                            store?.putBoolean("per_app", it)
+                        }
+                    )
+                }
+                if (perApp) {
+                    item {
+                        SwitchSetting(
+                            title = stringResource(R.string.adv_app_bypass_title),
+                            summary = stringResource(R.string.adv_app_bypass_sum),
+                            icon = painterResource(R.drawable.alt_route),
+                            checked = appBypass,
+                            onCheckedChange = {
+                                appBypass = it
+                                store?.putBoolean("app_bypass", it)
+                            }
+                        )
+                    }
+                    item {
+                        SettingsItem(
+                            title = stringResource(R.string.adv_app_list_title),
+                            summary = stringResource(R.string.adv_app_list_sum),
+                            icon = painterResource(R.drawable.apps),
+                            onClick = { navController?.navigate("APPLIST") }
+                        )
+                    }
+                }
+
+                // ---- Debug ----
+                item {
+                    Text(
+                        text = stringResource(R.string.debug),
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.padding(16.dp),
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+                item {
+                    SettingsItem(
+                        title = stringResource(R.string.logcat_name),
+                        icon = painterResource(R.drawable.adb),
+                        onClick = {
+
+                            val logcatExcludeRules = arrayListOf(
+                                ".*]: processMotionEvent MotionEvent \\{ action=ACTION_.*",
+                                ".*]: dispatchPointerEvent handled=true, event=MotionEvent \\{ action=ACTION_.*",
+                                ".*Davey! duration=.*",
+                                // android popup window select text debug log
+                                ".*Attempted to finish an input event but the input event receiver has already been disposed.*",
+                                ".*endAllActiveAnimators on .* with handle.*",
+                                ".*Initializing SystemTextClassifier,.*",
+                                ".*TextClassifier called on main thread.*",
+                                ".*android added item .*",
+                                ".*No package ID .* found for ID.*",
+                                ".*eglMakeCurrent:.*",
+                                ".*NotificationManager: io.github.asutorufa.yuhaiin: notify.*",
+                                ".*InputEventReceiver_DOT: IER.scheduleInputVsync.*",
+                                ".*ViewRootImpl@.*[.*]: .*"
+                            )
+                            context.startActivity(
+                                LogcatActivity.intent(logcatExcludeRules, context)
+                            )
+                        }
+                    )
+                }
+            }
+        })
 }
 
 @Composable
