@@ -5,6 +5,9 @@ import android.graphics.RenderEffect
 import android.graphics.Shader
 import android.os.Build
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedContentScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -60,17 +63,16 @@ fun blurEffect(): RenderEffect? {
 }
 
 @SuppressLint("RememberInComposition")
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalSharedTransitionApi::class)
 @Composable
-fun Home(
+fun SharedTransitionScope.Home(
     modifier: Modifier,
     navController: NavController,
     vpnState: State,
     stopService: () -> Unit,
     startService: () -> Unit,
+    animatedContentScope: AnimatedContentScope,
 ) {
-
-
     Box(
         modifier = modifier
     ) {
@@ -80,6 +82,7 @@ fun Home(
         val blur = blurEffect()
 
         SettingCompose(
+            animatedContentScope = animatedContentScope,
             modifier = Modifier
                 .fillMaxSize()
                 .then(
@@ -154,9 +157,14 @@ fun Home(
 
             if (vpnState == State.CONNECTED) {
                 FloatingActionButtonMenuItem(
-                    modifier = Modifier.semantics {
-                        isTraversalGroup = true
-                    },
+                    modifier = Modifier
+                        .semantics {
+                            isTraversalGroup = true
+                        }
+                        .sharedBounds(
+                            sharedContentState = rememberSharedContentState("OPEN_WEBVIEW"),
+                            animatedVisibilityScope = animatedContentScope,
+                        ),
                     onClick = {
                         navController.navigate("WebView")
                     },

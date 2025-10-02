@@ -4,6 +4,9 @@ import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.graphics.Color
 import android.graphics.drawable.Drawable
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -70,6 +73,7 @@ import androidx.core.graphics.drawable.toBitmap
 import androidx.core.graphics.drawable.toDrawable
 import androidx.navigation.NavController
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -81,9 +85,16 @@ data class AppListData(
     val isSystemApp: Boolean = false,
 )
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
+@OptIn(
+    ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class,
+    ExperimentalSharedTransitionApi::class
+)
 @Composable
-fun AppListComponent(navController: NavController, packageManager: PackageManager) {
+fun SharedTransitionScope.AppListComponent(
+    navController: NavController,
+    packageManager: PackageManager,
+    animatedVisibilityScope: AnimatedVisibilityScope,
+) {
     val checkedApps = remember {
         mutableStateSetOf(
             *MainApplication.store.getStringSet("app_list").toTypedArray()
@@ -92,6 +103,8 @@ fun AppListComponent(navController: NavController, packageManager: PackageManage
 
     val data by produceState<MutableList<AppListData>?>(initialValue = null) {
         value = withContext(Dispatchers.IO) {
+            val startTime = System.currentTimeMillis()
+
             val packages = packageManager.getInstalledApplications(PackageManager.GET_PERMISSIONS)
 
             val checkedApps = MainApplication.store.getStringSet("app_list")
@@ -110,6 +123,9 @@ fun AppListComponent(navController: NavController, packageManager: PackageManage
                 else apps.add(app)
             }
 
+            (System.currentTimeMillis() - startTime).apply {
+                if (this < 500) delay(500 - this)
+            }
             apps
         }
     }
@@ -156,6 +172,10 @@ fun AppListComponent(navController: NavController, packageManager: PackageManage
             },
         topBar = {
             AppBarWithSearch(
+                modifier = Modifier.sharedBounds(
+                    sharedContentState = rememberSharedContentState("OPEN_APP_LIST_TITLE"),
+                    animatedVisibilityScope = animatedVisibilityScope,
+                ),
                 state = searchBarState,
                 scrollBehavior = scrollBehavior,
                 inputField = inputField,
@@ -184,46 +204,54 @@ fun AppListComponent(navController: NavController, packageManager: PackageManage
             )
         },
         content = { padding ->
-
-            if (isKeyboardOpen) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .clickable(
-                            indication = null,
-                            interactionSource = remember { MutableInteractionSource() },
-                        ) {
-                            focusManager.clearFocus()
-                            keyboardController?.hide()
-                        }
-                        .zIndex(1f)
-                )
-            }
-
-            val blur = blurEffect()
-
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(padding)
-
-                    .graphicsLayer {
-                        renderEffect =
-                            if (isKeyboardOpen) blur?.asComposeRenderEffect() else null
-                    }
+                    .sharedBounds(
+                        sharedContentState = rememberSharedContentState("OPEN_APP_LIST_APP"),
+                        animatedVisibilityScope = animatedVisibilityScope,
+                    ),
             ) {
-                if (data == null) {
-                    LoadingIndicator(
+                if (isKeyboardOpen) {
+                    Box(
                         modifier = Modifier
-                            .align(Alignment.Center)
-                            .size(55.dp)
+                            .fillMaxSize()
+                            .clickable(
+                                indication = null,
+                                interactionSource = remember { MutableInteractionSource() },
+                            ) {
+                                focusManager.clearFocus()
+                                keyboardController?.hide()
+                            }
+                            .zIndex(1f)
                     )
-                } else
-                    AppList(
-                        apps = data!!,
-                        checkedApps = checkedApps,
-                        filter = textFieldState.text
-                    )
+                }
+
+                val blur = blurEffect()
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding)
+
+                        .graphicsLayer {
+                            renderEffect =
+                                if (isKeyboardOpen) blur?.asComposeRenderEffect() else null
+                        }
+                ) {
+                    if (data == null) {
+                        LoadingIndicator(
+                            modifier = Modifier
+                                .align(Alignment.Center)
+                                .size(55.dp)
+                        )
+                    } else
+                        AppList(
+                            apps = data!!,
+                            checkedApps = checkedApps,
+                            filter = textFieldState.text
+                        )
+                }
             }
         }
     )

@@ -2,6 +2,14 @@ package io.github.asutorufa.yuhaiin
 
 import android.annotation.SuppressLint
 import android.app.Activity
+import androidx.compose.animation.AnimatedContentScope
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -49,14 +57,15 @@ import androidx.navigation.NavController
 import com.github.logviewer.LogcatActivity
 import yuhaiin.Store
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class)
 @SuppressLint("ContextCastToActivity")
 @Composable
 @Preview
-fun SettingCompose(
+fun SharedTransitionScope.SettingCompose(
     modifier: Modifier = Modifier,
     navController: NavController? = null,
     store: Store? = null,
+    animatedContentScope: AnimatedContentScope,
 ) {
     val context = LocalContext.current as Activity
 
@@ -252,6 +261,14 @@ fun SettingCompose(
                     }
                     item {
                         SettingsItem(
+                            textModifier = Modifier.sharedBounds(
+                                sharedContentState = rememberSharedContentState("OPEN_APP_LIST_TITLE"),
+                                animatedVisibilityScope = animatedContentScope,
+                            ),
+                            iconModifier = Modifier.sharedBounds(
+                                sharedContentState = rememberSharedContentState("OPEN_APP_LIST_APP"),
+                                animatedVisibilityScope = animatedContentScope,
+                            ),
                             title = stringResource(R.string.adv_app_list_title),
                             summary = stringResource(R.string.adv_app_list_sum),
                             icon = painterResource(R.drawable.apps),
@@ -274,7 +291,6 @@ fun SettingCompose(
                         title = stringResource(R.string.logcat_name),
                         icon = painterResource(R.drawable.adb),
                         onClick = {
-
                             val logcatExcludeRules = arrayListOf(
                                 ".*]: processMotionEvent MotionEvent \\{ action=ACTION_.*",
                                 ".*]: dispatchPointerEvent handled=true, event=MotionEvent \\{ action=ACTION_.*",
@@ -304,13 +320,16 @@ fun SettingCompose(
 @Composable
 @Preview
 fun SettingsItem(
+    modifier: Modifier = Modifier,
+    iconModifier: Modifier = Modifier,
+    textModifier: Modifier = Modifier,
     title: String = "Test Item",
     summary: String? = null,
     icon: Painter? = rememberVectorPainter(Icons.Filled.Settings),
-    onClick: () -> Unit = {}
+    onClick: () -> Unit = {},
 ) {
     Row(
-        Modifier
+        modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
             .padding(16.dp),
@@ -320,16 +339,16 @@ fun SettingsItem(
             Icon(
                 painter = icon,
                 contentDescription = null,
-                modifier = Modifier.size(24.dp),
-                tint = MaterialTheme.colorScheme.onSurface
+                modifier = iconModifier.size(24.dp),
+                tint = MaterialTheme.colorScheme.onSurface,
             )
             Spacer(Modifier.width(16.dp))
         }
-        Column(Modifier.weight(1f)) {
+        Column(textModifier.weight(1f)) {
             Text(
-                title,
+                text = title,
                 style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface
+                color = MaterialTheme.colorScheme.onSurface,
             )
             if (summary != null) {
                 Text(
@@ -390,6 +409,7 @@ fun SwitchSetting(
     }
 }
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 @Preview
 fun ListPreferenceSetting(
@@ -410,12 +430,19 @@ fun ListPreferenceSetting(
         title = title,
         summary = summary ?: entries[selected],
         icon = icon,
-        onClick = { showDialog = true }
     )
+    { showDialog = true }
 
-
-    if (showDialog) {
+    AnimatedVisibility(
+        visible = showDialog,
+        enter = scaleIn(initialScale = 0.8f) + fadeIn(),
+        exit = scaleOut(targetScale = 0.8f) + fadeOut()
+    ) {
         AlertDialog(
+            modifier = Modifier.animateEnterExit(
+                enter = fadeIn() + scaleIn(),
+                exit = fadeOut() + scaleOut()
+            ),
             onDismissRequest = { showDialog = false },
             dismissButton = {
                 TextButton(onClick = {
@@ -424,7 +451,9 @@ fun ListPreferenceSetting(
                     Text("Close")
                 }
             },
-            title = { Text(title) },
+            title = {
+                Text(text = title)
+            },
             text = {
                 Column {
                     for ((key, value) in entries) {
@@ -464,19 +493,28 @@ fun PortsInputForm(
     onConfirmed: (host: Int) -> Unit = {},
 ) {
     var showDialog by rememberSaveable { mutableStateOf(false) }
-    var http by rememberSaveable { mutableStateOf(httpHost) }
+    var http by rememberSaveable { mutableIntStateOf(httpHost) }
 
     SettingsItem(
         title = "Ports",
         icon = painterResource(R.drawable.vpn_lock),
-        onClick = { showDialog = true }
+        onClick = { showDialog = true },
     )
 
-
-    if (showDialog) {
+    AnimatedVisibility(
+        visible = showDialog,
+        enter = scaleIn(initialScale = 0.8f) + fadeIn(),
+        exit = scaleOut(targetScale = 0.8f) + fadeOut()
+    ) {
         AlertDialog(
+            modifier = Modifier.animateEnterExit(
+                enter = fadeIn() + scaleIn(),
+                exit = fadeOut() + scaleOut()
+            ),
             onDismissRequest = { showDialog = false },
-            title = { Text(text = stringResource(R.string.ports_title)) },
+            title = {
+                Text(text = stringResource(R.string.ports_title))
+            },
             text = {
                 Column {
                     OutlinedTextField(
