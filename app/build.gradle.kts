@@ -161,6 +161,7 @@ dependencies {
     implementation(fileTree(mapOf("include" to listOf("*.aar", "*.jar"), "dir" to "libs")))
     implementation("androidx.appcompat:appcompat:1.7.1")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
+    implementation("com.google.android.material:material:1.13.0")
 
     // nav
     val navVersion = "2.9.5"
@@ -168,7 +169,6 @@ dependencies {
 
     implementation(project(":yuhaiin"))
     implementation(project(":logcatviewer"))
-
 
     val composeBom = platform("androidx.compose:compose-bom:2025.09.01")
     implementation(composeBom)

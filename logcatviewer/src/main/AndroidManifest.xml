@@ -12,15 +12,13 @@
         <activity
             android:name="com.github.logviewer.LogcatActivity"
             android:launchMode="singleTask"
-            android:theme="@style/AppTheme" />
-
-        <service android:name="com.github.logviewer.FloatingLogcatService" />
+            android:theme="@style/Theme.Material3.DayNight.NoActionBar" />
 
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.logcat_fileprovider"
-            android:grantUriPermissions="true"
-            android:exported="false">
+            android:exported="false"
+            android:grantUriPermissions="true">
             <meta-data
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/logcat_filepaths" />
