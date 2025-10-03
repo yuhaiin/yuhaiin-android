@@ -3,9 +3,14 @@ package io.github.asutorufa.yuhaiin
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.graphics.Color
+import android.graphics.RenderEffect
+import android.graphics.Shader
 import android.graphics.drawable.Drawable
+import android.os.Build
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -15,6 +20,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -29,24 +35,22 @@ import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.AppBarWithSearch
+import androidx.compose.material3.BottomAppBarDefaults
+import androidx.compose.material3.Card
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FlexibleBottomAppBar
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SearchBar
 import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.SearchBarValue
 import androidx.compose.material3.Text
-import androidx.compose.material3.TooltipAnchorPosition
-import androidx.compose.material3.TooltipBox
-import androidx.compose.material3.TooltipDefaults
 import androidx.compose.material3.rememberSearchBarState
-import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -65,7 +69,6 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
@@ -77,6 +80,14 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+@Composable
+fun blurEffect(radius: Float = 20f): RenderEffect? {
+    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) RenderEffect.createBlurEffect(
+        radius, radius, Shader.TileMode.CLAMP
+    )
+    else null
+}
+
 
 data class AppListData(
     val appName: String,
@@ -85,14 +96,25 @@ data class AppListData(
     val isSystemApp: Boolean = false,
 )
 
+@OptIn(ExperimentalSharedTransitionApi::class)
+@Preview
+@Composable
+fun PreviewAppListComponent() {
+    SharedTransitionLayout {
+        AnimatedVisibility(visible = true) {
+            AppListComponent(animatedVisibilityScope = this@AnimatedVisibility)
+        }
+    }
+}
+
 @OptIn(
     ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class,
     ExperimentalSharedTransitionApi::class
 )
 @Composable
 fun SharedTransitionScope.AppListComponent(
-    navController: NavController,
-    packageManager: PackageManager,
+    navController: NavController? = null,
+    packageManager: PackageManager? = null,
     animatedVisibilityScope: AnimatedVisibilityScope,
 ) {
     val checkedApps = remember {
@@ -105,15 +127,15 @@ fun SharedTransitionScope.AppListComponent(
         value = withContext(Dispatchers.IO) {
             val startTime = System.currentTimeMillis()
 
-            val packages = packageManager.getInstalledApplications(PackageManager.GET_PERMISSIONS)
+            val packages = packageManager?.getInstalledApplications(PackageManager.GET_PERMISSIONS)
 
             val checkedApps = MainApplication.store.getStringSet("app_list")
             val apps = mutableListOf<AppListData>()
 
-            packages.sortBy { it.loadLabel(packageManager).toString() }
+            packages?.sortBy { it.loadLabel(packageManager).toString() }
 
             var index = 0
-            packages.forEach {
+            packages?.forEach {
                 val app = AppListData(
                     it.loadLabel(packageManager).toString(), // app name
                     it.packageName, it.loadIcon(packageManager), // icon
@@ -139,23 +161,8 @@ fun SharedTransitionScope.AppListComponent(
     val textFieldState = rememberTextFieldState()
     val searchBarState = rememberSearchBarState()
     val scope = rememberCoroutineScope()
-    val scrollBehavior = SearchBarDefaults.enterAlwaysSearchBarScrollBehavior()
-
+    val scrollBehavior = BottomAppBarDefaults.exitAlwaysScrollBehavior()
     val isKeyboardOpen = WindowInsets.ime.getBottom(LocalDensity.current) > 0
-
-    val inputField =
-        @Composable {
-            SearchBarDefaults.InputField(
-                modifier = Modifier,
-                searchBarState = searchBarState,
-                textFieldState = textFieldState,
-                onSearch = {},
-                leadingIcon = {
-                    Icon(Icons.Default.Search, contentDescription = null)
-                },
-            )
-        }
-
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
 
@@ -170,46 +177,56 @@ fun SharedTransitionScope.AppListComponent(
                     keyboardController?.hide()
                 }
             },
-        topBar = {
-            AppBarWithSearch(
-                modifier = Modifier.sharedBounds(
-                    sharedContentState = rememberSharedContentState("OPEN_APP_LIST_TITLE"),
-                    animatedVisibilityScope = animatedVisibilityScope,
-                ),
-                state = searchBarState,
+        bottomBar = {
+            FlexibleBottomAppBar(
                 scrollBehavior = scrollBehavior,
-                inputField = inputField,
-                navigationIcon = {
-                    TooltipBox(
-                        positionProvider =
-                            TooltipDefaults.rememberTooltipPositionProvider(
-                                TooltipAnchorPosition.Above
-                            ),
-                        tooltip = { PlainTooltip { Text("Back") } },
-                        state = rememberTooltipState(),
-                    ) {
-                        IconButton(onClick = {
-                            if (isKeyboardOpen) {
-                                focusManager.clearFocus()
-                                keyboardController?.hide()
-                            } else navController.popBackStack()
-                        }) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Default.ArrowBack,
-                                contentDescription = "Back"
-                            )
-                        }
-                    }
+            ) {
+                IconButton(
+                    modifier = Modifier.sharedBounds(
+                        sharedContentState = rememberSharedContentState("OPEN_APP_LIST_ICON"),
+                        animatedVisibilityScope = animatedVisibilityScope,
+                    ),
+                    onClick = {
+                        if (isKeyboardOpen) {
+                            focusManager.clearFocus()
+                            keyboardController?.hide()
+                        } else navController?.popBackStack()
+                    },
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Default.ArrowBack,
+                        contentDescription = "Back"
+                    )
                 }
-            )
+
+                SearchBar(
+                    state = searchBarState,
+                    inputField = {
+                        SearchBarDefaults.InputField(
+                            modifier = Modifier.sharedBounds(
+                                sharedContentState = rememberSharedContentState("OPEN_APP_LIST_TITLE"),
+                                animatedVisibilityScope = animatedVisibilityScope,
+                            ),
+                            searchBarState = searchBarState,
+                            textFieldState = textFieldState,
+                            onSearch = {},
+                            leadingIcon = {
+                                Icon(Icons.Default.Search, contentDescription = null)
+                            },
+                        )
+                    }
+                )
+            }
         },
         content = { padding ->
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .sharedBounds(
-                        sharedContentState = rememberSharedContentState("OPEN_APP_LIST_APP"),
-                        animatedVisibilityScope = animatedVisibilityScope,
+                    .then(
+                        Modifier.sharedBounds(
+                            sharedContentState = rememberSharedContentState("OPEN_APP_LIST_APP"),
+                            animatedVisibilityScope = animatedVisibilityScope,
+                        )
                     ),
             ) {
                 if (isKeyboardOpen) {
@@ -233,24 +250,21 @@ fun SharedTransitionScope.AppListComponent(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(padding)
-
                         .graphicsLayer {
                             renderEffect =
                                 if (isKeyboardOpen) blur?.asComposeRenderEffect() else null
                         }
                 ) {
-                    if (data == null) {
-                        LoadingIndicator(
-                            modifier = Modifier
-                                .align(Alignment.Center)
-                                .size(55.dp)
-                        )
-                    } else
-                        AppList(
-                            apps = data!!,
-                            checkedApps = checkedApps,
-                            filter = textFieldState.text
-                        )
+                    if (data == null) LoadingIndicator(
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .size(55.dp)
+                    )
+                    else AppList(
+                        apps = data!!,
+                        checkedApps = checkedApps,
+                        filter = textFieldState.text
+                    )
                 }
             }
         }
@@ -289,14 +303,26 @@ fun AppList(
         }
     }
 
-    LazyColumn(modifier = modifier) {
+    LazyColumn(
+        modifier = modifier
+            .fillMaxSize(),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        contentPadding = PaddingValues(bottom = 8.dp, top = 8.dp)
+    ) {
         items(filteredApps) { app ->
-            AppListItem(app, onClick = {
-                if (checkedApps.contains(app.packageName)) checkedApps.remove(app.packageName)
-                else checkedApps.add(app.packageName)
-            }, checkedApps = checkedApps)
+            Card(
+                modifier = Modifier
+                    .padding(horizontal = 6.dp)
+            ) {
+                AppListItem(app, onClick = {
+                    if (checkedApps.contains(app.packageName)) checkedApps.remove(app.packageName)
+                    else checkedApps.add(app.packageName)
+                }, checkedApps = checkedApps)
+            }
         }
     }
+
+
 }
 
 @Composable
@@ -315,8 +341,8 @@ fun AppListItem(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() }
-            .background(MaterialTheme.colorScheme.surface)
-            .heightIn(min = 48.dp),
+            .heightIn(min = 48.dp)
+            .background(MaterialTheme.colorScheme.primaryContainer),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Image(
@@ -338,22 +364,19 @@ fun AppListItem(
             Text(
                 text = app.appName,
                 style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
             )
             Text(
                 text = app.packageName,
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
             )
         }
 
         Checkbox(
             checked = checkedApps.contains(app.packageName),
             onCheckedChange = null,
+            enabled = false,
             modifier = Modifier
                 .padding(start = 2.dp, end = 20.dp)
         )

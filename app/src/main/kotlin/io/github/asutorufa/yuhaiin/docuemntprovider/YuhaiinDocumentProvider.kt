@@ -13,7 +13,7 @@ import io.github.asutorufa.yuhaiin.R
 import java.io.File
 import java.io.FileNotFoundException
 import java.io.IOException
-import java.util.*
+import java.util.Locale
 
 
 class YuhaiinDocumentProvider : DocumentsProvider() {
@@ -69,7 +69,7 @@ class YuhaiinDocumentProvider : DocumentsProvider() {
         row.add(Root.COLUMN_TITLE, context?.getString(R.string.app_name) ?: "yuhaiin")
         row.add(Root.COLUMN_MIME_TYPES, ALL_MIME_TYPES)
         row.add(Root.COLUMN_AVAILABLE_BYTES, baseDir.freeSpace)
-        row.add(Root.COLUMN_ICON, R.mipmap.ic_launcher)
+        row.add(Root.COLUMN_ICON, R.mipmap.ic_launcher_v2_round)
         return result
     }
 
@@ -111,22 +111,22 @@ class YuhaiinDocumentProvider : DocumentsProvider() {
         // results, so we can stop as soon as we find a sufficient number of matches.  Other
         // implementations might rank results and use other data about files, rather than the file
         // name, to produce a match.
-        val pending = LinkedList<File>()
+        val pending = mutableListOf<File>()
         pending.add(parent)
 
         val maxSearchResults = 50
         while (!pending.isEmpty() && result.count < maxSearchResults) {
-            val file = pending.removeFirst()
+            val file = pending.removeAt(0)
             // Avoid directories outside the $HOME directory linked with symlinks (to avoid e.g. search
             // through the whole SD card).
             val isInsideHome: Boolean = try {
                 file.canonicalPath.startsWith(baseDir.toString())
-            } catch (e: IOException) {
+            } catch (_: IOException) {
                 true
             }
             if (isInsideHome) {
                 if (file.isDirectory) {
-                    file.listFiles()?.let { Collections.addAll(pending, *it) }
+                    file.listFiles()?.let { pending.addAll(it) }
                 } else {
                     if (file.name.lowercase(Locale.getDefault()).contains(query!!)) {
                         includeFile(result, null, file)
@@ -205,7 +205,7 @@ class YuhaiinDocumentProvider : DocumentsProvider() {
         row.add(DocumentsContract.Document.COLUMN_MIME_TYPE, mimeType)
         row.add(DocumentsContract.Document.COLUMN_LAST_MODIFIED, file.lastModified())
         row.add(DocumentsContract.Document.COLUMN_FLAGS, flags)
-        row.add(DocumentsContract.Document.COLUMN_ICON, R.mipmap.ic_launcher)
+        row.add(DocumentsContract.Document.COLUMN_ICON, R.mipmap.ic_launcher_v2_round)
     }
 
     override fun queryChildDocuments(

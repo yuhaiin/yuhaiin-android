@@ -1,1 +1,1 @@
-include ':app', ':yuhaiin', ':logcatviewer'
+include ':app', ':yuhaiin'

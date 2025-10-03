@@ -1,31 +1,26 @@
-package io.github.asutorufa.logviewer
+package io.github.asutorufa.yuhaiin
 
-import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.util.Log
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
+import androidx.activity.compose.LocalActivity
+import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
@@ -35,21 +30,24 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FabPosition
+import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.FloatingToolbarDefaults.floatingToolbarVerticalNestedScroll
+import androidx.compose.material3.HorizontalFloatingToolbar
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -57,14 +55,13 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
-import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -93,12 +90,14 @@ fun isLevelEnabled(filter: LogLevel, logLevel: LogLevel): Boolean {
     return logLevel.priority >= filter.priority
 }
 
-@OptIn(ExperimentalMaterial3Api::class, DelicateCoroutinesApi::class)
+@OptIn(
+    ExperimentalMaterial3Api::class, DelicateCoroutinesApi::class,
+    ExperimentalMaterial3ExpressiveApi::class, ExperimentalSharedTransitionApi::class
+)
 @Composable
 @Preview
 fun LogcatScreen(
-    modifier: Modifier = Modifier,
-    topBarModifier: Modifier = Modifier,
+    bottomBarModifier: Modifier = Modifier,
     logs: SnapshotStateList<LogEntry> = remember {
         mutableStateListOf(
             LogEntry(
@@ -111,188 +110,209 @@ fun LogcatScreen(
     navController: NavController? = null,
 ) {
     var filterMenuExpanded by remember { mutableStateOf(false) }
-    var mainMenuExpanded by remember { mutableStateOf(false) }
     var filter by remember { mutableStateOf(LogLevel.DEBUG) }
-    val context = LocalContext.current as? Activity
+    val context = LocalActivity.current
     val listState = rememberLazyListState()
-    var infoLog by remember { mutableStateOf<LogEntry?>(null) }
-    var showDialog by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
-    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
+    var expanded by rememberSaveable { mutableStateOf(true) }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                modifier = topBarModifier,
-                scrollBehavior = scrollBehavior,
-                title = { Text("Logcat") },
-                navigationIcon = {
-                    IconButton(onClick = {
-                        if (navController != null) navController.popBackStack()
-                        else context?.finish()
-                    }) {
-                        Icon(
-                            painter = rememberVectorPainter(Icons.AutoMirrored.Filled.ArrowBack),
-                            contentDescription = "Back"
-                        )
-                    }
-                },
-                actions = {
-                    Box {
-                        IconButton(onClick = { filterMenuExpanded = true }) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .floatingToolbarVerticalNestedScroll(
+                expanded = expanded,
+                onExpand = { expanded = true },
+                onCollapse = { expanded = false },
+            )
+    ) {
+        Scaffold(
+            content = { padding ->
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding)
+                ) {
+                    LogList(
+                        listState = listState,
+                        logs = logs,
+                        filter = filter,
+                    )
+                }
+            },
+            floatingActionButtonPosition = FabPosition.Center,
+            floatingActionButton = {
+                HorizontalFloatingToolbar(
+                    modifier = bottomBarModifier,
+                    expanded = expanded,
+                    trailingContent = {},
+                    leadingContent = {
+                        IconButton(
+                            onClick = { navController?.popBackStack() }) {
                             Icon(
-                                painter = painterResource(R.drawable.sort),
-                                contentDescription = "Filter",
+                                painter = rememberVectorPainter(Icons.AutoMirrored.Filled.ArrowBack),
+                                contentDescription = "Back"
                             )
                         }
-                        DropdownMenu(
-                            expanded = filterMenuExpanded,
-                            onDismissRequest = { filterMenuExpanded = false }
-                        ) {
-                            LogLevel.entries.forEach { level ->
-                                DropdownMenuItem(
-                                    leadingIcon = {
-                                        Box(
-                                            modifier = Modifier
-                                                .size(20.dp)
-                                                .background(
-                                                    level.bgColor,
-                                                    shape = MaterialTheme.shapes.small
-                                                ),
-                                            contentAlignment = Alignment.Center
-                                        ) {
-                                            Text(
-                                                text = level.tag.first().toString(),
-                                                fontSize = 12.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                color = Color.White
-                                            )
-                                        }
-                                    },
-                                    text = { Text(level.tag) },
-                                    onClick = {
-                                        filter = level
-                                        filterMenuExpanded = false
-                                    }
+                        IconButton(
+                            onClick = { logs.clear() }) {
+                            Icon(
+                                painter = rememberVectorPainter(Icons.Filled.Clear),
+                                contentDescription = "Clear all"
+                            )
+                        }
+                        IconButton(
+                            onClick = { if (context != null) exportLogFile(context, scope) }) {
+                            Icon(
+                                painter = rememberVectorPainter(Icons.Filled.Share),
+                                contentDescription = "Export"
+                            )
+                        }
+                        Box {
+                            IconButton(onClick = { filterMenuExpanded = true }) {
+                                Icon(
+                                    painter = painterResource(R.drawable.sort),
+                                    contentDescription = "Filter",
                                 )
+                            }
+                            DropdownMenu(
+                                expanded = filterMenuExpanded,
+                                onDismissRequest = { filterMenuExpanded = false }
+                            ) {
+                                LogLevel.entries.forEach { level ->
+                                    DropdownMenuItem(
+                                        leadingIcon = {
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(20.dp)
+                                                    .background(
+                                                        level.bgColor,
+                                                        shape = MaterialTheme.shapes.small
+                                                    ),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Text(
+                                                    text = level.tag.first().toString(),
+                                                    fontSize = 12.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = Color.White
+                                                )
+                                            }
+                                        },
+                                        text = { Text(level.tag) },
+                                        onClick = {
+                                            filter = level
+                                            filterMenuExpanded = false
+                                        }
+                                    )
+                                }
                             }
                         }
                     }
+                ) {
+                    FilledIconButton(
+                        onClick = {
+                            scope.launch {
+                                if (logs.isNotEmpty())
+                                    listState.animateScrollToItem(logs.lastIndex)
+                            }
+                        },
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.KeyboardArrowDown,
+                            contentDescription = "Scroll Latest"
+                        )
+                    }
+                }
+            },
+        )
+    }
+}
 
-                    Box {
-                        IconButton(onClick = { mainMenuExpanded = true }) {
-                            Icon(Icons.Default.MoreVert, contentDescription = "More options")
-                        }
-                        DropdownMenu(
-                            expanded = mainMenuExpanded,
-                            onDismissRequest = { mainMenuExpanded = false }
-                        ) {
-                            DropdownMenuItem(
-                                leadingIcon = {
-                                    Icon(
-                                        painter = rememberVectorPainter(Icons.Filled.Clear),
-                                        contentDescription = "Export"
-                                    )
-                                },
-                                text = { Text("Clear all") },
-                                onClick = {
-                                    logs.clear()
-                                    mainMenuExpanded = false
-                                })
-                            DropdownMenuItem(
-                                leadingIcon = {
-                                    Icon(
-                                        painter = rememberVectorPainter(Icons.Filled.Share),
-                                        contentDescription = "Export"
-                                    )
-                                },
-                                text = {
-                                    Text("Export...")
-                                }, onClick = {
-                                    if (context != null) exportLogFile(context, scope)
-                                    mainMenuExpanded = false
-                                })
-                        }
-                    }
-                },
+@OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3Api::class)
+@Composable
+@Preview
+fun LogList(
+    listState: LazyListState = rememberLazyListState(),
+    logs: List<LogEntry> = remember {
+        mutableStateListOf(
+            LogEntry(
+                LogLevel.WARN,
+                "2025.0.1",
+                "TestLogs"
+            ),
+            LogEntry(
+                LogLevel.WARN,
+                "2025.0.1",
+                "TestLogs"
+            ),
+            LogEntry(
+                LogLevel.WARN,
+                "2025.0.1",
+                "TestLogs"
             )
-        },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = {
-                    scope.launch {
-                        listState.animateScrollToItem(logs.lastIndex)
-                    }
-                },
-                containerColor = MaterialTheme.colorScheme.primary
-            ) {
-                Icon(
-                    painter = rememberVectorPainter(Icons.Filled.KeyboardArrowDown),
-                    contentDescription = "Scroll to bottom"
-                )
-            }
-        },
-        content = { padding ->
-            LazyColumn(
-                modifier = modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .nestedScroll(scrollBehavior.nestedScrollConnection),
-                state = listState,
-                verticalArrangement = Arrangement.Top,
-                contentPadding = PaddingValues(bottom = 16.dp)
-            ) {
-                items(logs) { log ->
-                    if (isLevelEnabled(filter, log.level))
+        )
+    },
+    filter: LogLevel = LogLevel.DEBUG,
+) {
+    val sheetState = rememberModalBottomSheetState()
+    var infoLog by remember { mutableStateOf<LogEntry?>(null) }
+    var showBottomSheet by remember { mutableStateOf(false) }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        LazyColumn(
+            state = listState,
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            items(logs) { log ->
+                if (isLevelEnabled(filter, log.level))
+                    Card(
+                        modifier = Modifier
+                            .padding(horizontal = 6.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+                    ) {
                         LogItem(
                             level = log.level,
                             timeText = log.time,
                             contentText = log.content,
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier
+                                .fillMaxWidth(),
                         ) {
                             infoLog = log
-                            showDialog = true
+                            showBottomSheet = true
                         }
-                }
-            }
-
-            AnimatedVisibility(
-                visible = showDialog,
-                enter = scaleIn(initialScale = 0.8f) + fadeIn(),
-                exit = scaleOut(targetScale = 0.8f) + fadeOut()
-            ) {
-                AlertDialog(
-                    modifier = Modifier.animateEnterExit(
-                        enter = fadeIn() + scaleIn(),
-                        exit = fadeOut() + scaleOut()
-                    ),
-                    onDismissRequest = { showDialog = false },
-                    confirmButton = {
-                        TextButton(onClick = { showDialog = false }) {
-                            Text("Close")
-                        }
-                    },
-                    title = { Text("Log Detail") },
-                    text = {
-                        if (infoLog != null) LogDetail(infoLog!!)
-                        else Text("Log is not exist")
                     }
-                )
             }
         }
-    )
+
+        if (showBottomSheet) {
+            ModalBottomSheet(
+                onDismissRequest = {
+                    showBottomSheet = false
+                },
+                sheetState = sheetState
+            ) {
+                Box(modifier = Modifier.padding(16.dp)) {
+                    if (infoLog != null) LogDetail(infoLog = infoLog!!)
+                    else Text("Log is not exist")
+                }
+            }
+        }
+    }
 }
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 @Preview
-fun LogDetail(infoLog: LogEntry = LogEntry(LogLevel.INFO, "2025.08.10", "Test Content")) {
+fun LogDetail(
+    modifier: Modifier = Modifier,
+    infoLog: LogEntry = LogEntry(LogLevel.INFO, "2025.08.10", "Test Content")
+) {
     SelectionContainer {
         Column(
-            modifier = Modifier.fillMaxWidth()
+            modifier = modifier.fillMaxWidth()
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(bottom = 8.dp)
             ) {
                 Box(
                     modifier = Modifier
@@ -403,7 +423,7 @@ fun LogItem(
         modifier = modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(4.dp)
+            .padding(6.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
@@ -429,16 +449,15 @@ fun LogItem(
             Text(
                 text = timeText,
                 fontSize = 12.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
             )
         }
 
-        Spacer(modifier = Modifier.height(2.dp))
-
         Text(
             text = contentText,
-            fontSize = 14.sp,
-            color = MaterialTheme.colorScheme.onSurface,
+            fontSize = 12.sp,
+            fontFamily = FontFamily.Monospace,
+            color = MaterialTheme.colorScheme.onPrimaryContainer,
             modifier = Modifier.fillMaxWidth()
         )
     }
@@ -483,7 +502,8 @@ fun runLogcat(
 ): Process {
     val process = ProcessBuilder(listOf("logcat", "-v", "threadtime")).start()
 
-    scope.launch(Dispatchers.IO) {
+    scope.launch(Dispatchers.Default) {
+        Log.i("logcat process", "start read logcat")
         process.inputStream.bufferedReader().use {
             while (true) {
                 try {
@@ -511,10 +531,10 @@ fun runLogcat(
     return process
 }
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun LogcatCompose(
-    modifier: Modifier = Modifier,
-    topBarModifier: Modifier = Modifier,
+    bottomBarModifier: Modifier = Modifier,
     excludeList: ArrayList<String>? = null,
     navController: NavController? = null,
 ) {
@@ -533,8 +553,9 @@ fun LogcatCompose(
 
     val logs = remember { mutableStateListOf<LogEntry>() }
     val scope = rememberCoroutineScope()
-    val process = runLogcat(scope, excludeList) { logs.add(it) }
+
     DisposableEffect(Unit) {
+        val process = runLogcat(scope, excludeList) { logs.add(it) }
         onDispose {
             logs.add(LogEntry(LogLevel.INFO, "", "stop read logcat"))
             process.destroy()
@@ -542,9 +563,8 @@ fun LogcatCompose(
     }
 
     LogcatScreen(
-        modifier,
         logs = logs,
         navController = navController,
-        topBarModifier = topBarModifier
+        bottomBarModifier = bottomBarModifier
     )
 }

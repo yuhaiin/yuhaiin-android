@@ -70,7 +70,7 @@ android {
         manifestPlaceholders["documentsAuthority"] = documentsAuthorityValue
         // Now we can use BuildConfig.DOCUMENTS_AUTHORITY in our code
         buildConfigField("String", "DOCUMENTS_AUTHORITY", "\"$documentsAuthorityValue\"")
-        minSdk = 23
+        minSdk = 24
         // uses-sdk:minSdkVersion 21 cannot be smaller than version 23 declared in library [androidx.compose.material3:material3-android:1.5.0-alpha04]
         targetSdk = 36
 
@@ -162,7 +162,6 @@ dependencies {
     implementation("androidx.navigation:navigation-compose:${navVersion}")
 
     implementation(project(":yuhaiin"))
-    implementation(project(":logcatviewer"))
 
     val composeBom = platform("androidx.compose:compose-bom:2025.09.01")
     implementation(composeBom)
