@@ -161,10 +161,7 @@ class YuhaiinVpnService : VpnService() {
         state = State.DISCONNECTING
 
         try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N)
-                stopForeground(STOP_FOREGROUND_REMOVE)
-            else stopForeground(true)
-
+            stopForeground(STOP_FOREGROUND_REMOVE)
             mInterface?.close()
             app.stop()
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {

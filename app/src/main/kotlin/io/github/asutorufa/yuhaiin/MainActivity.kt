@@ -17,8 +17,11 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
@@ -38,7 +41,6 @@ import androidx.core.content.ContextCompat
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import io.github.asutorufa.logviewer.LogcatCompose
 import io.github.asutorufa.yuhaiin.service.YuhaiinVpnService
 import io.github.asutorufa.yuhaiin.service.YuhaiinVpnService.Companion.State
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -123,20 +125,20 @@ class MainActivity : AppCompatActivity() {
 
                     NavHost(navController, "Home") {
                         composable("Home") {
-                            Home(
-                                modifier = Modifier
-                                    .fillMaxSize(),
-                                navController, vpnState,
-                                { vpnBinder?.stop() },
-                                { startService() },
+                            SettingCompose(
+                                navController = navController,
+                                vpnState = vpnState,
+                                stopService = { vpnBinder?.stop() },
+                                startService = { startService() },
                                 animatedContentScope = this@composable,
+                                store = MainApplication.store,
                             )
                         }
 
                         composable("APPLIST") {
                             AppListComponent(
-                                navController,
-                                applicationContext.packageManager,
+                                navController = navController,
+                                packageManager = applicationContext.packageManager,
                                 animatedVisibilityScope = this@composable,
                             )
                         }
@@ -147,7 +149,11 @@ class MainActivity : AppCompatActivity() {
                             }
                         }
 
-                        composable("LOGCAT") {
+                        composable(
+                            "LOGCAT",
+                            enterTransition = { slideInVertically { it } + fadeIn() },
+                            exitTransition = { slideOutVertically { it } + fadeOut() },
+                        ) {
                             val logcatExcludeRules = arrayListOf(
                                 ".*]: processMotionEvent MotionEvent \\{ action=ACTION_.*",
                                 ".*]: dispatchPointerEvent handled=true, event=MotionEvent \\{ action=ACTION_.*",
@@ -162,16 +168,18 @@ class MainActivity : AppCompatActivity() {
                                 ".*eglMakeCurrent:.*",
                                 ".*NotificationManager: io.github.asutorufa.yuhaiin: notify.*",
                                 ".*InputEventReceiver_DOT: IER.scheduleInputVsync.*",
-                                ".*ViewRootImpl@.*[.*]: .*"
+                                ".*ViewRootImpl@.*[.*]: .*",
+                                ".*androidx.compose.*",
+                                ".*ViewPostIme.*"
                             )
 
                             LogcatCompose(
-                                topBarModifier = Modifier.sharedElement(
-                                    sharedContentState = rememberSharedContentState("OPEN_LOGCAT"),
-                                    animatedVisibilityScope = this@composable,
-                                ),
                                 excludeList = logcatExcludeRules,
                                 navController = navController,
+                                bottomBarModifier = Modifier.sharedElement(
+                                    sharedContentState = rememberSharedContentState("OPEN_LOGCAT_FAB"),
+                                    animatedVisibilityScope = this@composable
+                                ),
                             )
                         }
                     }

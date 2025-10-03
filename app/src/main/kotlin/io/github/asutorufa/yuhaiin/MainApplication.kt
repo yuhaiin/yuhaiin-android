@@ -57,7 +57,7 @@ open class MainApplication : Application() {
     }
 
     class InterfaceIterImpl(
-        private val data: ArrayList<Interface> // 或 MutableList<Interface>
+        private val data: MutableList<Interface>
     ) : InterfaceIter {
         private var index = 0
 
@@ -102,9 +102,9 @@ open class MainApplication : Application() {
 
     inner class GetInterfaces : Interfaces {
         override fun getInterfaces(): InterfaceIter? {
-            val interfaces: ArrayList<NetworkInterface> =
-                java.util.Collections.list(NetworkInterface.getNetworkInterfaces())
-            val sb = ArrayList<Interface>(0)
+            val interfaces: List<NetworkInterface> =
+                NetworkInterface.getNetworkInterfaces().toList()
+            val sb = mutableListOf<Interface>()
             for (nif in interfaces) {
 
                 try {
@@ -130,7 +130,7 @@ open class MainApplication : Application() {
                             }
                         })
                     })
-                } catch (e: Exception) {
+                } catch (_: Exception) {
                     continue
                 }
             }
@@ -147,25 +147,5 @@ fun Store.getStringSet(key: String?): Set<String> {
 }
 
 fun Store.putStringSet(key: String?, values: Set<String?>?) {
-    putString(key, Json.encodeToString(values))
-}
-
-fun Store.getStringMap(key: String?): Map<String, String> {
-    val data = getString(key)
-    if (data.isEmpty()) return HashMap()
-    return Json.decodeFromString<Map<String, String>>(data)
-}
-
-fun Store.putStringMap(key: String?, values: Map<String, String>) {
-    putString(key, Json.encodeToString(values))
-}
-
-fun Store.getStringArrayList(key: String): ArrayList<String> {
-    val data = getString(key)
-    if (data.isEmpty()) return ArrayList()
-    return Json.decodeFromString<ArrayList<String>>(data)
-}
-
-fun Store.putStringArrayList(key: String, values: ArrayList<String>) {
     putString(key, Json.encodeToString(values))
 }

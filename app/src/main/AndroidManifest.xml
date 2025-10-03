@@ -64,6 +64,15 @@
         </receiver>
 
         <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.logcat_fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/logcat_filepaths" />
+        </provider>
+        <provider
             android:name=".docuemntprovider.YuhaiinDocumentProvider"
             android:authorities="io.github.asutorufa.yuhaiin.documents"
             android:exported="true"
