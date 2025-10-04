@@ -2,7 +2,6 @@ package io.github.asutorufa.yuhaiin.compose
 
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
-import android.graphics.Color
 import android.graphics.drawable.Drawable
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
@@ -17,11 +16,13 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.input.rememberTextFieldState
@@ -54,10 +55,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
-import androidx.core.graphics.drawable.toDrawable
 import androidx.navigation.NavController
 import io.github.asutorufa.yuhaiin.MainApplication
 import io.github.asutorufa.yuhaiin.getStringSet
@@ -69,7 +70,7 @@ import kotlinx.coroutines.withContext
 data class AppListData(
     val appName: String,
     val packageName: String,
-    val appIcon: Drawable,
+    val appIcon: Drawable? = null,
     val isSystemApp: Boolean = false,
 )
 
@@ -142,12 +143,14 @@ fun SharedTransitionScope.AppListComponent(
     Scaffold(
         modifier = Modifier
             .nestedScroll(scrollBehavior.nestedScrollConnection),
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         bottomBar = {
             FlexibleBottomAppBar(
-                modifier = Modifier.sharedBounds(
-                    sharedContentState = rememberSharedContentState("OPEN_APP_LIST_TITLE"),
-                    animatedVisibilityScope = animatedVisibilityScope,
-                ),
+                modifier = Modifier
+                    .sharedBounds(
+                        sharedContentState = rememberSharedContentState("OPEN_APP_LIST_TITLE"),
+                        animatedVisibilityScope = animatedVisibilityScope,
+                    ),
                 scrollBehavior = scrollBehavior,
             ) {
                 IconButton(
@@ -217,13 +220,13 @@ fun AppList(
         AppListData(
             "test",
             "com.example.test",
-            Color.RED.toDrawable(),
+            appIcon = null,
             false
         ),
         AppListData(
             "test",
             "com.example.test",
-            Color.RED.toDrawable(),
+            appIcon = null,
             false
         )
     ),
@@ -240,11 +243,14 @@ fun AppList(
         }
     }
 
+    val statusBarHeight = WindowInsets.statusBars
+        .getTop(LocalDensity.current)
+
     LazyColumn(
         modifier = modifier
             .fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(8.dp),
-        contentPadding = PaddingValues(bottom = 8.dp, top = 8.dp)
+        contentPadding = PaddingValues(bottom = 8.dp, top = statusBarHeight.dp)
     ) {
         items(filteredApps) { app ->
             Card(
@@ -268,7 +274,7 @@ fun AppListItem(
     app: AppListData = AppListData(
         "test",
         "com.example.test",
-        Color.RED.toDrawable(),
+        null,
         false
     ),
     checkedApps: SnapshotStateSet<String> = SnapshotStateSet(),
@@ -282,7 +288,7 @@ fun AppListItem(
             .background(MaterialTheme.colorScheme.primaryContainer),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Image(
+        if (app.appIcon != null) Image(
             bitmap = remember(app.appIcon) {
                 app.appIcon.toBitmap(height = 128, width = 128).asImageBitmap()
             },

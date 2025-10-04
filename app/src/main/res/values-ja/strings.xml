@@ -2,7 +2,7 @@
 <resources>
     <string name="app_name">ユハイ員</string>
     <string name="yuhaiin">ユハイ員</string>>
-    <string name="yuhaiin_running">ユハイ員実行中</string>
+    <string name="yuhaiin_running">ユハイ員稼働中</string>
     <string name="yuhaiin_port_title">ユハイ員ポート</string>
     <string name="ports_title">ポート</string>
     <string name="connection">コネクション</string>

@@ -12,14 +12,16 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
@@ -64,6 +66,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -129,11 +132,13 @@ fun SharedTransitionScope.LogcatScreen(
             )
     ) {
         Scaffold(
+            containerColor = Color.Transparent,
+            contentWindowInsets = WindowInsets(0, 0, 0, 0),
             content = { padding ->
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(padding)
+                        .padding(padding),
                 ) {
                     LogList(
                         listState = listState,
@@ -263,14 +268,16 @@ fun LogList(
     },
     filter: LogLevel = LogLevel.DEBUG,
 ) {
-    val sheetState = rememberModalBottomSheetState()
     var infoLog by remember { mutableStateOf<LogEntry?>(null) }
     var showBottomSheet by remember { mutableStateOf(false) }
+    val statusBarHeight = WindowInsets.statusBars
+        .getTop(LocalDensity.current)
 
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
             state = listState,
             verticalArrangement = Arrangement.spacedBy(8.dp),
+            contentPadding = PaddingValues(top = statusBarHeight.dp)
         ) {
             items(logs) { log ->
                 if (isLevelEnabled(filter, log.level))
@@ -295,12 +302,14 @@ fun LogList(
 
         if (showBottomSheet) {
             ModalBottomSheet(
-                onDismissRequest = {
-                    showBottomSheet = false
-                },
-                sheetState = sheetState
+                onDismissRequest = { showBottomSheet = false },
+                sheetState = rememberModalBottomSheetState(true)
             ) {
-                Box(modifier = Modifier.padding(16.dp)) {
+                Box(
+                    modifier = Modifier
+                        .padding(horizontal = 16.dp)
+                        .padding(bottom = 16.dp)
+                ) {
                     if (infoLog != null) LogDetail(infoLog = infoLog!!)
                     else Text("Log is not exist")
                 }
@@ -357,7 +366,6 @@ fun LogDetail(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(min = 100.dp, max = 300.dp)
                     .verticalScroll(rememberScrollState())
                     .background(
                         MaterialTheme.colorScheme.surfaceVariant,
