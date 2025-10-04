@@ -1,4 +1,4 @@
-package io.github.asutorufa.yuhaiin
+package io.github.asutorufa.yuhaiin.compose
 
 import android.graphics.RenderEffect
 import android.graphics.Shader
@@ -85,6 +85,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import io.github.asutorufa.yuhaiin.R
 import io.github.asutorufa.yuhaiin.service.YuhaiinVpnService.Companion.State
 import yuhaiin.Store
 
@@ -126,12 +127,12 @@ fun SharedTransitionScope.SettingCompose(
         floatingActionButtonPosition = FabPosition.End,
         floatingActionButton = {
             FloatingActionButtonMenu(
-                modifier = if (animatedContentScope != null)
-                    Modifier.sharedBounds(
+                modifier = Modifier.thenIfNotNull(animatedContentScope) {
+                    sharedBounds(
                         sharedContentState = rememberSharedContentState("OPEN_LOGCAT_FAB"),
-                        animatedVisibilityScope = animatedContentScope,
+                        animatedVisibilityScope = it,
                     )
-                else Modifier,
+                },
                 expanded = fabMenuExpanded,
                 button = {
                     ToggleFloatingActionButton(
@@ -152,12 +153,13 @@ fun SharedTransitionScope.SettingCompose(
                 val rotation by animateFloatAsState(targetValue = if (vpnState == State.CONNECTED) 90f else 0f)
                 if (vpnState == State.CONNECTED) {
                     FloatingActionButtonMenuItem(
-                        modifier = if (animatedContentScope != null)
-                            Modifier.sharedBounds(
-                                sharedContentState = rememberSharedContentState("OPEN_WEBVIEW"),
-                                animatedVisibilityScope = animatedContentScope,
-                            )
-                        else Modifier
+                        modifier = Modifier
+                            .thenIfNotNull(animatedContentScope) {
+                                sharedBounds(
+                                    sharedContentState = rememberSharedContentState("OPEN_WEBVIEW"),
+                                    animatedVisibilityScope = it,
+                                )
+                            }
                             .semantics { isTraversalGroup = true },
                         onClick = {
                             navController?.navigate("WebView")
@@ -345,14 +347,18 @@ fun SharedTransitionScope.SettingCompose(
                 }
                 item {
                     SettingsItem(
-                        textColumnModifier = if (animatedContentScope != null) Modifier.sharedBounds(
-                            sharedContentState = rememberSharedContentState("OPEN_APP_LIST_TITLE"),
-                            animatedVisibilityScope = animatedContentScope,
-                        ) else Modifier,
-                        iconModifier = if (animatedContentScope != null) Modifier.sharedBounds(
-                            sharedContentState = rememberSharedContentState("OPEN_APP_LIST_ICON"),
-                            animatedVisibilityScope = animatedContentScope,
-                        ) else Modifier,
+                        textColumnModifier = Modifier.thenIfNotNull(animatedContentScope) {
+                            sharedBounds(
+                                sharedContentState = rememberSharedContentState("OPEN_APP_LIST_TITLE"),
+                                animatedVisibilityScope = it,
+                            )
+                        },
+                        iconModifier = Modifier.thenIfNotNull(animatedContentScope) {
+                            sharedBounds(
+                                sharedContentState = rememberSharedContentState("OPEN_APP_LIST_ICON"),
+                                animatedVisibilityScope = it,
+                            )
+                        },
                         title = stringResource(R.string.adv_app_list_title),
                         summary = stringResource(R.string.adv_app_list_sum),
                         icon = painterResource(R.drawable.apps),

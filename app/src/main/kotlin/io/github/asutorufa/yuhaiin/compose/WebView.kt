@@ -1,4 +1,4 @@
-package io.github.asutorufa.yuhaiin
+package io.github.asutorufa.yuhaiin.compose
 
 import android.annotation.SuppressLint
 import android.graphics.Bitmap
@@ -37,6 +37,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.platform.LocalContext
@@ -72,10 +73,12 @@ fun SharedTransitionScope.WebViewComponent(
     }
 
     Scaffold(
-        modifier = if (animatedContentScope != null) Modifier.sharedBounds(
-            sharedContentState = rememberSharedContentState("OPEN_WEBVIEW"),
-            animatedVisibilityScope = animatedContentScope,
-        ) else Modifier,
+        modifier = Modifier.thenIfNotNull(animatedContentScope) {
+            sharedBounds(
+                sharedContentState = rememberSharedContentState("OPEN_WEBVIEW"),
+                animatedVisibilityScope = it,
+            )
+        },
         floatingActionButtonPosition = FabPosition.Center,
         floatingActionButton = {
             HorizontalFloatingToolbar(
@@ -168,7 +171,7 @@ fun SharedTransitionScope.WebViewComponent(
                 if (isLoading) {
                     LoadingIndicator(
                         modifier = Modifier
-                            .align(androidx.compose.ui.Alignment.Center)
+                            .align(Alignment.Center)
                             .size(55.dp)
                     )
                 }
