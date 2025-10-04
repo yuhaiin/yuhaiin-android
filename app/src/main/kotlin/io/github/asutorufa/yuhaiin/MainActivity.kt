@@ -11,6 +11,7 @@ import android.os.Bundle
 import android.os.IBinder
 import android.util.Log
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -26,7 +27,11 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContent { Main(this) }
+        enableEdgeToEdge()
+        
+        setContent {
+            Main(this)
+        }
     }
 
     override fun onStart() {

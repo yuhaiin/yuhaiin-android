@@ -73,8 +73,6 @@ fun Main(activity: MainActivity) {
     MaterialTheme(
         colorScheme = colorScheme
     ) {
-        ChangeSystemBarsTheme(activity, !isSystemInDarkTheme())
-
         SharedTransitionLayout {
             val navController = rememberNavController()
 

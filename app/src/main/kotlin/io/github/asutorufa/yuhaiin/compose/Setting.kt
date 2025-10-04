@@ -7,16 +7,11 @@ import androidx.activity.compose.BackHandler
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedContentScope
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -24,6 +19,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -36,7 +32,6 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ContainedLoadingIndicator
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -49,16 +44,17 @@ import androidx.compose.material3.FloatingActionButtonMenu
 import androidx.compose.material3.FloatingActionButtonMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.ToggleFloatingActionButton
 import androidx.compose.material3.ToggleFloatingActionButtonDefaults.animateIcon
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -587,26 +583,23 @@ fun ListPreferenceSetting(
     }
 }
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
 @Composable
 @Preview
 fun PortsInputForm(
     store: Store? = null,
 ) {
-    var showDialog by rememberSaveable { mutableStateOf(false) }
+    val sheetState = rememberModalBottomSheetState()
+    var showBottomSheet by remember { mutableStateOf(false) }
+
 
     SettingsItem(
         title = "Ports",
         icon = painterResource(R.drawable.vpn_lock),
-        onClick = { showDialog = true },
+        onClick = { showBottomSheet = true },
     )
 
-    AnimatedVisibility(
-        visible = showDialog,
-        enter = scaleIn(initialScale = 0.8f) + fadeIn(),
-        exit = scaleOut(targetScale = 0.8f) + fadeOut()
-    ) {
-
+    if (showBottomSheet) {
         var http by rememberSaveable { mutableIntStateOf(store?.getInt("http_port") ?: 0) }
         var yuhaiin by rememberSaveable {
             mutableIntStateOf(
@@ -614,68 +607,48 @@ fun PortsInputForm(
             )
         }
 
-
-        AlertDialog(
-            modifier = Modifier.animateEnterExit(
-                enter = fadeIn() + scaleIn(),
-                exit = fadeOut() + scaleOut()
-            ),
-            onDismissRequest = { showDialog = false },
-            title = {
-                Text(text = stringResource(R.string.ports_title))
+        ModalBottomSheet(
+            onDismissRequest = {
+                store?.putInt("http_port", http)
+                showBottomSheet = false
             },
-            text = {
-                Column {
-                    OutlinedTextField(
-                        value = http.toString(),
-                        onValueChange = { it ->
-                            if (it.all { it.isDigit() }) {
-                                val number = it.toIntOrNull()
-                                if (number == null || number in 0..65535) {
-                                    http = it.toInt()
-                                }
+            sheetState = sheetState
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxHeight(0.3f)
+                    .padding(horizontal = 16.dp)
+            ) {
+                OutlinedTextField(
+                    value = http.toString(),
+                    onValueChange = { it ->
+                        if (it.all { it.isDigit() }) {
+                            val number = it.toIntOrNull()
+                            if (number == null || number in 0..65535) {
+                                http = it.toInt()
                             }
-                        },
-                        label = { Text("HTTP & SOCKS5") },
-                        singleLine = true,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 10.dp)
-                    )
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    OutlinedTextField(
-                        value = yuhaiin.toString(),
-                        onValueChange = { },
-                        label = { Text("YUHAIIN") },
-                        singleLine = true,
-                        enabled = false,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 10.dp)
-                    )
-                }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = {
-                        showDialog = false
-                    }
-                ) {
-                    Text("Cancel")
-                }
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        store?.putInt("http_port", http)
-                        showDialog = false
+                        }
                     },
-                ) {
-                    Text("Save")
-                }
-            },
-        )
+                    label = { Text("HTTP & SOCKS5") },
+                    singleLine = true,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 10.dp)
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                OutlinedTextField(
+                    value = yuhaiin.toString(),
+                    onValueChange = { },
+                    label = { Text("YUHAIIN") },
+                    singleLine = true,
+                    enabled = false,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 10.dp)
+                )
+            }
+        }
     }
 }
