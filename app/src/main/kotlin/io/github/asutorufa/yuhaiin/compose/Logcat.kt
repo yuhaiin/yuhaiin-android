@@ -1,10 +1,12 @@
-package io.github.asutorufa.yuhaiin
+package io.github.asutorufa.yuhaiin.compose
 
 import android.content.Context
 import android.content.Intent
 import android.util.Log
 import androidx.activity.compose.LocalActivity
+import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -70,6 +72,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
 import androidx.navigation.NavController
+import io.github.asutorufa.yuhaiin.R
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
@@ -96,8 +99,7 @@ fun isLevelEnabled(filter: LogLevel, logLevel: LogLevel): Boolean {
 )
 @Composable
 @Preview
-fun LogcatScreen(
-    bottomBarModifier: Modifier = Modifier,
+fun SharedTransitionScope.LogcatScreen(
     logs: SnapshotStateList<LogEntry> = remember {
         mutableStateListOf(
             LogEntry(
@@ -108,6 +110,7 @@ fun LogcatScreen(
         )
     },
     navController: NavController? = null,
+    animatedVisibilityScope: AnimatedVisibilityScope? = null,
 ) {
     var filterMenuExpanded by remember { mutableStateOf(false) }
     var filter by remember { mutableStateOf(LogLevel.DEBUG) }
@@ -142,7 +145,12 @@ fun LogcatScreen(
             floatingActionButtonPosition = FabPosition.Center,
             floatingActionButton = {
                 HorizontalFloatingToolbar(
-                    modifier = bottomBarModifier,
+                    modifier = Modifier.thenIfNotNull(animatedVisibilityScope) {
+                        sharedBounds(
+                            sharedContentState = rememberSharedContentState("OPEN_LOGCAT_FAB"),
+                            animatedVisibilityScope = it
+                        )
+                    },
                     expanded = expanded,
                     trailingContent = {},
                     leadingContent = {
@@ -227,6 +235,7 @@ fun LogcatScreen(
         )
     }
 }
+
 
 @OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -533,10 +542,10 @@ fun runLogcat(
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
-fun LogcatCompose(
-    bottomBarModifier: Modifier = Modifier,
+fun SharedTransitionScope.LogcatCompose(
     excludeList: ArrayList<String>? = null,
     navController: NavController? = null,
+    animatedVisibilityScope: AnimatedVisibilityScope,
 ) {
     val excludeList = remember {
         val mExcludeList: MutableList<Pattern> = ArrayList()
@@ -565,6 +574,6 @@ fun LogcatCompose(
     LogcatScreen(
         logs = logs,
         navController = navController,
-        bottomBarModifier = bottomBarModifier
+        animatedVisibilityScope = animatedVisibilityScope,
     )
 }

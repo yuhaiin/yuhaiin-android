@@ -1,4 +1,4 @@
-package io.github.asutorufa.yuhaiin
+package io.github.asutorufa.yuhaiin.compose
 
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
@@ -59,6 +59,9 @@ import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
 import androidx.core.graphics.drawable.toDrawable
 import androidx.navigation.NavController
+import io.github.asutorufa.yuhaiin.MainApplication
+import io.github.asutorufa.yuhaiin.getStringSet
+import io.github.asutorufa.yuhaiin.putStringSet
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
@@ -93,7 +96,7 @@ fun SharedTransitionScope.AppListComponent(
 ) {
     val checkedApps = remember {
         mutableStateSetOf(
-            *MainApplication.store.getStringSet("app_list").toTypedArray()
+            *MainApplication.Companion.store.getStringSet("app_list").toTypedArray()
         )
     }
 
@@ -103,7 +106,7 @@ fun SharedTransitionScope.AppListComponent(
 
             val packages = packageManager?.getInstalledApplications(PackageManager.GET_PERMISSIONS)
 
-            val checkedApps = MainApplication.store.getStringSet("app_list")
+            val checkedApps = MainApplication.Companion.store.getStringSet("app_list")
             val apps = mutableListOf<AppListData>()
 
             packages?.sortBy { it.loadLabel(packageManager).toString() }
@@ -128,7 +131,7 @@ fun SharedTransitionScope.AppListComponent(
 
     DisposableEffect(Unit) {
         onDispose {
-            MainApplication.store.putStringSet("app_list", checkedApps.toSet())
+            MainApplication.Companion.store.putStringSet("app_list", checkedApps.toSet())
         }
     }
 
