@@ -58,7 +58,6 @@ class MainActivity : AppCompatActivity() {
             Log.d("VpnService", "state changed $value")
         }
 
-
     @Composable
     private fun ChangeSystemBarsTheme(lightTheme: Boolean) {
         val barColor = MaterialTheme.colorScheme.background.toArgb()
@@ -84,15 +83,6 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
-
-    //                CustomTabsIntent.Builder().apply {
-//                    setColorScheme(CustomTabsIntent.COLOR_SCHEME_SYSTEM)
-//                }.build().apply {
-//                    intent.data =
-//                        "http://127.0.0.1:${MainApplication.store.getInt("yuhaiin_port")}".toUri()
-//                    this@MainActivity.startActivity(intent)
-//                }
-//            }
 
     @OptIn(
         ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class,
@@ -176,7 +166,7 @@ class MainActivity : AppCompatActivity() {
                             LogcatCompose(
                                 excludeList = logcatExcludeRules,
                                 navController = navController,
-                                bottomBarModifier = Modifier.sharedElement(
+                                bottomBarModifier = Modifier.sharedBounds(
                                     sharedContentState = rememberSharedContentState("OPEN_LOGCAT_FAB"),
                                     animatedVisibilityScope = this@composable
                                 ),
@@ -187,7 +177,6 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
-
 
     override fun onStart() {
         super.onStart()

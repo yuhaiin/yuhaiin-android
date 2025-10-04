@@ -10,6 +10,7 @@
     <string name="ports_title">Ports</string>
     <string name="http_server_port_title">HTTP Port</string>
     <string name="append_http_proxy_to_vpn_title">Append HTTP Proxy to VPN</string>
+    <string name="append_http_proxy_to_vpn_sum">HTTP proxy will be used directly from without going through the virtual NIC device(Android 10+)</string>
     <string name="socks5_server_port_title">Socks5 Port</string>
 
     <string name="network_speed_title">Network Speed</string>
@@ -43,7 +44,7 @@
     <string name="adv_app_list_sum">Select apps to apply or bypass the proxy</string>
 
     <string name="notify_msg">Connected to %s</string>
-    <string name="channel_name">Proxy active</string>
+    <string name="channel_name" translatable="false">Proxy active</string>
 
     <string name="debug">Debug</string>
     <string name="logcat">Logcat</string>
@@ -55,4 +56,7 @@
 
     <string name="log_level_name">Log Level</string>
     <string name="refresh">Refresh</string>
+    <string name="Connect">Connect</string>
+    <string name="Stop">Stop</string>
+    <string name="Open">Open</string>
 </resources>
