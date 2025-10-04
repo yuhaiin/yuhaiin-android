@@ -1,10 +1,11 @@
 package io.github.asutorufa.yuhaiin
 
-import android.annotation.SuppressLint
 import android.graphics.RenderEffect
 import android.graphics.Shader
 import android.os.Build
 import androidx.activity.compose.BackHandler
+import androidx.annotation.DrawableRes
+import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedContentScope
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalSharedTransitionApi
@@ -32,6 +33,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
@@ -90,7 +92,6 @@ import yuhaiin.Store
     ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class,
     ExperimentalMaterial3ExpressiveApi::class
 )
-@SuppressLint("ContextCastToActivity")
 @Composable
 @Preview
 fun SharedTransitionScope.SettingCompose(
@@ -101,41 +102,9 @@ fun SharedTransitionScope.SettingCompose(
     stopService: () -> Unit = {},
     vpnState: State = State.DISCONNECTED,
 ) {
-    var appendHttpProxy by rememberSaveable {
-        mutableStateOf(store?.getBoolean("append_http_proxy_to_vpn") ?: false)
-    }
-    var allowLan by rememberSaveable { mutableStateOf(store?.getBoolean("allow_lan") ?: false) }
-    var networkSpeed by rememberSaveable {
-        mutableStateOf(
-            store?.getBoolean("network_speed") ?: false
-        )
-    }
-    var tunDriver by rememberSaveable {
-        mutableStateOf(store?.getString("Tun Driver"))
-    }
-    var route by rememberSaveable {
-        mutableStateOf(store?.getString("route"))
-    }
-    var sniff by rememberSaveable { mutableStateOf(store?.getBoolean("Sniff") ?: false) }
-    var dnsHijacking by rememberSaveable {
-        mutableStateOf(
-            store?.getBoolean("dns_hijacking") ?: false
-        )
-    }
-    var autoConnect by rememberSaveable {
-        mutableStateOf(
-            store?.getBoolean("auto_connect") ?: false
-        )
-    }
-    var perApp by rememberSaveable { mutableStateOf(store?.getBoolean("per_app") ?: false) }
-    var appBypass by rememberSaveable { mutableStateOf(store?.getBoolean("app_bypass") ?: false) }
-    var httpProxyPort by rememberSaveable { mutableIntStateOf(store?.getInt("http_port") ?: 0) }
-    var yuhaiinPort by rememberSaveable { mutableIntStateOf(store?.getInt("yuhaiin_port") ?: 0) }
-
-
+    var tunDriver by rememberSaveable { mutableStateOf(store?.getString("Tun Driver")) }
+    var route by rememberSaveable { mutableStateOf(store?.getString("route")) }
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
-
-//    val focusRequester =  FocusRequester()
     var fabMenuExpanded by rememberSaveable { mutableStateOf(false) }
     BackHandler(fabMenuExpanded) { fabMenuExpanded = false }
     val blur = remember { Animatable(0f) }
@@ -146,8 +115,6 @@ fun SharedTransitionScope.SettingCompose(
     }
 
     Scaffold(
-        modifier = Modifier
-            .fillMaxSize(),
         topBar = {
             TopAppBar(
                 scrollBehavior = scrollBehavior,
@@ -156,7 +123,7 @@ fun SharedTransitionScope.SettingCompose(
                 }
             )
         },
-        floatingActionButtonPosition = FabPosition.EndOverlay,
+        floatingActionButtonPosition = FabPosition.End,
         floatingActionButton = {
             FloatingActionButtonMenu(
                 modifier = if (animatedContentScope != null)
@@ -172,9 +139,7 @@ fun SharedTransitionScope.SettingCompose(
                         onCheckedChange = { fabMenuExpanded = !fabMenuExpanded }
                     ) {
                         val imageVector by remember {
-                            derivedStateOf {
-                                if (checkedProgress > 0.5f) Icons.Filled.Close else Icons.Filled.Add
-                            }
+                            derivedStateOf { if (checkedProgress > 0.5f) Icons.Filled.Close else Icons.Filled.Add }
                         }
                         Icon(
                             painter = rememberVectorPainter(imageVector),
@@ -185,7 +150,6 @@ fun SharedTransitionScope.SettingCompose(
                 }
             ) {
                 val rotation by animateFloatAsState(targetValue = if (vpnState == State.CONNECTED) 90f else 0f)
-
                 if (vpnState == State.CONNECTED) {
                     FloatingActionButtonMenuItem(
                         modifier = if (animatedContentScope != null)
@@ -198,7 +162,7 @@ fun SharedTransitionScope.SettingCompose(
                         onClick = {
                             navController?.navigate("WebView")
                         },
-                        text = { Text(text = "Open") },
+                        text = { Text(text = stringResource(R.string.Open)) },
                         icon = {
                             Icon(
                                 painter = painterResource(id = R.drawable.open_in_browser),
@@ -230,14 +194,16 @@ fun SharedTransitionScope.SettingCompose(
                                     .rotate(rotation)
                             )
                             Text(
-                                text = if (vpnState == State.CONNECTED) "Stop" else "Start"
+                                text = if (vpnState == State.CONNECTED) stringResource(R.string.Stop) else stringResource(
+                                    R.string.Connect
+                                )
                             )
 
                         },
                         icon = {}
                     )
                 else ContainedLoadingIndicator(
-                    modifier = Modifier.size(50.dp)
+                    modifier = Modifier.size(60.dp)
                 )
             }
         },
@@ -274,43 +240,31 @@ fun SharedTransitionScope.SettingCompose(
                     }
                 }
                 item {
-                    PortsInputForm(httpProxyPort, yuhaiinPort) {
-                        httpProxyPort = it
-                        store?.putInt("http_port", it)
-                    }
+                    PortsInputForm(store)
                 }
                 item {
-                    SwitchSetting(
-                        title = stringResource(R.string.append_http_proxy_to_vpn_title),
-                        summary = "HTTP proxy will be used directly from without going through the virtual NIC device(Android 10+)",
-                        checked = appendHttpProxy,
-                        onCheckedChange = {
-                            appendHttpProxy = it
-                            store?.putBoolean("append_http_proxy_to_vpn", it)
-                        }
+                    SwitchStore(
+                        title = R.string.append_http_proxy_to_vpn_title,
+                        summary = R.string.append_http_proxy_to_vpn_sum,
+                        store = store,
+                        storeKey = "append_http_proxy_to_vpn",
                     )
                 }
                 item {
-                    SwitchSetting(
-                        title = stringResource(R.string.allow_lan_title),
-                        icon = painterResource(R.drawable.lan),
-                        checked = allowLan,
-                        onCheckedChange = {
-                            allowLan = it
-                            store?.putBoolean("allow_lan", it)
-                        }
+                    SwitchStore(
+                        title = R.string.allow_lan_title,
+                        icon = R.drawable.lan,
+                        store = store,
+                        storeKey = "allow_lan",
                     )
                 }
                 item {
-                    SwitchSetting(
-                        title = stringResource(R.string.network_speed_title),
-                        summary = stringResource(R.string.network_speed_sum),
-                        icon = painterResource(R.drawable.speed_24px),
-                        checked = networkSpeed,
-                        onCheckedChange = {
-                            networkSpeed = it
-                            store?.putBoolean("network_speed", it)
-                        }
+                    SwitchStore(
+                        title = R.string.network_speed_title,
+                        summary = R.string.network_speed_sum,
+                        icon = R.drawable.speed_24px,
+                        store = store,
+                        storeKey = "network_speed",
                     )
                 }
 
@@ -349,81 +303,61 @@ fun SharedTransitionScope.SettingCompose(
                     )
                 }
                 item {
-                    SwitchSetting(
-                        title = stringResource(R.string.sniff_title),
-                        icon = painterResource(R.drawable.router),
-                        checked = sniff,
-                        onCheckedChange = {
-                            sniff = it
-                            store?.putBoolean("Sniff", it)
-                        }
+                    SwitchStore(
+                        title = R.string.sniff_title,
+                        icon = R.drawable.router,
+                        store = store,
+                        storeKey = "sniff",
                     )
                 }
                 item {
-                    SwitchSetting(
-                        title = stringResource(R.string.dns_dns_hijacking_title),
-                        checked = dnsHijacking,
-                        onCheckedChange = {
-                            dnsHijacking = it
-                            store?.putBoolean("dns_hijacking", it)
-                        }
+                    SwitchStore(
+                        title = R.string.dns_dns_hijacking_title,
+                        icon = R.drawable.router,
+                        store = store,
+                        storeKey = "dns_hijacking",
                     )
                 }
                 item {
-                    SwitchSetting(
-                        title = stringResource(R.string.adv_auto_connect_title),
-                        icon = painterResource(R.drawable.auto_mode),
-                        checked = autoConnect,
-                        onCheckedChange = {
-                            autoConnect = it
-                            store?.putBoolean("auto_connect", it)
-                        }
+                    SwitchStore(
+                        title = R.string.adv_auto_connect_title,
+                        icon = R.drawable.auto_mode,
+                        store = store,
+                        storeKey = "auto_connect",
                     )
                 }
                 item {
-                    SwitchSetting(
-                        title = stringResource(R.string.adv_per_app_title),
-                        icon = painterResource(R.drawable.settop_component),
-                        checked = perApp,
-                        onCheckedChange = {
-                            perApp = it
-                            store?.putBoolean("per_app", it)
-                        }
+                    SwitchStore(
+                        title = R.string.adv_per_app_title,
+                        icon = R.drawable.settop_component,
+                        store = store,
+                        storeKey = "per_app",
                     )
                 }
-                if (perApp) {
-                    item {
-                        SwitchSetting(
-                            title = stringResource(R.string.adv_app_bypass_title),
-                            summary = stringResource(R.string.adv_app_bypass_sum),
-                            icon = painterResource(R.drawable.alt_route),
-                            checked = appBypass,
-                            onCheckedChange = {
-                                appBypass = it
-                                store?.putBoolean("app_bypass", it)
-                            }
-                        )
-                    }
-                    item {
-                        SettingsItem(
-                            modifier = if (animatedContentScope != null) Modifier.sharedBounds(
-                                sharedContentState = rememberSharedContentState("OPEN_APP_LIST_APP"),
-                                animatedVisibilityScope = animatedContentScope,
-                            ) else Modifier,
-                            textModifier = if (animatedContentScope != null) Modifier.sharedBounds(
-                                sharedContentState = rememberSharedContentState("OPEN_APP_LIST_TITLE"),
-                                animatedVisibilityScope = animatedContentScope,
-                            ) else Modifier,
-                            iconModifier = if (animatedContentScope != null) Modifier.sharedBounds(
-                                sharedContentState = rememberSharedContentState("OPEN_APP_LIST_ICON"),
-                                animatedVisibilityScope = animatedContentScope,
-                            ) else Modifier,
-                            title = stringResource(R.string.adv_app_list_title),
-                            summary = stringResource(R.string.adv_app_list_sum),
-                            icon = painterResource(R.drawable.apps),
-                            onClick = { navController?.navigate("APPLIST") }
-                        )
-                    }
+                item {
+                    SwitchStore(
+                        title = R.string.adv_app_bypass_title,
+                        summary = R.string.adv_app_bypass_sum,
+                        icon = R.drawable.alt_route,
+                        store = store,
+                        storeKey = "app_bypass",
+                    )
+                }
+                item {
+                    SettingsItem(
+                        textColumnModifier = if (animatedContentScope != null) Modifier.sharedBounds(
+                            sharedContentState = rememberSharedContentState("OPEN_APP_LIST_TITLE"),
+                            animatedVisibilityScope = animatedContentScope,
+                        ) else Modifier,
+                        iconModifier = if (animatedContentScope != null) Modifier.sharedBounds(
+                            sharedContentState = rememberSharedContentState("OPEN_APP_LIST_ICON"),
+                            animatedVisibilityScope = animatedContentScope,
+                        ) else Modifier,
+                        title = stringResource(R.string.adv_app_list_title),
+                        summary = stringResource(R.string.adv_app_list_sum),
+                        icon = painterResource(R.drawable.apps),
+                        onClick = { navController?.navigate("APPLIST") }
+                    )
                 }
 
                 // ---- Debug ----
@@ -503,6 +437,29 @@ fun SettingsItem(
             }
         }
     }
+}
+
+@Composable
+@Preview
+fun SwitchStore(
+    @StringRes title: Int = R.string.app_name,
+    @StringRes summary: Int? = null,
+    @DrawableRes icon: Int? = null,
+    store: Store? = null,
+    storeKey: String = "",
+) {
+    var checked by rememberSaveable { mutableStateOf(store?.getBoolean(storeKey) ?: false) }
+
+    SwitchSetting(
+        title = stringResource(title),
+        icon = if (icon != null) painterResource(icon) else null,
+        summary = if (summary != null) stringResource(summary) else null,
+        checked = checked,
+        onCheckedChange = {
+            checked = it
+            store?.putBoolean(storeKey, it)
+        }
+    )
 }
 
 @Composable
@@ -610,8 +567,12 @@ fun ListPreferenceSetting(
                             expanded = false
                             onSelectedChange(key)
                         },
-                        text = {
-                            Text(value)
+                        text = { Text(value) },
+                        trailingIcon = {
+                            if (selected == key) Icon(
+                                imageVector = Icons.Filled.Check,
+                                contentDescription = key,
+                            )
                         }
                     )
                 }
@@ -624,12 +585,9 @@ fun ListPreferenceSetting(
 @Composable
 @Preview
 fun PortsInputForm(
-    httpHost: Int = 1080,
-    yuhaiinHost: Int = 50051,
-    onConfirmed: (host: Int) -> Unit = {},
+    store: Store? = null,
 ) {
     var showDialog by rememberSaveable { mutableStateOf(false) }
-    var http by rememberSaveable { mutableIntStateOf(httpHost) }
 
     SettingsItem(
         title = "Ports",
@@ -642,6 +600,15 @@ fun PortsInputForm(
         enter = scaleIn(initialScale = 0.8f) + fadeIn(),
         exit = scaleOut(targetScale = 0.8f) + fadeOut()
     ) {
+
+        var http by rememberSaveable { mutableIntStateOf(store?.getInt("http_port") ?: 0) }
+        var yuhaiin by rememberSaveable {
+            mutableIntStateOf(
+                store?.getInt("yuhaiin_port") ?: 0
+            )
+        }
+
+
         AlertDialog(
             modifier = Modifier.animateEnterExit(
                 enter = fadeIn() + scaleIn(),
@@ -673,7 +640,7 @@ fun PortsInputForm(
                     Spacer(modifier = Modifier.height(16.dp))
 
                     OutlinedTextField(
-                        value = yuhaiinHost.toString(),
+                        value = yuhaiin.toString(),
                         onValueChange = { },
                         label = { Text("YUHAIIN") },
                         singleLine = true,
@@ -696,7 +663,7 @@ fun PortsInputForm(
             confirmButton = {
                 TextButton(
                     onClick = {
-                        onConfirmed(http)
+                        store?.putInt("http_port", http)
                         showDialog = false
                     },
                 ) {

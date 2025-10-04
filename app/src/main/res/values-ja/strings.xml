@@ -9,6 +9,9 @@
     <string name="http_server_port_title">HTTPポート</string>
     <string name="socks5_server_port_title">Socks5ポート</string>
     <string name="append_http_proxy_to_vpn_title">HTTPプロキシをVPNに追加する</string>
+    <string name="append_http_proxy_to_vpn_sum">HTTP プロキシは仮想 NIC デバイスを経由せず、直接使用されます（Android 10 以降）</string>
+    <string name="network_speed_title">ネットワーク速度</string>
+    <string name="network_speed_sum">通知にネットワーク速度を表示する</string>
     <string name="allow_lan_title">LAN接続を許可する</string>
     <string name="advanced">アドバンスト</string>
     <string name="adv_route_title">ルート</string>
@@ -19,9 +22,16 @@
     <string name="adv_per_app_title">アプリバイパス</string>
     <string name="adv_app_bypass_title">バイパスモード</string>
     <string name="adv_app_list_title">アプリ一覧</string>
+    <string name="adv_app_bypass_sum">このオプションを有効にすると、選択したアプリはプロキシを経由せずバイパスされます</string>
+    <string name="adv_app_list_sum">プロキシを適用またはバイパスするアプリを選択</string>
     <string name="notify_msg">%sに接続されています</string>
     <string name="save_logcat_name">ログを保存</string>
     <string name="log_level_name">ログレベル</string>
     <string name="logcat_name">ログ</string>
     <string name="refresh">再読み込み</string>
+    <string name="debug">デバッグ</string>
+    <string name="logcat">ログキャット</string>
+    <string name="Connect">接続</string>
+    <string name="Stop">停止</string>
+    <string name="Open">開く</string>
 </resources>

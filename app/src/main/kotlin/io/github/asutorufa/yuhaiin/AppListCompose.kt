@@ -3,10 +3,7 @@ package io.github.asutorufa.yuhaiin
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.graphics.Color
-import android.graphics.RenderEffect
-import android.graphics.Shader
 import android.graphics.drawable.Drawable
-import android.os.Build
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
@@ -15,18 +12,14 @@ import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectVerticalDragGestures
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -48,7 +41,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SearchBar
 import androidx.compose.material3.SearchBarDefaults
-import androidx.compose.material3.SearchBarValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberSearchBarState
 import androidx.compose.runtime.Composable
@@ -57,37 +49,19 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateSetOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.snapshots.SnapshotStateSet
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.asComposeRenderEffect
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.zIndex
 import androidx.core.graphics.drawable.toBitmap
 import androidx.core.graphics.drawable.toDrawable
 import androidx.navigation.NavController
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-
-@Composable
-fun blurEffect(radius: Float = 20f): RenderEffect? {
-    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) RenderEffect.createBlurEffect(
-        radius, radius, Shader.TileMode.CLAMP
-    )
-    else null
-}
-
 
 data class AppListData(
     val appName: String,
@@ -160,38 +134,21 @@ fun SharedTransitionScope.AppListComponent(
 
     val textFieldState = rememberTextFieldState()
     val searchBarState = rememberSearchBarState()
-    val scope = rememberCoroutineScope()
     val scrollBehavior = BottomAppBarDefaults.exitAlwaysScrollBehavior()
-    val isKeyboardOpen = WindowInsets.ime.getBottom(LocalDensity.current) > 0
-    val keyboardController = LocalSoftwareKeyboardController.current
-    val focusManager = LocalFocusManager.current
 
     Scaffold(
         modifier = Modifier
-            .nestedScroll(scrollBehavior.nestedScrollConnection)
-            .pointerInput(Unit) {
-                detectVerticalDragGestures { _, _ ->
-                    if (searchBarState.currentValue == SearchBarValue.Expanded)
-                        scope.launch { searchBarState.animateToCollapsed() }
-
-                    keyboardController?.hide()
-                }
-            },
+            .nestedScroll(scrollBehavior.nestedScrollConnection),
         bottomBar = {
             FlexibleBottomAppBar(
+                modifier = Modifier.sharedBounds(
+                    sharedContentState = rememberSharedContentState("OPEN_APP_LIST_TITLE"),
+                    animatedVisibilityScope = animatedVisibilityScope,
+                ),
                 scrollBehavior = scrollBehavior,
             ) {
                 IconButton(
-                    modifier = Modifier.sharedBounds(
-                        sharedContentState = rememberSharedContentState("OPEN_APP_LIST_ICON"),
-                        animatedVisibilityScope = animatedVisibilityScope,
-                    ),
-                    onClick = {
-                        if (isKeyboardOpen) {
-                            focusManager.clearFocus()
-                            keyboardController?.hide()
-                        } else navController?.popBackStack()
-                    },
+                    onClick = { navController?.popBackStack() },
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Default.ArrowBack,
@@ -203,10 +160,6 @@ fun SharedTransitionScope.AppListComponent(
                     state = searchBarState,
                     inputField = {
                         SearchBarDefaults.InputField(
-                            modifier = Modifier.sharedBounds(
-                                sharedContentState = rememberSharedContentState("OPEN_APP_LIST_TITLE"),
-                                animatedVisibilityScope = animatedVisibilityScope,
-                            ),
                             searchBarState = searchBarState,
                             textFieldState = textFieldState,
                             onSearch = {},
@@ -221,46 +174,27 @@ fun SharedTransitionScope.AppListComponent(
         content = { padding ->
             Box(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .then(
-                        Modifier.sharedBounds(
-                            sharedContentState = rememberSharedContentState("OPEN_APP_LIST_APP"),
-                            animatedVisibilityScope = animatedVisibilityScope,
-                        )
-                    ),
+                    .fillMaxSize(),
             ) {
-                if (isKeyboardOpen) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .clickable(
-                                indication = null,
-                                interactionSource = remember { MutableInteractionSource() },
-                            ) {
-                                focusManager.clearFocus()
-                                keyboardController?.hide()
-                            }
-                            .zIndex(1f)
-                    )
-                }
-
-                val blur = blurEffect()
-
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(padding)
-                        .graphicsLayer {
-                            renderEffect =
-                                if (isKeyboardOpen) blur?.asComposeRenderEffect() else null
-                        }
                 ) {
                     if (data == null) LoadingIndicator(
                         modifier = Modifier
                             .align(Alignment.Center)
                             .size(55.dp)
+                            .sharedBounds(
+                                sharedContentState = rememberSharedContentState("OPEN_APP_LIST_ICON"),
+                                animatedVisibilityScope = animatedVisibilityScope,
+                            )
                     )
                     else AppList(
+                        modifier = Modifier.sharedBounds(
+                            sharedContentState = rememberSharedContentState("OPEN_APP_LIST_ICON"),
+                            animatedVisibilityScope = animatedVisibilityScope,
+                        ),
                         apps = data!!,
                         checkedApps = checkedApps,
                         filter = textFieldState.text
