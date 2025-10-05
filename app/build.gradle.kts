@@ -77,7 +77,7 @@ android {
         versionCode = 184
         versionName = getVersionName()
 
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner" // 追加
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         vectorDrawables.useSupportLibrary = true
     }
@@ -141,6 +141,10 @@ android {
             isIncludeAndroidResources = true
         }
 
+        unitTests.all {
+            it.useJUnit()
+        }
+
         namespace = "io.github.asutorufa.yuhaiin"
     }
 
@@ -152,10 +156,13 @@ android {
 }
 
 dependencies {
+    testImplementation(kotlin("test"))
+    testImplementation("junit:junit:4.13.2")
     implementation(fileTree(mapOf("include" to listOf("*.aar", "*.jar"), "dir" to "libs")))
     implementation("androidx.appcompat:appcompat:1.7.1")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
     implementation("com.google.android.material:material:1.13.0")
+    implementation("fastutil:fastutil:5.0.9")
 
     // nav
     val navVersion = "2.9.5"

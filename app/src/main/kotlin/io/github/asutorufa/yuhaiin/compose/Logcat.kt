@@ -83,7 +83,6 @@ import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileOutputStream
 import java.util.Date
-import java.util.regex.Pattern
 
 enum class LogLevel(val tag: String, val bgColor: Color, val priority: Int) {
     DEBUG("DEBUG", Color(0xFF4CAF50), 1),
@@ -277,7 +276,7 @@ fun LogList(
         LazyColumn(
             state = listState,
             verticalArrangement = Arrangement.spacedBy(8.dp),
-            contentPadding = PaddingValues(top = statusBarHeight.dp)
+            contentPadding = PaddingValues(top = statusBarHeight.dp, bottom = 16.dp)
         ) {
             items(logs) { log ->
                 if (isLevelEnabled(filter, log.level))
@@ -385,45 +384,63 @@ fun LogDetail(
 }
 
 data class LogEntry(
-    val level: LogLevel,
-    val time: String = "",
-    val content: String = "",
-    val tag: String? = "",
-    val pid: Int? = 0,
-    val tid: Int? = 0,
-)
-
-private val sLogcatPattern = Pattern.compile(
-    "([\\d^-]+-[\\d^ ]+ [\\d^:]+:[\\d^:]+\\.\\d+) +(\\d+) +(\\d+) ([VDIWEF]) ((?!: ).)+: (.*)"
+    var level: LogLevel = LogLevel.INFO,
+    var time: String = "",
+    var content: String = "",
+    var tag: String? = "",
+    var pid: Int? = 0,
+    var tid: Int? = 0,
 )
 
 fun parseLog(line: String): LogEntry {
-    val matcher = sLogcatPattern.matcher(line)
-    check(matcher.find()) { "logcat pattern not match: $line" }
+    var i = 0
+    val n = line.length
 
-    val time = matcher.group(1) ?: ""
-    val pid = matcher.group(2)?.toInt()
-    val tid = matcher.group(3)?.toInt()
-    val level = when (matcher.group(4)) {
-        "V" -> LogLevel.DEBUG
-        "D" -> LogLevel.DEBUG
+    fun skipSpaces() {
+        while (i < n && line[i] == ' ') i++
+    }
+
+    fun readWord(): String {
+        val start = i
+        while (i < n && line[i] != ' ') i++
+        return line.substring(start, i)
+    }
+
+    skipSpaces()
+    val date = readWord()
+    skipSpaces()
+    val timeStr = readWord()
+    skipSpaces()
+    val pidStr = readWord()
+    skipSpaces()
+    val tidStr = readWord()
+    skipSpaces()
+    val levelStr = readWord()
+    skipSpaces()
+    val tagStart = i
+    while (i < n && line[i] != ':') i++
+    val tag = if (i < n) line.substring(tagStart, i) else ""
+    i++ // skip ':'
+    val content = if (i < n) line.substring(i).trimStart() else ""
+
+    val level = when (levelStr) {
+        "V", "D" -> LogLevel.DEBUG
         "I" -> LogLevel.INFO
         "W" -> LogLevel.WARN
-        "E" -> LogLevel.ERROR
-        "F" -> LogLevel.ERROR
+        "E", "F" -> LogLevel.ERROR
         else -> LogLevel.INFO
     }
-    val tag = matcher.group(5)
-    val content = matcher.group(6) ?: ""
 
+    if (content.isEmpty())
+        return LogEntry(time = Date().toString(), content = line)
 
     return LogEntry(
-        level,
-        time,
-        content,
-        tag,
-        pid,
-        tid
+        level = level,
+        time = "$date $timeStr",
+        content = content,
+        tag = tag,
+        pid = pidStr.toIntOrNull(),
+        tid = tidStr.toIntOrNull()
     )
 }
 
@@ -506,15 +523,9 @@ fun exportLogFile(context: Context, scope: CoroutineScope) {
     }
 }
 
-
-private fun skip(mExcludeList: List<Pattern>, line: String): Boolean {
-    for (pattern in mExcludeList) if (pattern.matcher(line).matches()) return true
-    return false
-}
-
 fun runLogcat(
     scope: CoroutineScope,
-    excludeList: MutableList<Pattern>,
+    excludeList: ACAutomaton = ACAutomaton(),
     pushLogs: (LogEntry) -> Unit
 ): Process {
     val process = ProcessBuilder(listOf("logcat", "-v", "threadtime")).start()
@@ -525,14 +536,8 @@ fun runLogcat(
             while (true) {
                 try {
                     it.readLine()?.let { line ->
-                        try {
-                            if (skip(excludeList, line))
-                                return@let
-                            pushLogs(parseLog(line))
-                        } catch (e: Exception) {
-                            Log.w("parse log failed", "$e: log: $line")
-                            pushLogs(LogEntry(LogLevel.INFO, Date().toString(), line))
-                        }
+                        if (excludeList.exist(line)) return@let
+                        pushLogs(parseLog(line))
                     } ?: break
                 } catch (e: Exception) {
                     Log.w("read log failed", "$e")
@@ -556,15 +561,9 @@ fun SharedTransitionScope.LogcatCompose(
     animatedVisibilityScope: AnimatedVisibilityScope,
 ) {
     val excludeList = remember {
-        val mExcludeList: MutableList<Pattern> = ArrayList()
-        excludeList?.forEach {
-            try {
-                mExcludeList.add(Pattern.compile(it))
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
-
+        val mExcludeList = ACAutomaton()
+        excludeList?.forEach { mExcludeList.insert(it) }
+        mExcludeList.buildFail()
         mExcludeList
     }
 
