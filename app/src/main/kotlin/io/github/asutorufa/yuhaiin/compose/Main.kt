@@ -108,22 +108,22 @@ fun Main(activity: MainActivity) {
                     exitTransition = { slideOutVertically { it } + fadeOut() },
                 ) {
                     val logcatExcludeRules = arrayListOf(
-                        ".*]: processMotionEvent MotionEvent \\{ action=ACTION_.*",
-                        ".*]: dispatchPointerEvent handled=true, event=MotionEvent \\{ action=ACTION_.*",
-                        ".*Davey! duration=.*",
+                        "]: processMotionEvent MotionEvent \\{ action=ACTION_",
+                        "]: dispatchPointerEvent handled=true, event=MotionEvent \\{ action=ACTION_",
+                        "Davey! duration=",
                         // android popup window select text debug log
-                        ".*Attempted to finish an input event but the input event receiver has already been disposed.*",
-                        ".*endAllActiveAnimators on .* with handle.*",
-                        ".*Initializing SystemTextClassifier,.*",
-                        ".*TextClassifier called on main thread.*",
-                        ".*android added item .*",
-                        ".*No package ID .* found for ID.*",
-                        ".*eglMakeCurrent:.*",
-                        ".*NotificationManager: io.github.asutorufa.yuhaiin: notify.*",
-                        ".*InputEventReceiver_DOT: IER.scheduleInputVsync.*",
-                        ".*ViewRootImpl@.*[.*]: .*",
-                        ".*androidx.compose.*",
-                        ".*ViewPostIme.*"
+                        "Attempted to finish an input event but the input event receiver has already been disposed",
+                        "endAllActiveAnimators on ",
+                        "Initializing SystemTextClassifier,",
+                        "TextClassifier called on main thread",
+                        "android added item ",
+                        "No package ID ",
+                        "eglMakeCurrent:",
+                        "NotificationManager: io.github.asutorufa.yuhaiin: notify",
+                        "InputEventReceiver_DOT: IER.scheduleInputVsync",
+                        "ViewRootImpl@",
+                        "androidx.compose",
+                        "ViewPostIme"
                     )
 
                     LogcatCompose(

@@ -250,7 +250,7 @@ fun AppList(
         modifier = modifier
             .fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(8.dp),
-        contentPadding = PaddingValues(bottom = 8.dp, top = statusBarHeight.dp)
+        contentPadding = PaddingValues(bottom = 16.dp, top = statusBarHeight.dp)
     ) {
         items(filteredApps) { app ->
             Card(
