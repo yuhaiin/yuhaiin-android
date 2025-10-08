@@ -3,7 +3,7 @@ package io.github.asutorufa.yuhaiin
 import android.app.Application
 import android.net.ConnectivityManager
 import android.os.Build
-import androidx.annotation.RequiresApi
+import android.util.Log
 import androidx.core.content.getSystemService
 import go.Seq
 import kotlinx.serialization.json.Json
@@ -26,7 +26,6 @@ open class MainApplication : Application() {
     val connectivity by lazy { this.getSystemService<ConnectivityManager>()!! }
 
     inner class UidDumper : yuhaiin.UidDumper {
-        @RequiresApi(Build.VERSION_CODES.Q)
         override fun dumpUid(
             p0: Int,
             srcIp: String?,
@@ -34,17 +33,18 @@ open class MainApplication : Application() {
             destIp: String?,
             destPort: Int
         ): Int =
-            connectivity.getConnectionOwnerUid(
-                p0,
-                InetSocketAddress(srcIp, srcPort),
-                InetSocketAddress(destIp, destPort)
-            )
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                connectivity.getConnectionOwnerUid(
+                    p0,
+                    InetSocketAddress(srcIp, srcPort),
+                    InetSocketAddress(destIp, destPort)
+                )
+            } else {
+                0
+            }
 
         override fun getUidInfo(p0: Int): String = packageManager.getNameForUid(p0) ?: "unknown"
     }
-
-
-    private val uidDumper = UidDumper()
 
     override fun onCreate() {
         super.onCreate()
@@ -52,13 +52,20 @@ open class MainApplication : Application() {
         Yuhaiin.setSavePath(getExternalFilesDir("yuhaiin").toString())
         Yuhaiin.setDataDir(applicationInfo.dataDir)
         Yuhaiin.setInterfaces(GetInterfaces())
-        Yuhaiin.setProcessDumper(uidDumper)
+        Yuhaiin.setProcessDumper(UidDumper())
         store = Yuhaiin.getStore()
     }
+    
+    override fun onTerminate() {
+        super.onTerminate()
+        try {
+            store.close()
+        } catch (e: Exception) {
+            Log.e("close store", "$e")
+        }
+    }
 
-    class InterfaceIterImpl(
-        private val data: MutableList<Interface>
-    ) : InterfaceIter {
+    class InterfaceIterImpl(private val data: MutableList<Interface>) : InterfaceIter {
         private var index = 0
 
         override fun next(): Interface? {
@@ -69,9 +76,7 @@ open class MainApplication : Application() {
             }
         }
 
-        override fun hasNext(): Boolean {
-            return index < data.size
-        }
+        override fun hasNext(): Boolean = index < data.size
 
         override fun reset() {
             index = 0
@@ -79,7 +84,7 @@ open class MainApplication : Application() {
     }
 
     class AddressIterImpl(
-        private val data: ArrayList<AddressPrefix> // 或 MutableList<Interface>
+        private val data: ArrayList<AddressPrefix>
     ) : AddressIter {
         private var index = 0
 

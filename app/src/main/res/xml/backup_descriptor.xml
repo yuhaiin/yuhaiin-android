@@ -4,9 +4,9 @@
         domain="database"
         path="." />
     <include
-        domain="external"
+        domain="file"
         path="." />
     <exclude
-        domain="external"
+        domain="file"
         path="./yuhaiin/log" />
 </full-backup-content>

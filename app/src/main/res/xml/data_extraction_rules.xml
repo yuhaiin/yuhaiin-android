@@ -1,14 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <data-extraction-rules>
-    <cloud-backup>
-        <include
-            domain="database"
-            path="." />
-        <include
-            domain="external"
-            path="." />
-        <exclude
-            domain="external"
-            path="./yuhaiin/log" />
-    </cloud-backup>
+    <allow domain="file" />
+    <allow domain="database" />
 </data-extraction-rules>
