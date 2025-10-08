@@ -1,6 +1,5 @@
 package io.github.asutorufa.yuhaiin.service
 
-import android.annotation.SuppressLint
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -36,7 +35,6 @@ import yuhaiin.TunAddress
 import yuhaiin.Yuhaiin
 
 
-@SuppressLint("VpnServicePolicy")
 class YuhaiinVpnService : VpnService() {
     companion object {
         enum class State {
