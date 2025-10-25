@@ -4,7 +4,7 @@ plugins {
     id("com.android.application")
     kotlin("android")
     id("androidx.navigation.safeargs.kotlin")
-    kotlin("plugin.serialization") version "2.2.20"
+    kotlin("plugin.serialization") version "2.2.21"
     id("org.jetbrains.kotlin.plugin.compose")
 }
 
@@ -169,20 +169,20 @@ dependencies {
 
     implementation(project(":yuhaiin"))
 
-    val composeBom = platform("androidx.compose:compose-bom:2025.10.00")
+    val composeBom = platform("androidx.compose:compose-bom:2025.10.01")
     implementation(composeBom)
     androidTestImplementation(composeBom)
     implementation("androidx.compose.ui:ui-graphics")
-    implementation("androidx.compose.ui:ui-text:1.9.3")
+    implementation("androidx.compose.ui:ui-text:1.9.4")
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
-    implementation("androidx.compose.material3:material3:1.5.0-alpha06")
+    implementation("androidx.compose.material3:material3:1.5.0-alpha07")
     implementation("androidx.compose.ui:ui-tooling-preview")
-    implementation("androidx.compose.foundation:foundation:1.9.3")
+    implementation("androidx.compose.foundation:foundation:1.9.4")
     debugImplementation("androidx.compose.ui:ui-tooling")
-    implementation("androidx.compose.ui:ui:1.10.0-alpha05")
-    implementation("androidx.activity:activity-compose:1.12.0-alpha09")
+    implementation("androidx.compose.ui:ui:1.10.0-beta01")
+    implementation("androidx.activity:activity-compose:1.12.0-beta01")
     implementation("androidx.fragment:fragment-compose:1.8.9")
-    implementation("androidx.compose.material:material-navigation:1.10.0-alpha05")
+    implementation("androidx.compose.material:material-navigation:1.10.0-beta01")
     implementation("androidx.compose.material:material-icons-core:1.7.8")
 }
