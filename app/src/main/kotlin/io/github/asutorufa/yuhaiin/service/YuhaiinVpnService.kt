@@ -216,16 +216,6 @@ class YuhaiinVpnService : VpnService() {
         }
     }
 
-    private fun Builder.addRuleRoute() {
-        Yuhaiin.addRulesCidrv2 {
-            try {
-                addRoute(it.ip, it.mask)
-            } catch (e: Exception) {
-                Log.w("vpn service", "addRuleRoute: $e")
-            }
-        }
-    }
-
     private fun configure(tunAddress: TunAddress) {
         Builder().apply {
             setMtu(VPN_MTU)
@@ -265,13 +255,11 @@ class YuhaiinVpnService : VpnService() {
             when (MainApplication.store.getString(resources.getString(R.string.adv_route_Key))) {
                 resources.getString(R.string.adv_route_non_chn) -> {
                     resources.getStringArray(R.array.simple_route).forEach { addRoute(it) }
-                    addRuleRoute()
                 }
 
                 resources.getString(R.string.adv_route_non_local) -> {
                     resources.getStringArray(R.array.all_routes_except_local)
                         .forEach { addRoute(it) }
-                    addRuleRoute()
                 }
 
                 else -> {
