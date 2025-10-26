@@ -167,7 +167,10 @@ fun SharedTransitionScope.WebViewComponent(
                         webView.value = this
                     }
                 }
-                if (webView.value != null) AndroidView(factory = { webView.value!! })
+                if (webView.value != null) AndroidView(
+                    factory = { webView.value!! },
+                    modifier = Modifier.fillMaxSize()
+                )
                 if (isLoading) {
                     LoadingIndicator(
                         modifier = Modifier
