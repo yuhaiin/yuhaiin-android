@@ -55,11 +55,11 @@ open class MainApplication : Application() {
         Yuhaiin.setProcessDumper(UidDumper())
         store = Yuhaiin.getStore()
     }
-    
+
     override fun onTerminate() {
         super.onTerminate()
         try {
-            store.close()
+            Yuhaiin.closeStore()
         } catch (e: Exception) {
             Log.e("close store", "$e")
         }
