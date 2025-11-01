@@ -54,8 +54,8 @@ tasks.withType<org.jetbrains.kotlin.gradle.internal.KaptWithoutKotlincTask>().co
 }
 
 android {
-    compileSdk = 36
 
+    compileSdk = 36
     compileOptions {
         // Flag to enable support for the new language APIs
         sourceCompatibility = JavaVersion.VERSION_17
@@ -153,6 +153,8 @@ android {
         buildConfig = true
         aidl = true
     }
+    buildToolsVersion = "36.1.0"
+    compileSdkMinor = 1
 }
 
 dependencies {
