@@ -10,14 +10,14 @@ buildscript {
         google()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:8.13.0'
+        classpath 'com.android.tools.build:gradle:8.13.1'
 
         // NOTE: Do not place your application dependencies here; they belong
         // in the individual module build.gradle files
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
         classpath 'org.jetbrains.kotlin:compose-compiler-gradle-plugin:2.2.21'
 
-        def nav_version = "2.9.5"
+        def nav_version = "2.9.6"
         classpath "androidx.navigation:navigation-safe-args-gradle-plugin:$nav_version"
     }
 }

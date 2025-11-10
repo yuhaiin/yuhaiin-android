@@ -166,25 +166,25 @@ dependencies {
     implementation("fastutil:fastutil:5.0.9")
 
     // nav
-    val navVersion = "2.9.5"
+    val navVersion = "2.9.6"
     implementation("androidx.navigation:navigation-compose:${navVersion}")
 
     implementation(project(":yuhaiin"))
 
-    val composeBom = platform("androidx.compose:compose-bom:2025.10.01")
+    val composeBom = platform("androidx.compose:compose-bom:2025.11.00")
     implementation(composeBom)
     androidTestImplementation(composeBom)
     implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.ui:ui-text:1.9.4")
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
-    implementation("androidx.compose.material3:material3:1.5.0-alpha07")
+    implementation("androidx.compose.material3:material3:1.5.0-alpha08")
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.foundation:foundation:1.9.4")
     debugImplementation("androidx.compose.ui:ui-tooling")
-    implementation("androidx.compose.ui:ui:1.10.0-beta01")
-    implementation("androidx.activity:activity-compose:1.12.0-beta01")
+    implementation("androidx.compose.ui:ui:1.10.0-beta02")
+    implementation("androidx.activity:activity-compose:1.12.0-rc01")
     implementation("androidx.fragment:fragment-compose:1.8.9")
-    implementation("androidx.compose.material:material-navigation:1.10.0-beta01")
+    implementation("androidx.compose.material:material-navigation:1.10.0-beta02")
     implementation("androidx.compose.material:material-icons-core:1.7.8")
 }
