@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -45,7 +44,6 @@ import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.FabPosition
 import androidx.compose.material3.FloatingActionButtonMenu
 import androidx.compose.material3.FloatingActionButtonMenuItem
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -599,7 +597,7 @@ fun PortsInputForm(
 
 
     SettingsItem(
-        title = "Ports",
+        title = "Listener",
         icon = painterResource(R.drawable.vpn_lock),
         onClick = { showBottomSheet = true },
     )
@@ -617,61 +615,61 @@ fun PortsInputForm(
                 showBottomSheet = false
                 store?.putInt("http_port", http)
             },
-            sheetState = rememberModalBottomSheetState()
+            sheetState = rememberModalBottomSheetState(true)
         ) {
-            Column(
+            Box(
                 modifier = Modifier
                     .padding(horizontal = 16.dp)
+                    .padding(bottom = 16.dp)
             ) {
-                if (addresses?.isNotEmpty() == true) {
-                    Box(
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    OutlinedTextField(
+                        value = http.toString(),
+                        onValueChange = { it ->
+                            if (it.all { it.isDigit() }) {
+                                val number = it.toIntOrNull()
+                                if (number == null || number in 0..65535) {
+                                    http = it.toInt()
+                                }
+                            }
+                        },
+                        label = { Text("HTTP & SOCKS5") },
+                        singleLine = true,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .verticalScroll(rememberScrollState())
-                            .background(
-                                MaterialTheme.colorScheme.surfaceVariant,
-                                shape = MaterialTheme.shapes.medium
-                            )
-                            .padding(10.dp)
-                    ) {
-                        SelectionContainer {
-                            Text(addresses.joinToString("\n"))
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    OutlinedTextField(
+                        value = yuhaiin.toString(),
+                        onValueChange = { },
+                        label = { Text("YUHAIIN") },
+                        singleLine = true,
+                        enabled = false,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                    )
+
+                    if (addresses?.isNotEmpty() == true) {
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .verticalScroll(rememberScrollState())
+                                .background(
+                                    MaterialTheme.colorScheme.surfaceVariant,
+                                    shape = MaterialTheme.shapes.medium
+                                )
+                                .padding(10.dp)
+                        ) {
+                            SelectionContainer {
+                                Text(addresses.joinToString("\n"))
+                            }
                         }
                     }
                 }
-
-                Spacer(modifier = Modifier.height(16.dp))
             }
-
-            OutlinedTextField(
-                value = http.toString(),
-                onValueChange = { it ->
-                    if (it.all { it.isDigit() }) {
-                        val number = it.toIntOrNull()
-                        if (number == null || number in 0..65535) {
-                            http = it.toInt()
-                        }
-                    }
-                },
-                label = { Text("HTTP & SOCKS5") },
-                singleLine = true,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 10.dp)
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            OutlinedTextField(
-                value = yuhaiin.toString(),
-                onValueChange = { },
-                label = { Text("YUHAIIN") },
-                singleLine = true,
-                enabled = false,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 10.dp)
-            )
         }
     }
 }
