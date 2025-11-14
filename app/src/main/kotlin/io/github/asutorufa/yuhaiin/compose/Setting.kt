@@ -626,12 +626,13 @@ fun PortsInputForm(
                     OutlinedTextField(
                         value = http.toString(),
                         onValueChange = { text ->
-                            if (text.isEmpty()) {
-                                http = 0
-                            } else if (text.all { it.isDigit() }) {
-                                text.toIntOrNull()?.let { number ->
-                                    if (number in 0..65535) {
-                                        http = number
+                            when {
+                                text.isEmpty() -> http = 0
+                                text.all { it.isDigit() } -> {
+                                    text.toIntOrNull()?.let { number ->
+                                        if (number in 0..65535) {
+                                            http = number
+                                        }
                                     }
                                 }
                             }

@@ -22,26 +22,24 @@ open class MainApplication : Application() {
     companion object {
         lateinit var store: Store
 
-        fun getAddresses(): List<String> {
-            return try {
-                NetworkInterface.getNetworkInterfaces()?.asSequence()
-                    ?.filter {
-                        it.isUp
-                                && !it.isLoopback
-                                && !it.isVirtual
-                                && !it.name.startsWith("dummy")
-                                && !it.name.startsWith("lo")
+        fun getAddresses(): List<String> = try {
+            NetworkInterface.getNetworkInterfaces()?.asSequence()
+                ?.filter {
+                    it.isUp &&
+                            !it.isLoopback &&
+                            !it.isVirtual &&
+                            !it.name.startsWith("dummy") &&
+                            !it.name.startsWith("lo")
+                }
+                ?.flatMap { nif ->
+                    nif.interfaceAddresses.asSequence().mapNotNull { ia ->
+                        ia.address?.hostAddress?.substringBefore('%')
+                            ?.let { "$it (${nif.name})" }
                     }
-                    ?.flatMap { nif ->
-                        nif.interfaceAddresses.asSequence().mapNotNull { ia ->
-                            ia.address?.hostAddress?.substringBefore('%')
-                                ?.let { "$it (${nif.name})" }
-                        }
-                    }?.toList() ?: emptyList()
-            } catch (e: java.net.SocketException) {
-                Log.e("MainApplication", "Could not get network interfaces", e)
-                emptyList()
-            }
+                }?.toList() ?: emptyList()
+        } catch (e: java.net.SocketException) {
+            Log.e("MainApplication", "Could not get network interfaces", e)
+            emptyList()
         }
     }
 
