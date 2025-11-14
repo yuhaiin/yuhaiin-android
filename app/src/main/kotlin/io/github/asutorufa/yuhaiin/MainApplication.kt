@@ -21,6 +21,26 @@ open class MainApplication : Application() {
 
     companion object {
         lateinit var store: Store
+
+        fun getAddresses(): List<String> = try {
+            NetworkInterface.getNetworkInterfaces()?.asSequence()
+                ?.filter {
+                    it.isUp &&
+                            !it.isLoopback &&
+                            !it.isVirtual &&
+                            !it.name.startsWith("dummy") &&
+                            !it.name.startsWith("lo")
+                }
+                ?.flatMap { nif ->
+                    nif.interfaceAddresses.asSequence().mapNotNull { ia ->
+                        ia.address?.hostAddress?.substringBefore('%')
+                            ?.let { "$it (${nif.name})" }
+                    }
+                }?.toList() ?: emptyList()
+        } catch (e: java.net.SocketException) {
+            Log.e("MainApplication", "Could not get network interfaces", e)
+            emptyList()
+        }
     }
 
     val connectivity by lazy { this.getSystemService<ConnectivityManager>()!! }
@@ -106,7 +126,7 @@ open class MainApplication : Application() {
     }
 
     inner class GetInterfaces : Interfaces {
-        override fun getInterfaces(): InterfaceIter? {
+        override fun getInterfaces(): InterfaceIter {
             val interfaces: List<NetworkInterface> =
                 NetworkInterface.getNetworkInterfaces().toList()
             val sb = mutableListOf<Interface>()
@@ -144,6 +164,7 @@ open class MainApplication : Application() {
         }
     }
 }
+
 
 fun Store.getStringSet(key: String?): Set<String> {
     val data = getString(key)

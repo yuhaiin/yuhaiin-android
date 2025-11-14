@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -27,6 +26,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
@@ -94,6 +96,7 @@ import yuhaiin.Store
 fun SharedTransitionScope.SettingCompose(
     navController: NavController? = null,
     store: Store? = null,
+    addresses: List<String>? = null,
     animatedContentScope: AnimatedContentScope? = null,
     startService: () -> Unit = {},
     stopService: () -> Unit = {},
@@ -238,7 +241,7 @@ fun SharedTransitionScope.SettingCompose(
                     }
                 }
                 item {
-                    PortsInputForm(store)
+                    PortsInputForm(store, addresses)
                 }
                 item {
                     SwitchStore(
@@ -588,13 +591,13 @@ fun ListPreferenceSetting(
 @Preview
 fun PortsInputForm(
     store: Store? = null,
+    addresses: List<String>? = listOf("1.1.1.1", "1.2.3.4"),
 ) {
-    val sheetState = rememberModalBottomSheetState()
     var showBottomSheet by remember { mutableStateOf(false) }
 
 
     SettingsItem(
-        title = "Ports",
+        title = "Listener",
         icon = painterResource(R.drawable.vpn_lock),
         onClick = { showBottomSheet = true },
     )
@@ -609,45 +612,67 @@ fun PortsInputForm(
 
         ModalBottomSheet(
             onDismissRequest = {
-                store?.putInt("http_port", http)
                 showBottomSheet = false
+                store?.putInt("http_port", http)
             },
-            sheetState = sheetState
+            sheetState = rememberModalBottomSheetState(true)
         ) {
-            Column(
+            Box(
                 modifier = Modifier
-                    .fillMaxHeight(0.3f)
                     .padding(horizontal = 16.dp)
+                    .padding(bottom = 16.dp)
             ) {
-                OutlinedTextField(
-                    value = http.toString(),
-                    onValueChange = { it ->
-                        if (it.all { it.isDigit() }) {
-                            val number = it.toIntOrNull()
-                            if (number == null || number in 0..65535) {
-                                http = it.toInt()
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    OutlinedTextField(
+                        value = http.toString(),
+                        onValueChange = { text ->
+                            when {
+                                text.isEmpty() -> http = 0
+                                text.all { it.isDigit() } -> {
+                                    text.toIntOrNull()?.let { number ->
+                                        if (number in 0..65535) {
+                                            http = number
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        label = { Text("HTTP & SOCKS5") },
+                        singleLine = true,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    OutlinedTextField(
+                        value = yuhaiin.toString(),
+                        onValueChange = { },
+                        label = { Text("YUHAIIN") },
+                        singleLine = true,
+                        enabled = false,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                    )
+
+                    if (!addresses.isNullOrEmpty()) {
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .verticalScroll(rememberScrollState())
+                                .background(
+                                    MaterialTheme.colorScheme.surfaceVariant,
+                                    shape = MaterialTheme.shapes.medium
+                                )
+                                .padding(10.dp)
+                        ) {
+                            SelectionContainer {
+                                Text(addresses.joinToString("\n"))
                             }
                         }
-                    },
-                    label = { Text("HTTP & SOCKS5") },
-                    singleLine = true,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 10.dp)
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                OutlinedTextField(
-                    value = yuhaiin.toString(),
-                    onValueChange = { },
-                    label = { Text("YUHAIIN") },
-                    singleLine = true,
-                    enabled = false,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 10.dp)
-                )
+                    }
+                }
             }
         }
     }
