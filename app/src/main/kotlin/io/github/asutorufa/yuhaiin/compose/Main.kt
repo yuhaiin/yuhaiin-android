@@ -85,6 +85,7 @@ fun Main(activity: MainActivity) {
                         startService = { activity.startService() },
                         animatedContentScope = this@composable,
                         store = MainApplication.store,
+                        addresses = MainApplication.getAddresses(),
                     )
                 }
 

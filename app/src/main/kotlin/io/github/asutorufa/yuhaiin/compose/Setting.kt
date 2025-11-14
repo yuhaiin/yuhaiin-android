@@ -27,6 +27,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
@@ -42,6 +45,7 @@ import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.FabPosition
 import androidx.compose.material3.FloatingActionButtonMenu
 import androidx.compose.material3.FloatingActionButtonMenuItem
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -94,6 +98,7 @@ import yuhaiin.Store
 fun SharedTransitionScope.SettingCompose(
     navController: NavController? = null,
     store: Store? = null,
+    addresses: List<String>? = null,
     animatedContentScope: AnimatedContentScope? = null,
     startService: () -> Unit = {},
     stopService: () -> Unit = {},
@@ -238,7 +243,7 @@ fun SharedTransitionScope.SettingCompose(
                     }
                 }
                 item {
-                    PortsInputForm(store)
+                    PortsInputForm(store, addresses)
                 }
                 item {
                     SwitchStore(
@@ -588,8 +593,8 @@ fun ListPreferenceSetting(
 @Preview
 fun PortsInputForm(
     store: Store? = null,
+    addresses: List<String>? = listOf("1.1.1.1", "1.2.3.4"),
 ) {
-    val sheetState = rememberModalBottomSheetState()
     var showBottomSheet by remember { mutableStateOf(false) }
 
 
@@ -609,46 +614,64 @@ fun PortsInputForm(
 
         ModalBottomSheet(
             onDismissRequest = {
-                store?.putInt("http_port", http)
                 showBottomSheet = false
+                store?.putInt("http_port", http)
             },
-            sheetState = sheetState
+            sheetState = rememberModalBottomSheetState()
         ) {
             Column(
                 modifier = Modifier
-                    .fillMaxHeight(0.3f)
                     .padding(horizontal = 16.dp)
             ) {
-                OutlinedTextField(
-                    value = http.toString(),
-                    onValueChange = { it ->
-                        if (it.all { it.isDigit() }) {
-                            val number = it.toIntOrNull()
-                            if (number == null || number in 0..65535) {
-                                http = it.toInt()
-                            }
+                if (addresses?.isNotEmpty() == true) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .verticalScroll(rememberScrollState())
+                            .background(
+                                MaterialTheme.colorScheme.surfaceVariant,
+                                shape = MaterialTheme.shapes.medium
+                            )
+                            .padding(10.dp)
+                    ) {
+                        SelectionContainer {
+                            Text(addresses.joinToString("\n"))
                         }
-                    },
-                    label = { Text("HTTP & SOCKS5") },
-                    singleLine = true,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 10.dp)
-                )
+                    }
+                }
 
                 Spacer(modifier = Modifier.height(16.dp))
-
-                OutlinedTextField(
-                    value = yuhaiin.toString(),
-                    onValueChange = { },
-                    label = { Text("YUHAIIN") },
-                    singleLine = true,
-                    enabled = false,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 10.dp)
-                )
             }
+
+            OutlinedTextField(
+                value = http.toString(),
+                onValueChange = { it ->
+                    if (it.all { it.isDigit() }) {
+                        val number = it.toIntOrNull()
+                        if (number == null || number in 0..65535) {
+                            http = it.toInt()
+                        }
+                    }
+                },
+                label = { Text("HTTP & SOCKS5") },
+                singleLine = true,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 10.dp)
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            OutlinedTextField(
+                value = yuhaiin.toString(),
+                onValueChange = { },
+                label = { Text("YUHAIIN") },
+                singleLine = true,
+                enabled = false,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 10.dp)
+            )
         }
     }
 }
