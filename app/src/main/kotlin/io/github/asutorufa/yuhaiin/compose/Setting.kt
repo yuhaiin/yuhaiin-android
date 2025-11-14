@@ -625,11 +625,14 @@ fun PortsInputForm(
                 Column(modifier = Modifier.fillMaxWidth()) {
                     OutlinedTextField(
                         value = http.toString(),
-                        onValueChange = { it ->
-                            if (it.all { it.isDigit() }) {
-                                val number = it.toIntOrNull()
-                                if (number == null || number in 0..65535) {
-                                    http = it.toInt()
+                        onValueChange = { text ->
+                            if (text.isEmpty()) {
+                                http = 0
+                            } else if (text.all { it.isDigit() }) {
+                                text.toIntOrNull()?.let { number ->
+                                    if (number in 0..65535) {
+                                        http = number
+                                    }
                                 }
                             }
                         },
@@ -651,7 +654,7 @@ fun PortsInputForm(
                             .fillMaxWidth()
                     )
 
-                    if (addresses?.isNotEmpty() == true) {
+                    if (!addresses.isNullOrEmpty()) {
                         Spacer(modifier = Modifier.height(16.dp))
                         Box(
                             modifier = Modifier

@@ -6,7 +6,6 @@ import android.os.Build
 import android.util.Log
 import androidx.core.content.getSystemService
 import go.Seq
-import io.github.asutorufa.yuhaiin.MainApplication.AddressIterImpl
 import kotlinx.serialization.json.Json
 import yuhaiin.AddressIter
 import yuhaiin.AddressPrefix
@@ -17,7 +16,6 @@ import yuhaiin.Store
 import yuhaiin.Yuhaiin
 import java.net.InetSocketAddress
 import java.net.NetworkInterface
-import kotlin.text.trimStart
 
 open class MainApplication : Application() {
 
@@ -25,27 +23,25 @@ open class MainApplication : Application() {
         lateinit var store: Store
 
         fun getAddresses(): List<String> {
-            val interfaces: List<NetworkInterface> =
-                NetworkInterface.getNetworkInterfaces().toList()
-            val sb = mutableListOf<String>()
-
-            for (nif in interfaces) {
-                if (nif.name.startsWith("dummy") || nif.name.startsWith("lo")) continue
-
-                try {
-                    for (ia in nif.interfaceAddresses) {
-                        sb.add(
-                            "${
-                                ia.address.toString().trimStart('/').substringBefore("%")
-                            } (${nif.name})"
-                        )
+            return try {
+                NetworkInterface.getNetworkInterfaces()?.asSequence()
+                    ?.filter {
+                        it.isUp
+                                && !it.isLoopback
+                                && !it.isVirtual
+                                && !it.name.startsWith("dummy")
+                                && !it.name.startsWith("lo")
                     }
-                } catch (_: Exception) {
-                    continue
-                }
+                    ?.flatMap { nif ->
+                        nif.interfaceAddresses.asSequence().mapNotNull { ia ->
+                            ia.address?.hostAddress?.substringBefore('%')
+                                ?.let { "$it (${nif.name})" }
+                        }
+                    }?.toList() ?: emptyList()
+            } catch (e: java.net.SocketException) {
+                Log.e("MainApplication", "Could not get network interfaces", e)
+                emptyList()
             }
-
-            return sb
         }
     }
 
