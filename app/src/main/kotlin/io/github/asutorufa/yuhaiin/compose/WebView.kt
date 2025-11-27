@@ -2,7 +2,9 @@ package io.github.asutorufa.yuhaiin.compose
 
 import android.annotation.SuppressLint
 import android.graphics.Bitmap
+import android.view.View
 import android.webkit.JavascriptInterface
+import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.activity.compose.BackHandler
@@ -31,7 +33,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -40,13 +41,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.net.toUri
 import androidx.navigation.NavController
-import kotlinx.coroutines.delay
 
 @SuppressLint("SetJavaScriptEnabled")
 @OptIn(
@@ -60,7 +59,6 @@ fun SharedTransitionScope.WebViewComponent(
     navController: NavController? = null,
     getPort: () -> Int = { 0 },
 ) {
-    val context = LocalContext.current
     var isLoading by remember { mutableStateOf(true) }
     val webView = remember { mutableStateOf<WebView?>(null) }
     var expanded by rememberSaveable { mutableStateOf(false) }
@@ -132,43 +130,42 @@ fun SharedTransitionScope.WebViewComponent(
                     .fillMaxSize()
                     .animateContentSize()
             ) {
-                LaunchedEffect(Unit) {
-                    val startTime = System.currentTimeMillis()
-                    WebView(context).apply {
-                        addJavascriptInterface(object {
-                            @JavascriptInterface
-                            fun setRefreshEnabled(enabled: Boolean) {
-                            }
-                        }, "Android")
+                AndroidView(
+                    factory = { context ->
+                        WebView(context).apply {
+                            addJavascriptInterface(object {
+                                @JavascriptInterface
+                                fun setRefreshEnabled(enabled: Boolean) {
+                                }
+                            }, "Android")
 
-                        webViewClient = object : WebViewClient() {
-                            override fun onPageStarted(
-                                view: WebView?,
-                                url: String?,
-                                favicon: Bitmap?
-                            ) {
-                                super.onPageStarted(view, url, favicon)
-                                isLoading = true
+                            settings.javaScriptEnabled = true
+                            settings.domStorageEnabled = true
+                            settings.layoutAlgorithm = WebSettings.LayoutAlgorithm.NORMAL
+
+                            setLayerType(View.LAYER_TYPE_HARDWARE, null)
+
+                            webViewClient = object : WebViewClient() {
+                                override fun onPageStarted(
+                                    view: WebView?,
+                                    url: String?,
+                                    favicon: Bitmap?
+                                ) {
+                                    super.onPageStarted(view, url, favicon)
+                                    isLoading = true
+                                }
+
+                                override fun onPageFinished(view: WebView?, url: String?) {
+                                    super.onPageFinished(view, url)
+                                    isLoading = false
+                                }
                             }
 
-                            override fun onPageFinished(view: WebView?, url: String?) {
-                                super.onPageFinished(view, url)
-                                isLoading = false
-                            }
+                            loadUrl("http://127.0.0.1:${getPort()}")
+
+                            webView.value = this
                         }
-
-                        settings.javaScriptEnabled = true
-                        settings.domStorageEnabled = true
-                        loadUrl("http://127.0.0.1:${getPort()}")
-
-                        (System.currentTimeMillis() - startTime).apply {
-                            if (this < 500) delay(500 - this)
-                        }
-                        webView.value = this
-                    }
-                }
-                if (webView.value != null) AndroidView(
-                    factory = { webView.value!! },
+                    },
                     modifier = Modifier.fillMaxSize()
                 )
                 if (isLoading) {
