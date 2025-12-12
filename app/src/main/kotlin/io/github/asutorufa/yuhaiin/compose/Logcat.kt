@@ -83,16 +83,18 @@ import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileOutputStream
 import java.util.Date
+import java.util.regex.Pattern
+
 
 enum class LogLevel(val tag: String, val bgColor: Color, val priority: Int) {
     DEBUG("DEBUG", Color(0xFF4CAF50), 1),
     INFO("INFO", Color(0xFF2196F3), 2),
     WARN("WARN", Color(0xFFFFC107), 3),
     ERROR("ERROR", Color(0xFFF44336), 4);
-}
 
-fun isLevelEnabled(filter: LogLevel, logLevel: LogLevel): Boolean {
-    return logLevel.priority >= filter.priority
+    fun enabled(filter: LogLevel): Boolean {
+        return priority >= filter.priority
+    }
 }
 
 @OptIn(
@@ -141,8 +143,7 @@ fun SharedTransitionScope.LogcatScreen(
                 ) {
                     LogList(
                         listState = listState,
-                        logs = logs,
-                        filter = filter,
+                        logs = logs.filter { it.level.enabled(filter) },
                     )
                 }
             },
@@ -265,7 +266,6 @@ fun LogList(
             )
         )
     },
-    filter: LogLevel = LogLevel.DEBUG,
 ) {
     var infoLog by remember { mutableStateOf<LogEntry?>(null) }
     var showBottomSheet by remember { mutableStateOf(false) }
@@ -279,23 +279,22 @@ fun LogList(
             contentPadding = PaddingValues(top = statusBarHeight.dp, bottom = 16.dp)
         ) {
             items(logs) { log ->
-                if (isLevelEnabled(filter, log.level))
-                    Card(
+                Card(
+                    modifier = Modifier
+                        .padding(horizontal = 6.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+                ) {
+                    LogItem(
+                        level = log.level,
+                        timeText = log.time,
+                        contentText = log.content,
                         modifier = Modifier
-                            .padding(horizontal = 6.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+                            .fillMaxWidth(),
                     ) {
-                        LogItem(
-                            level = log.level,
-                            timeText = log.time,
-                            contentText = log.content,
-                            modifier = Modifier
-                                .fillMaxWidth(),
-                        ) {
-                            infoLog = log
-                            showBottomSheet = true
-                        }
+                        infoLog = log
+                        showBottomSheet = true
                     }
+                }
             }
         }
 
@@ -383,6 +382,25 @@ fun LogDetail(
     }
 }
 
+/**
+ * Match a single line of `logcat -v threadtime`, such as:
+ * 05-26 11:02:36.886  5689  5689 D AndroidRuntime: CheckJNI is OFF
+ */
+val THREADTIME_LINE = Pattern.compile(
+    "^(\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}.\\d{3})\\s+" +  /* timestamp [1] */
+            "(\\d+)\\s+(\\d+)\\s+([A-Z])\\s+" +  /* pid/tid and log level [2-4] */
+            "(.+?)\\s*: (.*)$" /* tag and message [5-6]*/
+)
+
+/**
+ * Match a single line of `logcat -v time`, such as:
+ * 06-04 02:32:14.002 D/dalvikvm(  236): GC_CONCURRENT freed 580K, 51% free [...]
+ */
+val TIME_LINE = Pattern.compile(
+    "^(\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}.\\d{3})\\s+" +  /* timestamp [1] */
+            "(\\w)/(.+?)\\(\\s*(\\d+)\\): (.*)$"
+) /* level, tag, pid, msg [2-5] */
+
 data class LogEntry(
     var level: LogLevel = LogLevel.INFO,
     var time: String = "",
@@ -391,6 +409,49 @@ data class LogEntry(
     var pid: Int? = 0,
     var tid: Int? = 0,
 )
+
+fun parseLogv2(line: String): LogEntry {
+    val log = LogEntry(
+        content = line
+    )
+
+    val m = THREADTIME_LINE.matcher(line)
+    if (m.matches()) {
+        log.time = m.group(1) ?: ""
+        log.pid = m.group(2)?.toInt()
+        log.tid = m.group(3)?.toInt()
+        log.level = when (m.group(4)) {
+            "V", "D" -> LogLevel.DEBUG
+            "I" -> LogLevel.INFO
+            "W" -> LogLevel.WARN
+            "E", "F" -> LogLevel.ERROR
+            else -> LogLevel.INFO
+        }
+        log.tag = m.group(5)
+        m.group(6)?.apply {
+            log.content = this
+        }
+    } else {
+        val tm = TIME_LINE.matcher(line)
+        if (!tm.matches()) return log
+
+        log.time = m.group(1) ?: ""
+        log.level = when (m.group(4)) {
+            "V", "D" -> LogLevel.DEBUG
+            "I" -> LogLevel.INFO
+            "W" -> LogLevel.WARN
+            "E", "F" -> LogLevel.ERROR
+            else -> LogLevel.INFO
+        }
+        log.tag = tm.group(3)
+        log.pid = tm.group(4)?.toInt()
+        tm.group(5)?.apply {
+            log.content = this
+        }
+    }
+
+    return log
+}
 
 fun parseLog(line: String): LogEntry {
     var i = 0
@@ -537,7 +598,7 @@ fun runLogcat(
                 try {
                     it.readLine()?.let { line ->
                         if (excludeList.exist(line)) return@let
-                        pushLogs(parseLog(line))
+                        pushLogs(parseLogv2(line))
                     } ?: break
                 } catch (e: Exception) {
                     Log.w("read log failed", "$e")
