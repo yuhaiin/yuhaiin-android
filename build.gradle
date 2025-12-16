@@ -4,7 +4,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 
 buildscript {
-    ext.kotlin_version = '2.2.21'
+    ext.kotlin_version = '2.3.0'
     repositories {
         mavenCentral()
         google()
@@ -15,7 +15,7 @@ buildscript {
         // NOTE: Do not place your application dependencies here; they belong
         // in the individual module build.gradle files
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
-        classpath 'org.jetbrains.kotlin:compose-compiler-gradle-plugin:2.2.21'
+        classpath 'org.jetbrains.kotlin:compose-compiler-gradle-plugin:2.3.0'
 
         def nav_version = "2.9.6"
         classpath "androidx.navigation:navigation-safe-args-gradle-plugin:$nav_version"
