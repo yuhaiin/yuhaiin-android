@@ -70,19 +70,9 @@ open class MainApplication : Application() {
         super.onCreate()
         Seq.setContext(this)
         Yuhaiin.setSavePath(getExternalFilesDir("yuhaiin").toString())
-        Yuhaiin.setDataDir(applicationInfo.dataDir)
         Yuhaiin.setInterfaces(GetInterfaces())
         Yuhaiin.setProcessDumper(UidDumper())
         store = Yuhaiin.getStore()
-    }
-
-    override fun onTerminate() {
-        super.onTerminate()
-        try {
-            Yuhaiin.closeStore()
-        } catch (e: Exception) {
-            Log.e("close store", "$e")
-        }
     }
 
     class InterfaceIterImpl(private val data: MutableList<Interface>) : InterfaceIter {
