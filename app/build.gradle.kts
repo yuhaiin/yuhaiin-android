@@ -90,11 +90,6 @@ android {
         }
     }
 
-    this.buildOutputs.all {
-        val variantOutputImpl = this as com.android.build.gradle.internal.api.BaseVariantOutputImpl
-        val variantName: String = variantOutputImpl.name
-        variantOutputImpl.outputFileName = "yuhaiin-${variantName}.apk"
-    }
 
     buildTypes {
         release {
@@ -115,7 +110,6 @@ android {
         }
     }
 
-
     splits {
         abi {
             isEnable = true
@@ -129,7 +123,7 @@ android {
 
     sourceSets {
         named("main") {
-            java.srcDir("src/main/kotlin")
+            java { directories.add("src/main/kotlin") }
         }
     }
 
@@ -154,6 +148,10 @@ android {
     }
     buildToolsVersion = "36.1.0"
     compileSdkMinor = 1
+}
+
+base {
+    archivesName.set("yuhaiin")
 }
 
 dependencies {
