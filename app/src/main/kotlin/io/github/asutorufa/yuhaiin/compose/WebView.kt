@@ -3,6 +3,7 @@ package io.github.asutorufa.yuhaiin.compose
 import android.annotation.SuppressLint
 import android.graphics.Bitmap
 import android.view.View
+import android.view.ViewGroup
 import android.webkit.JavascriptInterface
 import android.webkit.WebSettings
 import android.webkit.WebView
@@ -138,6 +139,11 @@ fun SharedTransitionScope.WebViewComponent(
                                 fun setRefreshEnabled(enabled: Boolean) {
                                 }
                             }, "Android")
+                            
+                            layoutParams = ViewGroup.LayoutParams(
+                                ViewGroup.LayoutParams.MATCH_PARENT,
+                                ViewGroup.LayoutParams.MATCH_PARENT
+                            )
 
                             settings.javaScriptEnabled = true
                             settings.domStorageEnabled = true
