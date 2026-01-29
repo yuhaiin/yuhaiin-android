@@ -158,12 +158,12 @@ dependencies {
     testImplementation(kotlin("test"))
     testImplementation("junit:junit:4.13.2")
     implementation("androidx.appcompat:appcompat:1.7.1")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.10.0")
     implementation("com.google.android.material:material:1.13.0")
     implementation("fastutil:fastutil:5.0.9")
 
     // nav
-    val navVersion = "2.9.6"
+    val navVersion = "2.9.7"
     implementation("androidx.navigation:navigation-compose:${navVersion}")
 
     implementation(project(":yuhaiin"))
