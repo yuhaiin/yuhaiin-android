@@ -3,7 +3,7 @@ import java.util.Date
 plugins {
     id("com.android.application")
     id("androidx.navigation.safeargs.kotlin")
-    kotlin("plugin.serialization") version "2.3.0"
+    kotlin("plugin.serialization") version "2.3.10"
     id("org.jetbrains.kotlin.plugin.compose")
 }
 
