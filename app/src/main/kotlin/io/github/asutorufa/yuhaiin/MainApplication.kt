@@ -73,6 +73,31 @@ open class MainApplication : Application() {
         Yuhaiin.setInterfaces(GetInterfaces())
         Yuhaiin.setProcessDumper(UidDumper())
         store = Yuhaiin.getStore()
+        initRoutes()
+    }
+
+    private fun initRoutes() {
+        val savedRoutes = store.getStringSet("saved_routes_list")
+        if (savedRoutes.isEmpty()) {
+            val all = getString(R.string.adv_route_all)
+            val nonLocal = getString(R.string.adv_route_non_local)
+            val nonChn = getString(R.string.adv_route_non_chn)
+
+            store.putStringSet("saved_routes_list", setOf(all, nonLocal, nonChn))
+
+            store.putString(
+                "route_content_$all",
+                "0.0.0.0/0\n::/0"
+            )
+            store.putString(
+                "route_content_$nonLocal",
+                resources.getStringArray(R.array.all_routes_except_local).joinToString("\n")
+            )
+            store.putString(
+                "route_content_$nonChn",
+                resources.getStringArray(R.array.simple_route).joinToString("\n")
+            )
+        }
     }
 
     class InterfaceIterImpl(private val data: MutableList<Interface>) : InterfaceIter {

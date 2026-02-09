@@ -253,20 +253,17 @@ class YuhaiinVpnService : VpnService() {
                 .addRoute("2000::", 3) // https://issuetracker.google.com/issues/149636790
                 .addRoute(tunAddress.iPv6, 64)
 
-            when (MainApplication.store.getString(resources.getString(R.string.adv_route_Key))) {
-                resources.getString(R.string.adv_route_non_chn) -> {
-                    resources.getStringArray(R.array.simple_route).forEach { addRoute(it) }
-                }
 
-                resources.getString(R.string.adv_route_non_local) -> {
-                    resources.getStringArray(R.array.all_routes_except_local)
-                        .forEach { addRoute(it) }
+            val routeKey = MainApplication.store.getString("route")
+            val content = MainApplication.store.getString("route_content_$routeKey")
+            Log.i("VPN", "Configure route: $routeKey")
+            if (content.isNotBlank()) {
+                content.split('\n').forEach {
+                    if (it.isNotBlank()) addRoute(it)
                 }
-
-                else -> {
-                    addRoute("0.0.0.0/0")
-                    if (Yuhaiin.isIPv6()) addRoute("::/0")
-                }
+            } else {
+                addRoute("0.0.0.0/0")
+                if (Yuhaiin.isIPv6()) addRoute("::/0")
             }
 
             addDnsServer(tunAddress.iPv4Portal)
