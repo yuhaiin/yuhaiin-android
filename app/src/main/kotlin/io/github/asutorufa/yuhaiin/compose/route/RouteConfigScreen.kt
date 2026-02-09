@@ -47,6 +47,7 @@ import io.github.asutorufa.yuhaiin.getStringSet
 import io.github.asutorufa.yuhaiin.putStringSet
 import yuhaiin.Store
 import yuhaiin.Yuhaiin
+import io.github.asutorufa.yuhaiin.remove
 
 @OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -245,6 +246,7 @@ fun SharedTransitionScope.RouteEditScreen(
     }
 
     if (showDeleteDialog) {
+        val allRouteName = stringResource(R.string.adv_route_all)
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
             title = { Text(stringResource(R.string.route_config_delete_confirm_title)) },
@@ -256,12 +258,11 @@ fun SharedTransitionScope.RouteEditScreen(
                             MainApplication.store.getStringSet("saved_routes_list").toMutableSet()
                         currentRoutes.remove(routeName)
                         MainApplication.store.putStringSet("saved_routes_list", currentRoutes)
-                        MainApplication.store.delete("route_content_$routeName")
+                        MainApplication.store.remove("route_content_$routeName")
 
                         // If current selected route is deleted, reset to All
-                        val all = stringResource(R.string.adv_route_all)
                         if (MainApplication.store.getString("route") == routeName) {
-                            MainApplication.store.putString("route", all)
+                            MainApplication.store.putString("route", allRouteName)
                         }
 
                         showDeleteDialog = false
