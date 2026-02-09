@@ -3,6 +3,8 @@ package io.github.asutorufa.yuhaiin.compose.route
 import androidx.compose.animation.AnimatedContentScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,8 +17,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
@@ -26,15 +28,19 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.painterResource
@@ -45,9 +51,9 @@ import io.github.asutorufa.yuhaiin.MainApplication
 import io.github.asutorufa.yuhaiin.R
 import io.github.asutorufa.yuhaiin.getStringSet
 import io.github.asutorufa.yuhaiin.putStringSet
+import io.github.asutorufa.yuhaiin.remove
 import yuhaiin.Store
 import yuhaiin.Yuhaiin
-import io.github.asutorufa.yuhaiin.remove
 
 @OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -62,8 +68,11 @@ fun SharedTransitionScope.RouteConfigScreen(
         )
     }
     var showAddDialog by remember { mutableStateOf(false) }
+    var deleteRouteName by remember { mutableStateOf<String?>(null) }
+    val allRouteName = stringResource(R.string.adv_route_all)
 
-    Scaffold(
+    with(animatedContentScope ?: return) {
+        Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             TopAppBar(
@@ -85,20 +94,103 @@ fun SharedTransitionScope.RouteConfigScreen(
             }
         }
     ) { padding ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-        ) {
-            items(routeList) { routeName ->
-                ListItem(
-                    headlineContent = { Text(routeName) },
-                    modifier = Modifier.clickable {
-                        navController.navigate("RouteEdit/$routeName")
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .animateContentSize()
+            ) {
+                items(items = routeList, key = { it }) { routeName ->
+                    val dismissState = rememberSwipeToDismissBoxState(
+                        confirmValueChange = {
+                            if (it == SwipeToDismissBoxValue.EndToStart) {
+                                deleteRouteName = routeName
+                                true
+                            } else false
+                        }
+                    )
+
+                    SwipeToDismissBox(
+                        state = dismissState,
+                        backgroundContent = {
+                            val color = MaterialTheme.colorScheme.errorContainer
+                            Box(
+                                Modifier
+                                    .fillMaxSize()
+                                    .background(color)
+                                    .padding(horizontal = 20.dp),
+                                contentAlignment = Alignment.CenterEnd
+                            ) {
+                                Icon(
+                                    Icons.Default.Delete,
+                                    contentDescription = "Delete",
+                                    tint = MaterialTheme.colorScheme.onErrorContainer
+                                )
+                            }
+                        }
+                    ) {
+                        ListItem(
+                            headlineContent = {
+                                Text(
+                                    routeName,
+                                    modifier = Modifier.sharedElement(
+                                        rememberSharedContentState(key = "ROUTE_NAME_$routeName"),
+                                        animatedVisibilityScope = this@with
+                                    )
+                                )
+                            },
+                            leadingContent = {
+                                Icon(
+                                    painter = painterResource(R.drawable.router),
+                                    contentDescription = null
+                                )
+                            },
+                            modifier = Modifier.clickable {
+                                navController.navigate("RouteEdit/$routeName")
+                            }
+                        )
                     }
-                )
+                }
             }
         }
+    }
+
+    if (deleteRouteName != null) {
+        AlertDialog(
+            onDismissRequest = { deleteRouteName = null },
+            title = { Text(stringResource(R.string.route_config_delete_confirm_title)) },
+            text = { Text(stringResource(R.string.route_config_delete_confirm)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        deleteRouteName?.let { route ->
+                            val currentRoutes =
+                                MainApplication.store.getStringSet("saved_routes_list")
+                                    .toMutableSet()
+                            currentRoutes.remove(route)
+                            MainApplication.store.putStringSet(
+                                "saved_routes_list",
+                                currentRoutes
+                            )
+                            MainApplication.store.remove("route_content_$route")
+
+                            if (MainApplication.store.getString("route") == route) {
+                                MainApplication.store.putString("route", allRouteName)
+                            }
+                            routeList = currentRoutes.toList().sorted()
+                        }
+                        deleteRouteName = null
+                    }
+                ) {
+                    Text(stringResource(R.string.route_config_delete_confirm_yes))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { deleteRouteName = null }) {
+                    Text(stringResource(R.string.route_config_delete_confirm_no))
+                }
+            }
+        )
     }
 
     if (showAddDialog) {
@@ -180,27 +272,39 @@ fun SharedTransitionScope.RouteEditScreen(
     var showDeleteDialog by remember { mutableStateOf(false) }
     var isValid by remember { mutableStateOf(true) }
 
-    Scaffold(
+    with(animatedContentScope ?: return) {
+        Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.route_config_edit_route) + " - " + routeName) },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
-                        )
-                    }
-                },
-                actions = {
-                    IconButton(onClick = { showDeleteDialog = true }) {
-                        Icon(Icons.Default.Delete, contentDescription = "Delete")
-                    }
-                },
-                scrollBehavior = scrollBehavior
-            )
-        },
+            topBar = {
+                TopAppBar(
+                    title = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(stringResource(R.string.route_config_edit_route) + " - ")
+                            Text(
+                                routeName,
+                                modifier = Modifier.sharedElement(
+                                    rememberSharedContentState(key = "ROUTE_NAME_$routeName"),
+                                    animatedVisibilityScope = this@with
+                                )
+                            )
+                        }
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = { navController.popBackStack() }) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Back"
+                            )
+                        }
+                    },
+                    actions = {
+                        IconButton(onClick = { showDeleteDialog = true }) {
+                            Icon(Icons.Default.Delete, contentDescription = "Delete")
+                        }
+                    },
+                    scrollBehavior = scrollBehavior
+                )
+            },
         floatingActionButton = {
             FloatingActionButton(onClick = {
                 if (isValid) {
@@ -211,14 +315,14 @@ fun SharedTransitionScope.RouteEditScreen(
                 Icon(painterResource(R.drawable.save), contentDescription = "Save")
             }
         }
-    ) { padding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-        ) {
-            OutlinedTextField(
-                value = routeContent,
+        ) { padding ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+            ) {
+                OutlinedTextField(
+                    value = routeContent,
                 onValueChange = {
                     routeContent = it
                     isValid = try {
@@ -237,11 +341,15 @@ fun SharedTransitionScope.RouteEditScreen(
                     }
                 },
                 label = { Text(stringResource(R.string.route_config_content_hint)) },
+                textStyle = androidx.compose.ui.text.TextStyle(
+                    fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
+                ),
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(16.dp),
-                maxLines = Int.MAX_VALUE
-            )
+                    maxLines = Int.MAX_VALUE
+                )
+            }
         }
     }
 
