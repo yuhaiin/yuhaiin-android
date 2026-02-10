@@ -36,6 +36,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -109,6 +110,10 @@ fun SharedTransitionScope.RouteConfigScreen(
                             } else false
                         }
                     )
+
+                LaunchedEffect(deleteRouteName) {
+                    if (deleteRouteName == null) dismissState.reset()
+                }
 
                     SwipeToDismissBox(
                         state = dismissState,
