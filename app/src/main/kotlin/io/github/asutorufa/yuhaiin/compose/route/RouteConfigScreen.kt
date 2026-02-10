@@ -39,6 +39,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -48,11 +49,14 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import io.github.asutorufa.yuhaiin.Constants
 import io.github.asutorufa.yuhaiin.MainApplication
 import io.github.asutorufa.yuhaiin.R
 import io.github.asutorufa.yuhaiin.getStringSet
 import io.github.asutorufa.yuhaiin.putStringSet
 import io.github.asutorufa.yuhaiin.remove
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import yuhaiin.Store
 import yuhaiin.Yuhaiin
 
@@ -63,11 +67,14 @@ fun SharedTransitionScope.RouteConfigScreen(
     animatedContentScope: AnimatedContentScope?
 ) {
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
-    var routeList by remember {
-        mutableStateOf(
-            MainApplication.store.getStringSet("saved_routes_list").toList().sorted()
-        )
+    var routeList by remember { mutableStateOf(emptyList<String>()) }
+
+    LaunchedEffect(Unit) {
+        withContext(Dispatchers.IO) {
+            routeList = MainApplication.store.getStringSet(Constants.SAVED_ROUTES_LIST).toList().sorted()
+        }
     }
+
     var showAddDialog by remember { mutableStateOf(false) }
     var deleteRouteName by remember { mutableStateOf<String?>(null) }
     val allRouteName = stringResource(R.string.adv_route_all)
@@ -211,8 +218,9 @@ fun SharedTransitionScope.RouteConfigScreen(
                         value = newRouteName,
                         onValueChange = {
                             newRouteName = it
-                            isError =
-                                it.isBlank() || routeList.contains(it) || it.contains('/') // Prevent '/' as it breaks navigation
+                            isError = it.isBlank() || routeList.contains(it) || !it.all { char ->
+                                char.isLetterOrDigit() || char == '_' || char == '-'
+                            }
                         },
                         label = { Text(stringResource(R.string.route_config_name_hint)) },
                         isError = isError,
@@ -221,8 +229,8 @@ fun SharedTransitionScope.RouteConfigScreen(
                                 Text(
                                     when {
                                         newRouteName.isBlank() -> stringResource(R.string.route_config_error_name_empty)
-                                        newRouteName.contains('/') -> "Name cannot contain '/'"
-                                        else -> "Route already exists"
+                                        routeList.contains(newRouteName) -> "Route already exists"
+                                        else -> stringResource(R.string.route_config_error_name_invalid)
                                     }
                                 )
                             }
@@ -235,21 +243,18 @@ fun SharedTransitionScope.RouteConfigScreen(
             confirmButton = {
                 TextButton(
                     onClick = {
-                        if (newRouteName.isNotBlank() && !routeList.contains(newRouteName) && !newRouteName.contains(
-                                '/'
-                            )
-                        ) {
-                            val newList = routeList.toMutableSet()
-                            newList.add(newRouteName)
-                            MainApplication.store.putStringSet("saved_routes_list", newList)
-                            // Initialize with empty or default content if needed
-                            MainApplication.store.putString("route_content_$newRouteName", "")
-                            routeList = newList.toList().sorted()
-                            showAddDialog = false
-                        } else {
-                            isError = true
-                        }
-                    }
+                        val newList = routeList.toMutableSet()
+                        newList.add(newRouteName)
+                        MainApplication.store.putStringSet(Constants.SAVED_ROUTES_LIST, newList)
+                        // Initialize with empty or default content if needed
+                        MainApplication.store.putString(
+                            Constants.ROUTE_CONTENT_PREFIX + newRouteName,
+                            ""
+                        )
+                        routeList = newList.toList().sorted()
+                        showAddDialog = false
+                    },
+                    enabled = !isError && newRouteName.isNotBlank()
                 ) {
                     Text(stringResource(R.string.route_config_save_route))
                 }
@@ -272,19 +277,24 @@ fun SharedTransitionScope.RouteEditScreen(
 ) {
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     var routeContent by remember {
-        mutableStateOf(MainApplication.store.getString("route_content_$routeName"))
+        mutableStateOf(MainApplication.store.getString(Constants.ROUTE_CONTENT_PREFIX + routeName))
     }
     var showDeleteDialog by remember { mutableStateOf(false) }
     var isValid by remember { mutableStateOf(true) }
 
     with(animatedContentScope ?: return) {
         Scaffold(
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+            modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
             topBar = {
                 TopAppBar(
                     title = {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(stringResource(R.string.route_config_edit_route) + " - ")
+                            Text(
+                                stringResource(
+                                    R.string.route_config_edit_route_title,
+                                    routeName
+                                ).substringBefore(routeName)
+                            )
                             Text(
                                 routeName,
                                 modifier = Modifier.sharedElement(
@@ -330,14 +340,16 @@ fun SharedTransitionScope.RouteEditScreen(
                     value = routeContent,
                 onValueChange = {
                     routeContent = it
-                    isValid = try {
-                        it.split('\n').filter { line -> line.isNotBlank() }.forEach { line ->
-                            Yuhaiin.parseCIDR(line)
+                    isValid = it.lineSequence()
+                        .filter { line -> line.isNotBlank() }
+                        .all { line ->
+                            try {
+                                Yuhaiin.parseCIDR(line)
+                                true
+                            } catch (e: Exception) {
+                                false
+                            }
                         }
-                        true
-                    } catch (e: Exception) {
-                        false
-                    }
                 },
                 isError = !isValid,
                 supportingText = {
@@ -368,14 +380,18 @@ fun SharedTransitionScope.RouteEditScreen(
                 TextButton(
                     onClick = {
                         val currentRoutes =
-                            MainApplication.store.getStringSet("saved_routes_list").toMutableSet()
+                            MainApplication.store.getStringSet(Constants.SAVED_ROUTES_LIST)
+                                .toMutableSet()
                         currentRoutes.remove(routeName)
-                        MainApplication.store.putStringSet("saved_routes_list", currentRoutes)
-                        MainApplication.store.remove("route_content_$routeName")
+                        MainApplication.store.putStringSet(
+                            Constants.SAVED_ROUTES_LIST,
+                            currentRoutes
+                        )
+                        MainApplication.store.remove(Constants.ROUTE_CONTENT_PREFIX + routeName)
 
                         // If current selected route is deleted, reset to All
-                        if (MainApplication.store.getString("route") == routeName) {
-                            MainApplication.store.putString("route", allRouteName)
+                        if (MainApplication.store.getString(Constants.ROUTE_KEY) == routeName) {
+                            MainApplication.store.putString(Constants.ROUTE_KEY, allRouteName)
                         }
 
                         showDeleteDialog = false
