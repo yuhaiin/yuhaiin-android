@@ -85,11 +85,23 @@ class YuhaiinDocumentProvider : DocumentsProvider() {
     }
 
     override fun isChildDocument(parentDocumentId: String?, documentId: String?): Boolean {
-        if (documentId != null) {
-            return parentDocumentId?.let { documentId.startsWith(it) } ?: false
+        if (parentDocumentId == null || documentId == null) {
+            return false
         }
+        return isChild(File(parentDocumentId), File(documentId))
+    }
 
-        return false
+    internal fun isChild(parent: File, child: File): Boolean {
+        return try {
+            val canonicalParent = parent.canonicalPath
+            val canonicalChild = child.canonicalPath
+            if (canonicalChild == canonicalParent) return true
+            val parentPathWithSeparator =
+                if (canonicalParent.endsWith(File.separator)) canonicalParent else canonicalParent + File.separator
+            canonicalChild.startsWith(parentPathWithSeparator)
+        } catch (e: IOException) {
+            false
+        }
     }
 
     override fun querySearchDocuments(
@@ -119,12 +131,7 @@ class YuhaiinDocumentProvider : DocumentsProvider() {
             val file = pending.removeAt(0)
             // Avoid directories outside the $HOME directory linked with symlinks (to avoid e.g. search
             // through the whole SD card).
-            val isInsideHome: Boolean = try {
-                file.canonicalPath.startsWith(baseDir.toString())
-            } catch (_: IOException) {
-                true
-            }
-            if (isInsideHome) {
+            if (isChild(baseDir, file)) {
                 if (file.isDirectory) {
                     file.listFiles()?.let { pending.addAll(it) }
                 } else {
@@ -144,6 +151,7 @@ class YuhaiinDocumentProvider : DocumentsProvider() {
     private fun getFileForDocId(docId: String): File {
         val f = File(docId)
         if (!f.exists()) throw FileNotFoundException(f.absolutePath + " not found")
+        if (!isChild(baseDir, f)) throw FileNotFoundException("Invalid document ID: $docId")
         return f
     }
 
