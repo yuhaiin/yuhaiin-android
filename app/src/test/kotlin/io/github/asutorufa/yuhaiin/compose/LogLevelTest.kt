@@ -7,11 +7,12 @@ import kotlin.test.assertTrue
 class LogLevelTest {
 
     @Test
-    fun testDebugEnabled() {
-        assertTrue(LogLevel.DEBUG.enabled(LogLevel.DEBUG))
-        assertFalse(LogLevel.DEBUG.enabled(LogLevel.INFO))
-        assertFalse(LogLevel.DEBUG.enabled(LogLevel.WARN))
-        assertFalse(LogLevel.DEBUG.enabled(LogLevel.ERROR))
+    fun testDebugFilter() {
+        val filter = LogLevel.DEBUG
+        assertTrue(LogLevel.DEBUG.enabled(filter))
+        assertTrue(LogLevel.INFO.enabled(filter))
+        assertTrue(LogLevel.WARN.enabled(filter))
+        assertTrue(LogLevel.ERROR.enabled(filter))
     }
 
     @Test
