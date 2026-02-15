@@ -16,11 +16,12 @@ class LogLevelTest {
     }
 
     @Test
-    fun testInfoEnabled() {
-        assertTrue(LogLevel.INFO.enabled(LogLevel.DEBUG))
-        assertTrue(LogLevel.INFO.enabled(LogLevel.INFO))
-        assertFalse(LogLevel.INFO.enabled(LogLevel.WARN))
-        assertFalse(LogLevel.INFO.enabled(LogLevel.ERROR))
+    fun testInfoFilter() {
+        val filter = LogLevel.INFO
+        assertFalse(LogLevel.DEBUG.enabled(filter))
+        assertTrue(LogLevel.INFO.enabled(filter))
+        assertTrue(LogLevel.WARN.enabled(filter))
+        assertTrue(LogLevel.ERROR.enabled(filter))
     }
 
     @Test
