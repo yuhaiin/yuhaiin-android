@@ -6,6 +6,9 @@ import android.os.Build
 import android.util.Log
 import androidx.core.content.getSystemService
 import go.Seq
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import yuhaiin.AddressIter
 import yuhaiin.AddressPrefix
@@ -73,6 +76,33 @@ open class MainApplication : Application() {
         Yuhaiin.setInterfaces(GetInterfaces())
         Yuhaiin.setProcessDumper(UidDumper())
         store = Yuhaiin.getStore()
+        CoroutineScope(Dispatchers.IO).launch {
+            initRoutes()
+        }
+    }
+
+    private fun initRoutes() {
+        val savedRoutes = store.getStringSet(Constants.SAVED_ROUTES_LIST)
+        if (savedRoutes.isEmpty()) {
+            val all = getString(R.string.adv_route_all)
+            val nonLocal = getString(R.string.adv_route_non_local)
+            val nonChn = getString(R.string.adv_route_non_chn)
+
+            store.putStringSet(Constants.SAVED_ROUTES_LIST, setOf(all, nonLocal, nonChn))
+
+            store.putString(
+                Constants.ROUTE_CONTENT_PREFIX + all,
+                "0.0.0.0/0\n::/0"
+            )
+            store.putString(
+                Constants.ROUTE_CONTENT_PREFIX + nonLocal,
+                resources.getStringArray(R.array.all_routes_except_local).joinToString("\n")
+            )
+            store.putString(
+                Constants.ROUTE_CONTENT_PREFIX + nonChn,
+                resources.getStringArray(R.array.simple_route).joinToString("\n")
+            )
+        }
     }
 
     class InterfaceIterImpl(private val data: MutableList<Interface>) : InterfaceIter {

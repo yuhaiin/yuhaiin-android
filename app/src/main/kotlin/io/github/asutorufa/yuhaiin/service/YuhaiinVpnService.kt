@@ -25,6 +25,11 @@ import io.github.asutorufa.yuhaiin.IYuhaiinVpnCallback
 import io.github.asutorufa.yuhaiin.MainActivity
 import io.github.asutorufa.yuhaiin.MainApplication
 import io.github.asutorufa.yuhaiin.R
+import io.github.asutorufa.yuhaiin.Constants
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import yuhaiin.App
 import yuhaiin.Closer
@@ -253,20 +258,25 @@ class YuhaiinVpnService : VpnService() {
                 .addRoute("2000::", 3) // https://issuetracker.google.com/issues/149636790
                 .addRoute(tunAddress.iPv6, 64)
 
-            when (MainApplication.store.getString(resources.getString(R.string.adv_route_Key))) {
-                resources.getString(R.string.adv_route_non_chn) -> {
-                    resources.getStringArray(R.array.simple_route).forEach { addRoute(it) }
-                }
 
-                resources.getString(R.string.adv_route_non_local) -> {
-                    resources.getStringArray(R.array.all_routes_except_local)
-                        .forEach { addRoute(it) }
+            val routeKey = MainApplication.store.getString(Constants.ROUTE_KEY)
+            val content = MainApplication.store.getString(Constants.ROUTE_CONTENT_PREFIX + routeKey)
+            Log.i("VPN", "Configure route: $routeKey")
+            if (content.isNotBlank()) {
+                // Using runBlocking here because configure() is likely expected to be synchronous
+                // or we are already in a background thread (onStartCommand -> configure).
+                // However, VpnService.Builder methods must be called on the same thread as establish().
+                // Since onStartCommand runs on the main thread, and establish() is synchronous,
+                // we should probably keep this on the main thread unless we move the whole configure/start logic.
+                // But splitting a large string might be heavy.
+                // Given the constraints of VpnService, we'll iterate.
+                // To avoid ANR on very large lists, we can sequence it.
+                content.lineSequence().forEach {
+                    if (it.isNotBlank()) addRoute(it)
                 }
-
-                else -> {
-                    addRoute("0.0.0.0/0")
-                    if (Yuhaiin.isIPv6()) addRoute("::/0")
-                }
+            } else {
+                addRoute("0.0.0.0/0")
+                if (Yuhaiin.isIPv6()) addRoute("::/0")
             }
 
             addDnsServer(tunAddress.iPv4Portal)
