@@ -212,10 +212,13 @@ class YuhaiinVpnService : VpnService() {
                     start(tunAddress)
                 }
 
-                state = State.CONNECTED
+                if (state == State.CONNECTING) {
+                    state = State.CONNECTED
+                }
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                // Ignore cancellation
             } catch (e: Exception) {
-                e.printStackTrace()
-                state = State.DISCONNECTED
+                Log.e(tag, "Failed to start VPN", e)
                 callbacks.sendMsg(e.toString())
                 onRevoke()
             }
