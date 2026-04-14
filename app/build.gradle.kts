@@ -3,7 +3,7 @@ import java.util.Date
 plugins {
     id("com.android.application")
     id("androidx.navigation.safeargs.kotlin")
-    kotlin("plugin.serialization") version "2.3.10"
+    kotlin("plugin.serialization") version "2.3.20"
     id("org.jetbrains.kotlin.plugin.compose")
 }
 
@@ -158,7 +158,7 @@ dependencies {
     testImplementation(kotlin("test"))
     testImplementation("junit:junit:4.13.2")
     implementation("androidx.appcompat:appcompat:1.7.1")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.10.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
     implementation("com.google.android.material:material:1.13.0")
     implementation("fastutil:fastutil:5.0.9")
 
@@ -168,20 +168,20 @@ dependencies {
 
     implementation(project(":yuhaiin"))
 
-    val composeBom = platform("androidx.compose:compose-bom:2026.02.00")
+    val composeBom = platform("androidx.compose:compose-bom:2026.03.01")
     implementation(composeBom)
     androidTestImplementation(composeBom)
     implementation("androidx.compose.ui:ui-graphics")
-    implementation("androidx.compose.ui:ui-text:1.10.3")
+    implementation("androidx.compose.ui:ui-text:1.10.6")
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
-    implementation("androidx.compose.material3:material3:1.5.0-alpha14")
+    implementation("androidx.compose.material3:material3:1.5.0-alpha17")
     implementation("androidx.compose.ui:ui-tooling-preview")
-    implementation("androidx.compose.foundation:foundation:1.10.3")
+    implementation("androidx.compose.foundation:foundation:1.10.6")
     debugImplementation("androidx.compose.ui:ui-tooling")
-    implementation("androidx.compose.ui:ui:1.10.3")
-    implementation("androidx.activity:activity-compose:1.12.4")
+    implementation("androidx.compose.ui:ui:1.10.6")
+    implementation("androidx.activity:activity-compose:1.13.0")
     implementation("androidx.fragment:fragment-compose:1.8.9")
-    implementation("androidx.compose.material:material-navigation:1.10.3")
+    implementation("androidx.compose.material:material-navigation:1.10.6")
     implementation("androidx.compose.material:material-icons-core:1.7.8")
 }
