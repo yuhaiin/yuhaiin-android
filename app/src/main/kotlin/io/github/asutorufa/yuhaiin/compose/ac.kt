@@ -78,17 +78,3 @@ class ACAutomaton {
         return false
     }
 }
-
-fun main() {
-    val ac = ACAutomaton()
-    ac.insert("he")
-    ac.insert("she")
-    ac.insert("his")
-    ac.insert("hers")
-    ac.buildFail()
-
-    val text = "ushers"
-    val matches = ac.search(text)
-
-    println(matches)
-}
