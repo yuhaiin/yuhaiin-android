@@ -1,4 +1,4 @@
-package io.github.asutorufa.yuhaiin.docuemntprovider
+package io.github.asutorufa.yuhaiin.documentprovider
 
 import android.database.Cursor
 import android.database.MatrixCursor

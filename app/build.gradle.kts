@@ -161,10 +161,13 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
     implementation("com.google.android.material:material:1.13.0")
     implementation("fastutil:fastutil:5.0.9")
+    implementation("androidx.core:core-ktx:1.18.0")
 
     // nav
     val navVersion = "2.9.7"
     implementation("androidx.navigation:navigation-compose:${navVersion}")
+    implementation("androidx.navigation:navigation-ui-ktx:${navVersion}")
+    implementation("androidx.navigation:navigation-fragment-ktx:${navVersion}")
 
     implementation(project(":yuhaiin"))
 
