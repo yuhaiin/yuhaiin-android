@@ -19,6 +19,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
@@ -27,6 +28,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import io.github.asutorufa.yuhaiin.MainActivity
 import io.github.asutorufa.yuhaiin.MainApplication
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 
 @Composable
@@ -78,6 +81,12 @@ fun Main(activity: MainActivity) {
 
             NavHost(navController, "Home") {
                 composable("Home") {
+                    val addresses by produceState(initialValue = emptyList<String>()) {
+                        value = withContext(Dispatchers.IO) {
+                            MainApplication.getAddresses()
+                        }
+                    }
+
                     SettingCompose(
                         navController = navController,
                         vpnState = vpnState,
@@ -85,7 +94,7 @@ fun Main(activity: MainActivity) {
                         startService = { activity.startService() },
                         animatedContentScope = this@composable,
                         store = MainApplication.store,
-                        addresses = MainApplication.getAddresses(),
+                        addresses = addresses,
                     )
                 }
 
