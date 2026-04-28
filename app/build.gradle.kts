@@ -3,7 +3,7 @@ import java.util.Date
 plugins {
     id("com.android.application")
     id("androidx.navigation.safeargs.kotlin")
-    kotlin("plugin.serialization") version "2.3.20"
+    kotlin("plugin.serialization") version "2.3.21"
     id("org.jetbrains.kotlin.plugin.compose")
 }
 
@@ -164,27 +164,27 @@ dependencies {
     implementation("androidx.core:core-ktx:1.18.0")
 
     // nav
-    val navVersion = "2.9.7"
+    val navVersion = "2.9.8"
     implementation("androidx.navigation:navigation-compose:${navVersion}")
     implementation("androidx.navigation:navigation-ui-ktx:${navVersion}")
     implementation("androidx.navigation:navigation-fragment-ktx:${navVersion}")
 
     implementation(project(":yuhaiin"))
 
-    val composeBom = platform("androidx.compose:compose-bom:2026.03.01")
+    val composeBom = platform("androidx.compose:compose-bom:2026.04.01")
     implementation(composeBom)
     androidTestImplementation(composeBom)
     implementation("androidx.compose.ui:ui-graphics")
-    implementation("androidx.compose.ui:ui-text:1.10.6")
+    implementation("androidx.compose.ui:ui-text:1.11.0")
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
-    implementation("androidx.compose.material3:material3:1.5.0-alpha17")
+    implementation("androidx.compose.material3:material3:1.5.0-alpha18")
     implementation("androidx.compose.ui:ui-tooling-preview")
-    implementation("androidx.compose.foundation:foundation:1.10.6")
+    implementation("androidx.compose.foundation:foundation:1.11.0")
     debugImplementation("androidx.compose.ui:ui-tooling")
-    implementation("androidx.compose.ui:ui:1.10.6")
+    implementation("androidx.compose.ui:ui:1.11.0")
     implementation("androidx.activity:activity-compose:1.13.0")
     implementation("androidx.fragment:fragment-compose:1.8.9")
-    implementation("androidx.compose.material:material-navigation:1.10.6")
+    implementation("androidx.compose.material:material-navigation:1.11.0")
     implementation("androidx.compose.material:material-icons-core:1.7.8")
 }
