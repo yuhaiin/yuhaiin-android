@@ -110,15 +110,16 @@ fun SharedTransitionScope.AppListComponent(
             val checkedApps = MainApplication.Companion.store.getStringSet("app_list")
             val apps = mutableListOf<AppListData>()
 
-            packages?.sortBy { it.loadLabel(packageManager).toString() }
-
-            var index = 0
-            packages?.forEach {
-                val app = AppListData(
+            val appList = packages?.map {
+                AppListData(
                     it.loadLabel(packageManager).toString(), // app name
                     it.packageName, it.loadIcon(packageManager), // icon
                     (it.flags and ApplicationInfo.FLAG_SYSTEM) > 0, // is system
                 )
+            }?.sortedBy { it.appName }
+
+            var index = 0
+            appList?.forEach { app ->
                 if (checkedApps.contains(app.packageName)) apps.add(index++, app)
                 else apps.add(app)
             }
