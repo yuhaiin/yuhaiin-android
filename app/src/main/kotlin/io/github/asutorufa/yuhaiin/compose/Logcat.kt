@@ -453,58 +453,6 @@ fun parseLogv2(line: String): LogEntry {
     return log
 }
 
-fun parseLog(line: String): LogEntry {
-    var i = 0
-    val n = line.length
-
-    fun skipSpaces() {
-        while (i < n && line[i] == ' ') i++
-    }
-
-    fun readWord(): String {
-        val start = i
-        while (i < n && line[i] != ' ') i++
-        return line.substring(start, i)
-    }
-
-    skipSpaces()
-    val date = readWord()
-    skipSpaces()
-    val timeStr = readWord()
-    skipSpaces()
-    val pidStr = readWord()
-    skipSpaces()
-    val tidStr = readWord()
-    skipSpaces()
-    val levelStr = readWord()
-    skipSpaces()
-    val tagStart = i
-    while (i < n && line[i] != ':') i++
-    val tag = if (i < n) line.substring(tagStart, i) else ""
-    i++ // skip ':'
-    val content = if (i < n) line.substring(i).trimStart() else ""
-
-    val level = when (levelStr) {
-        "V", "D" -> LogLevel.DEBUG
-        "I" -> LogLevel.INFO
-        "W" -> LogLevel.WARN
-        "E", "F" -> LogLevel.ERROR
-        else -> LogLevel.INFO
-    }
-
-    if (content.isEmpty())
-        return LogEntry(time = Date().toString(), content = line)
-
-    return LogEntry(
-        level = level,
-        time = "$date $timeStr",
-        content = content,
-        tag = tag,
-        pid = pidStr.toIntOrNull(),
-        tid = tidStr.toIntOrNull()
-    )
-}
-
 @Composable
 @Preview
 fun LogItem(
