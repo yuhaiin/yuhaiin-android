@@ -50,8 +50,9 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -301,7 +302,7 @@ fun LogList(
         if (showBottomSheet) {
             ModalBottomSheet(
                 onDismissRequest = { showBottomSheet = false },
-                sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+                sheetState = rememberBottomSheetState(initialValue = SheetValue.Hidden, skipPartiallyExpanded = true)
             ) {
                 Box(
                     modifier = Modifier
@@ -420,12 +421,11 @@ fun parseLogv2(line: String): LogEntry {
         log.time = m.group(1) ?: ""
         log.pid = m.group(2)?.toInt()
         log.tid = m.group(3)?.toInt()
-        log.level = when (m.group(4)) {
+        log.level = when (m.group(4) ?: "") {
             "V", "D" -> LogLevel.DEBUG
             "I" -> LogLevel.INFO
             "W" -> LogLevel.WARN
             "E", "F" -> LogLevel.ERROR
-            null, "" -> LogLevel.INFO
             else -> LogLevel.INFO
         }
         log.tag = m.group(5)
@@ -437,12 +437,11 @@ fun parseLogv2(line: String): LogEntry {
         if (!tm.matches()) return log
 
         log.time = tm.group(1) ?: ""
-        log.level = when (tm.group(2)) {
+        log.level = when (tm.group(2) ?: "") {
             "V", "D" -> LogLevel.DEBUG
             "I" -> LogLevel.INFO
             "W" -> LogLevel.WARN
             "E", "F" -> LogLevel.ERROR
-            null, "" -> LogLevel.INFO
             else -> LogLevel.INFO
         }
         log.tag = tm.group(3)
