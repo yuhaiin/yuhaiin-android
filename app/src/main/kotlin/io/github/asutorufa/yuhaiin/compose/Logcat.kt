@@ -420,12 +420,11 @@ fun parseLogv2(line: String): LogEntry {
         log.time = m.group(1) ?: ""
         log.pid = m.group(2)?.toInt()
         log.tid = m.group(3)?.toInt()
-        log.level = when (m.group(4)) {
+        log.level = when (m.group(4) ?: "") {
             "V", "D" -> LogLevel.DEBUG
             "I" -> LogLevel.INFO
             "W" -> LogLevel.WARN
             "E", "F" -> LogLevel.ERROR
-            null -> LogLevel.INFO
             else -> LogLevel.INFO
         }
         log.tag = m.group(5)
@@ -437,12 +436,11 @@ fun parseLogv2(line: String): LogEntry {
         if (!tm.matches()) return log
 
         log.time = tm.group(1) ?: ""
-        log.level = when (tm.group(2)) {
+        log.level = when (tm.group(2) ?: "") {
             "V", "D" -> LogLevel.DEBUG
             "I" -> LogLevel.INFO
             "W" -> LogLevel.WARN
             "E", "F" -> LogLevel.ERROR
-            null -> LogLevel.INFO
             else -> LogLevel.INFO
         }
         log.tag = tm.group(3)
