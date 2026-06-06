@@ -301,7 +301,7 @@ fun LogList(
         if (showBottomSheet) {
             ModalBottomSheet(
                 onDismissRequest = { showBottomSheet = false },
-                sheetState = rememberModalBottomSheetState(true)
+                sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
             ) {
                 Box(
                     modifier = Modifier
@@ -425,6 +425,7 @@ fun parseLogv2(line: String): LogEntry {
             "I" -> LogLevel.INFO
             "W" -> LogLevel.WARN
             "E", "F" -> LogLevel.ERROR
+            null, "" -> LogLevel.INFO
             else -> LogLevel.INFO
         }
         log.tag = m.group(5)
@@ -435,12 +436,13 @@ fun parseLogv2(line: String): LogEntry {
         val tm = TIME_LINE.matcher(line)
         if (!tm.matches()) return log
 
-        log.time = m.group(1) ?: ""
-        log.level = when (m.group(4)) {
+        log.time = tm.group(1) ?: ""
+        log.level = when (tm.group(2)) {
             "V", "D" -> LogLevel.DEBUG
             "I" -> LogLevel.INFO
             "W" -> LogLevel.WARN
             "E", "F" -> LogLevel.ERROR
+            null, "" -> LogLevel.INFO
             else -> LogLevel.INFO
         }
         log.tag = tm.group(3)

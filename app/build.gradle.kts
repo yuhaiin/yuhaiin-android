@@ -54,7 +54,7 @@ tasks.withType<org.jetbrains.kotlin.gradle.internal.KaptWithoutKotlincTask>().co
 
 android {
 
-    compileSdk = 36
+    compileSdk = 37
     compileOptions {
         // Flag to enable support for the new language APIs
         sourceCompatibility = JavaVersion.VERSION_17
@@ -71,7 +71,7 @@ android {
         buildConfigField("String", "DOCUMENTS_AUTHORITY", "\"$documentsAuthorityValue\"")
         minSdk = 24
         // uses-sdk:minSdkVersion 21 cannot be smaller than version 23 declared in library [androidx.compose.material3:material3-android:1.5.0-alpha04]
-        targetSdk = 36
+        targetSdk = 37
 
         versionCode = 184
         versionName = getVersionName()
