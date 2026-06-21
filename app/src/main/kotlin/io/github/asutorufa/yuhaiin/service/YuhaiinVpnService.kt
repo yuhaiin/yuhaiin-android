@@ -25,6 +25,12 @@ import io.github.asutorufa.yuhaiin.IYuhaiinVpnCallback
 import io.github.asutorufa.yuhaiin.MainActivity
 import io.github.asutorufa.yuhaiin.MainApplication
 import io.github.asutorufa.yuhaiin.R
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import yuhaiin.App
 import yuhaiin.Closer
@@ -80,14 +86,17 @@ class YuhaiinVpnService : VpnService() {
         finishBroadcast()
     }
 
+    private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private val mBinder = VpnBinder()
     private val tag = this.javaClass.simpleName
+    @Volatile
     private var state = State.DISCONNECTED
         set(value) {
             field = value
             callbacks.broadcast(value)
         }
 
+    @Volatile
     private var mInterface: ParcelFileDescriptor? = null
     private val notification by lazy { application.getSystemService<NotificationManager>()!! }
     private val app = App()
@@ -155,8 +164,13 @@ class YuhaiinVpnService : VpnService() {
     override fun onBind(intent: Intent?) =
         if (intent?.action == SERVICE_INTERFACE) super.onBind(intent) else mBinder
 
+    override fun onDestroy() {
+        super.onDestroy()
+        serviceScope.cancel()
+    }
+
     private fun stop() {
-        if (state != State.CONNECTED) return
+        if (state != State.CONNECTED && state != State.CONNECTING) return
         state = State.DISCONNECTING
 
         try {
@@ -188,19 +202,26 @@ class YuhaiinVpnService : VpnService() {
         }
 
         state = State.CONNECTING
+        startNotification()
 
-        try {
-            val tunAddress = Yuhaiin.getTunAddress()
-            configure(tunAddress)
-            startNotification()
-            start(tunAddress)
+        serviceScope.launch {
+            try {
+                withContext(Dispatchers.IO) {
+                    val tunAddress = Yuhaiin.getTunAddress()
+                    configure(tunAddress)
+                    start(tunAddress)
+                }
 
-            state = State.CONNECTED
-        } catch (e: Exception) {
-            e.printStackTrace()
-            state = State.DISCONNECTED
-            callbacks.sendMsg(e.toString())
-            onRevoke()
+                if (state == State.CONNECTING) {
+                    state = State.CONNECTED
+                }
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                // Ignore cancellation
+            } catch (e: Exception) {
+                Log.e(tag, "Failed to start VPN", e)
+                callbacks.sendMsg(e.toString())
+                onRevoke()
+            }
         }
 
         return START_STICKY
