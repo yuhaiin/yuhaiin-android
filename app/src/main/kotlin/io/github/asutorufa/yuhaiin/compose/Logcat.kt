@@ -54,6 +54,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -122,6 +123,7 @@ fun SharedTransitionScope.LogcatScreen(
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
     var expanded by rememberSaveable { mutableStateOf(true) }
+    val filteredLogs by remember { derivedStateOf { logs.filter { it.level.enabled(filter) } } }
 
     Box(
         modifier = Modifier
@@ -143,7 +145,7 @@ fun SharedTransitionScope.LogcatScreen(
                 ) {
                     LogList(
                         listState = listState,
-                        logs = logs.filter { it.level.enabled(filter) },
+                        logs = filteredLogs,
                     )
                 }
             },
