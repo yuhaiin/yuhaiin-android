@@ -84,6 +84,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import io.github.asutorufa.yuhaiin.R
+import io.github.asutorufa.yuhaiin.compose.route.RouteConfig
+import io.github.asutorufa.yuhaiin.getStringSet
 import io.github.asutorufa.yuhaiin.service.YuhaiinVpnService.Companion.State
 import yuhaiin.Store
 
@@ -292,16 +294,28 @@ fun SharedTransitionScope.SettingCompose(
                     )
                 }
                 item {
+                    val entries = store?.getStringSet("saved_routes_list")?.associateWith { it }
+                        ?: stringArrayResource(R.array.adv_routes).associateWith { it }
+                    val default = stringResource(R.string.adv_route_all)
+
                     ListPreferenceSetting(
                         title = stringResource(R.string.adv_route_title),
                         icon = painterResource(R.drawable.router),
-                        entries = stringArrayResource(R.array.adv_routes).associateWith { it },
-                        selected = route ?: stringResource(R.string.adv_route_all),
+                        entries = entries,
+                        selected = if (entries.containsKey(route)) route!! else default,
                         onSelectedChange = {
                             route = it
                             store?.putString("route", it)
                         }
                     )
+                }
+                item {
+                    if (navController != null) {
+                        RouteConfig(
+                            navController = navController,
+                            animatedContentScope = animatedContentScope
+                        )
+                    }
                 }
                 item {
                     SwitchStore(

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="route_config_title">Route Config</string>
+    <string name="route_config_add_route">Add Route</string>
+    <string name="route_config_delete_route">Delete Route</string>
+    <string name="route_config_edit_route">Edit Route</string>
+    <string name="route_config_edit_route_title">Edit Route - %1$s</string>
+    <string name="route_config_save_route">Save Route</string>
+    <string name="route_config_name_hint">Route Name</string>
+    <string name="route_config_content_hint">Route Content (CIDR)</string>
+    <string name="route_config_error_name_empty">Route Name cannot be empty</string>
+    <string name="route_config_error_name_invalid">Route Name contains invalid characters</string>
+    <string name="route_config_error_content_invalid">Invalid CIDR</string>
+    <string name="route_config_delete_confirm">Are you sure to delete this route?</string>
+    <string name="route_config_delete_confirm_title">Delete Route</string>
+    <string name="route_config_delete_confirm_yes">Yes</string>
+    <string name="route_config_delete_confirm_no">No</string>
+</resources>
