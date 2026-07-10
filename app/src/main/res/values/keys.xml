@@ -30,8 +30,39 @@
         <item>@string/tun_driver_system_gvisor_value</item>
     </string-array>
     <string name="adv_auto_connect_key">auto_connect</string>
+    <string name="process_lookup_mode_key">process_lookup_mode</string>
+    <string name="vpn_mtu_profile_key">vpn_mtu_profile</string>
+    <string name="register_underlying_network_callback_key">register_underlying_network_callback</string>
+    <string name="boot_connect_policy_key">boot_connect_policy</string>
     <string name="adv_per_app_key">per_app</string>
     <string name="adv_app_bypass_key">app_bypass</string>
     <string name="adv_app_list_key">app_list</string>
     <string name="adv_new_app_list_key">new_app_list</string>
+
+    <string name="process_lookup_off_value">off</string>
+    <string name="process_lookup_rules_only_value">rules_only</string>
+    <string name="process_lookup_always_value">always</string>
+    <string-array name="process_lookup_mode_values">
+        <item>@string/process_lookup_off_value</item>
+        <item>@string/process_lookup_rules_only_value</item>
+        <item>@string/process_lookup_always_value</item>
+    </string-array>
+
+    <string name="vpn_mtu_auto_value">auto</string>
+    <string name="vpn_mtu_1500_value">1500</string>
+    <string name="vpn_mtu_9000_value">9000</string>
+    <string-array name="vpn_mtu_profile_values">
+        <item>@string/vpn_mtu_auto_value</item>
+        <item>@string/vpn_mtu_1500_value</item>
+        <item>@string/vpn_mtu_9000_value</item>
+    </string-array>
+
+    <string name="boot_connect_policy_always_value">always</string>
+    <string name="boot_connect_policy_charging_only_value">charging_only</string>
+    <string name="boot_connect_policy_skip_battery_saver_value">skip_in_power_save</string>
+    <string-array name="boot_connect_policy_values">
+        <item>@string/boot_connect_policy_always_value</item>
+        <item>@string/boot_connect_policy_charging_only_value</item>
+        <item>@string/boot_connect_policy_skip_battery_saver_value</item>
+    </string-array>
 </resources>

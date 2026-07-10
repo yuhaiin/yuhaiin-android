@@ -43,6 +43,39 @@
     <string name="adv_app_list_title">App List</string>
     <string name="adv_app_list_sum">Select apps to apply or bypass the proxy</string>
 
+    <string name="background_battery">VPN Options</string>
+
+    <string name="process_lookup_mode_title">Process Lookup</string>
+    <string name="process_lookup_off">Off</string>
+    <string name="process_lookup_rules_only">Rules only</string>
+    <string name="process_lookup_always">Always</string>
+    <string-array name="process_lookup_mode_entries">
+        <item>@string/process_lookup_off</item>
+        <item>@string/process_lookup_rules_only</item>
+        <item>@string/process_lookup_always</item>
+    </string-array>
+
+    <string name="vpn_mtu_profile_title">VPN MTU</string>
+    <string name="vpn_mtu_auto">Auto</string>
+    <string name="vpn_mtu_1500">1500</string>
+    <string name="vpn_mtu_9000">9000</string>
+    <string-array name="vpn_mtu_profile_entries">
+        <item>@string/vpn_mtu_auto</item>
+        <item>@string/vpn_mtu_1500</item>
+        <item>@string/vpn_mtu_9000</item>
+    </string-array>
+    <string name="register_underlying_network_callback_title">Track Underlying Network</string>
+    <string name="register_underlying_network_callback_summary">Register the Android network callback and continuously update underlying networks for the VPN.</string>
+    <string name="boot_connect_policy_title">Boot Connect Policy</string>
+    <string name="boot_connect_policy_always">Always</string>
+    <string name="boot_connect_policy_charging_only">Only When Charging</string>
+    <string name="boot_connect_policy_skip_battery_saver">Skip In Battery Saver</string>
+    <string-array name="boot_connect_policy_entries">
+        <item>@string/boot_connect_policy_always</item>
+        <item>@string/boot_connect_policy_charging_only</item>
+        <item>@string/boot_connect_policy_skip_battery_saver</item>
+    </string-array>
+
     <string name="notify_msg">Connected to %s</string>
     <string name="channel_name" translatable="false">Proxy active</string>
 

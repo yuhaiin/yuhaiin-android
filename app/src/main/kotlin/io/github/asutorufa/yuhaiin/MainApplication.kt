@@ -49,6 +49,9 @@ open class MainApplication : Application() {
     val connectivity by lazy { this.getSystemService<ConnectivityManager>()!! }
 
     inner class UidDumper : yuhaiin.UidDumper {
+        private fun processLookupMode(): String =
+            store.getString(Constants.PROCESS_LOOKUP_MODE_KEY).ifBlank { "always" }
+
         override fun dumpUid(
             p0: Int,
             srcIp: String?,
@@ -56,7 +59,9 @@ open class MainApplication : Application() {
             destIp: String?,
             destPort: Int
         ): Int =
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            if (processLookupMode() == "off") {
+                0
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 connectivity.getConnectionOwnerUid(
                     p0,
                     InetSocketAddress(srcIp, srcPort),
@@ -66,18 +71,37 @@ open class MainApplication : Application() {
                 0
             }
 
-        override fun getUidInfo(p0: Int): String = packageManager.getNameForUid(p0) ?: "unknown"
+        override fun getUidInfo(p0: Int): String {
+            if (processLookupMode() == "off") return ""
+            return packageManager.getNameForUid(p0) ?: "unknown"
+        }
     }
 
     override fun onCreate() {
         super.onCreate()
         Seq.setContext(this)
         Yuhaiin.setSavePath(getExternalFilesDir("yuhaiin").toString())
+        store = Yuhaiin.getStore()
+        ensureBatteryDefaults()
         Yuhaiin.setInterfaces(GetInterfaces())
         Yuhaiin.setProcessDumper(UidDumper())
-        store = Yuhaiin.getStore()
         CoroutineScope(Dispatchers.IO).launch {
             initRoutes()
+        }
+    }
+
+    private fun ensureBatteryDefaults() {
+        if (store.getString(Constants.PROCESS_LOOKUP_MODE_KEY).isBlank()) {
+            store.putString(Constants.PROCESS_LOOKUP_MODE_KEY, "always")
+        }
+        if (store.getString(Constants.VPN_MTU_PROFILE_KEY).isBlank()) {
+            store.putString(Constants.VPN_MTU_PROFILE_KEY, "auto")
+        }
+        if (store.getString(Constants.REGISTER_UNDERLYING_NETWORK_CALLBACK_KEY).isBlank()) {
+            store.putBoolean(Constants.REGISTER_UNDERLYING_NETWORK_CALLBACK_KEY, true)
+        }
+        if (store.getString(Constants.BOOT_CONNECT_POLICY_KEY).isBlank()) {
+            store.putString(Constants.BOOT_CONNECT_POLICY_KEY, "always")
         }
     }
 

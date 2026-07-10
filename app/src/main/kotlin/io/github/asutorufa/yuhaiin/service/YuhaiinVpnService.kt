@@ -51,7 +51,7 @@ class YuhaiinVpnService : VpnService() {
             ERROR
         }
 
-        private const val VPN_MTU = 9000
+        private const val DEFAULT_VPN_MTU = 9000
         private const val PRIVATE_VLAN4_ADDRESS = "172.19.0.1"
         private const val PRIVATE_VLAN4_PORTAL = "172.19.0.2"
         private const val PRIVATE_VLAN6_ADDRESS = "fdfe:dcba:9876::1"
@@ -94,8 +94,28 @@ class YuhaiinVpnService : VpnService() {
         }
 
     private var mInterface: ParcelFileDescriptor? = null
+    private var underlyingNetworkCallbackRegistered = false
     private val notification by lazy { application.getSystemService<NotificationManager>()!! }
     private val app = App()
+
+    private fun vpnMtu(): Int =
+        when (MainApplication.store.getString(Constants.VPN_MTU_PROFILE_KEY).ifBlank { "auto" }) {
+            "1500" -> 1500
+            "9000" -> 9000
+            else -> DEFAULT_VPN_MTU
+        }
+
+    private fun shouldRegisterUnderlyingNetworkCallback(): Boolean =
+        MainApplication.store.getString(Constants.REGISTER_UNDERLYING_NETWORK_CALLBACK_KEY)
+            .ifBlank { "true" }
+            .toBoolean()
+
+    private fun unregisterUnderlyingNetworkCallback() {
+        if (!underlyingNetworkCallbackRegistered) return
+
+        (application as MainApplication).connectivity.unregisterNetworkCallback(defaultNetworkCallback)
+        underlyingNetworkCallbackRegistered = false
+    }
 
     private fun notificationBuilder(): NotificationCompat.Builder {
         return NotificationCompat.Builder(this, packageName)
@@ -168,11 +188,7 @@ class YuhaiinVpnService : VpnService() {
             stopForeground(STOP_FOREGROUND_REMOVE)
             mInterface?.close()
             app.stop()
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                (application as MainApplication).connectivity.unregisterNetworkCallback(
-                    defaultNetworkCallback
-                )
-            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) unregisterUnderlyingNetworkCallback()
             state = State.DISCONNECTED
         } catch (e: Exception) {
             e.printStackTrace()
@@ -203,6 +219,7 @@ class YuhaiinVpnService : VpnService() {
             state = State.CONNECTED
         } catch (e: Exception) {
             e.printStackTrace()
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) unregisterUnderlyingNetworkCallback()
             state = State.DISCONNECTED
             callbacks.sendMsg(e.toString())
             onRevoke()
@@ -224,7 +241,7 @@ class YuhaiinVpnService : VpnService() {
 
     private fun configure(tunAddress: TunAddress) {
         Builder().apply {
-            setMtu(VPN_MTU)
+            setMtu(vpnMtu())
             setSession("Default")
 
 
@@ -291,11 +308,13 @@ class YuhaiinVpnService : VpnService() {
 //            addRoute(MainApplication.store.getString(resources.getString(R.string.adv_fake_dns_cidr_key)))
 //            addRoute(MainApplication.store.getString(resources.getString(R.string.adv_fake_dnsv6_cidr_key)))
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && shouldRegisterUnderlyingNetworkCallback()) {
                 (application as MainApplication).connectivity.requestNetwork(
                     defaultNetworkRequest,
                     defaultNetworkCallback
                 )
+                underlyingNetworkCallbackRegistered = true
+            }
 
             val httpProxy = MainApplication.store.getInt("http_port")
 
@@ -320,7 +339,7 @@ class YuhaiinVpnService : VpnService() {
 
             tun = TUN().apply {
                 fd = mInterface!!.fd
-                mtu = VPN_MTU
+                mtu = vpnMtu()
                 portal = "${tunAddress.iPv4Address}/24"
                 portalV6 = "${tunAddress.iPv6Address}/64"
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)

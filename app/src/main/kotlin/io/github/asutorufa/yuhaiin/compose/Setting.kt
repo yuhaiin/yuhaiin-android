@@ -83,6 +83,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import io.github.asutorufa.yuhaiin.Constants
 import io.github.asutorufa.yuhaiin.R
 import io.github.asutorufa.yuhaiin.compose.route.RouteConfig
 import io.github.asutorufa.yuhaiin.getStringSet
@@ -106,6 +107,19 @@ fun SharedTransitionScope.SettingCompose(
 ) {
     var tunDriver by rememberSaveable { mutableStateOf(store?.getString("Tun Driver")) }
     var route by rememberSaveable { mutableStateOf(store?.getString("route")) }
+    var processLookupMode by rememberSaveable {
+        mutableStateOf(
+            store?.getString(Constants.PROCESS_LOOKUP_MODE_KEY)
+                ?.takeIf { it == "off" || it == "rules_only" || it == "always" }
+                ?: "always"
+        )
+    }
+    var vpnMtuProfile by rememberSaveable {
+        mutableStateOf(store?.getString(Constants.VPN_MTU_PROFILE_KEY))
+    }
+    var bootConnectPolicy by rememberSaveable {
+        mutableStateOf(store?.getString(Constants.BOOT_CONNECT_POLICY_KEY))
+    }
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     var fabMenuExpanded by rememberSaveable { mutableStateOf(false) }
     BackHandler(fabMenuExpanded) { fabMenuExpanded = false }
@@ -273,6 +287,69 @@ fun SharedTransitionScope.SettingCompose(
 
                 item {
                     Text(
+                        text = stringResource(R.string.background_battery),
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.padding(16.dp),
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+                item {
+                    ListPreferenceSetting(
+                        title = stringResource(R.string.process_lookup_mode_title),
+                        icon = painterResource(R.drawable.person),
+                        entries = stringArrayResource(R.array.process_lookup_mode_values).zip(
+                            stringArrayResource(R.array.process_lookup_mode_entries)
+                        ).toMap(),
+                        selected = processLookupMode,
+                        onSelectedChange = {
+                            processLookupMode = it
+                            store?.putString(Constants.PROCESS_LOOKUP_MODE_KEY, it)
+                        }
+                    )
+                }
+                item {
+                    ListPreferenceSetting(
+                        title = stringResource(R.string.vpn_mtu_profile_title),
+                        icon = painterResource(R.drawable.vpn_key),
+                        entries = stringArrayResource(R.array.vpn_mtu_profile_values).zip(
+                            stringArrayResource(R.array.vpn_mtu_profile_entries)
+                        ).toMap(),
+                        selected = vpnMtuProfile
+                            ?: stringResource(R.string.vpn_mtu_auto_value),
+                        onSelectedChange = {
+                            vpnMtuProfile = it
+                            store?.putString(Constants.VPN_MTU_PROFILE_KEY, it)
+                        }
+                    )
+                }
+                item {
+                    SwitchStore(
+                        title = R.string.register_underlying_network_callback_title,
+                        summary = R.string.register_underlying_network_callback_summary,
+                        icon = R.drawable.hub,
+                        store = store,
+                        storeKey = Constants.REGISTER_UNDERLYING_NETWORK_CALLBACK_KEY,
+                        defaultValue = true,
+                    )
+                }
+                item {
+                    ListPreferenceSetting(
+                        title = stringResource(R.string.boot_connect_policy_title),
+                        icon = painterResource(R.drawable.speed_24px),
+                        entries = stringArrayResource(R.array.boot_connect_policy_values).zip(
+                            stringArrayResource(R.array.boot_connect_policy_entries)
+                        ).toMap(),
+                        selected = bootConnectPolicy
+                            ?: stringResource(R.string.boot_connect_policy_always_value),
+                        onSelectedChange = {
+                            bootConnectPolicy = it
+                            store?.putString(Constants.BOOT_CONNECT_POLICY_KEY, it)
+                        }
+                    )
+                }
+
+                item {
+                    Text(
                         text = stringResource(R.string.advanced),
                         style = MaterialTheme.typography.titleMedium,
                         modifier = Modifier.padding(16.dp),
@@ -322,7 +399,7 @@ fun SharedTransitionScope.SettingCompose(
                         title = R.string.sniff_title,
                         icon = R.drawable.router,
                         store = store,
-                        storeKey = "sniff",
+                        storeKey = Constants.SNIFF_KEY,
                     )
                 }
                 item {
@@ -330,7 +407,7 @@ fun SharedTransitionScope.SettingCompose(
                         title = R.string.dns_dns_hijacking_title,
                         icon = R.drawable.router,
                         store = store,
-                        storeKey = "dns_hijacking",
+                        storeKey = Constants.DNS_HIJACKING_KEY,
                     )
                 }
                 item {
@@ -338,7 +415,7 @@ fun SharedTransitionScope.SettingCompose(
                         title = R.string.adv_auto_connect_title,
                         icon = R.drawable.auto_mode,
                         store = store,
-                        storeKey = "auto_connect",
+                        storeKey = Constants.AUTO_CONNECT_KEY,
                     )
                 }
                 item {
@@ -466,8 +543,9 @@ fun SwitchStore(
     @DrawableRes icon: Int? = null,
     store: Store? = null,
     storeKey: String = "",
+    defaultValue: Boolean = false,
 ) {
-    var checked by rememberSaveable { mutableStateOf(store?.getBoolean(storeKey) ?: false) }
+    var checked by rememberSaveable { mutableStateOf(store?.getBoolean(storeKey) ?: defaultValue) }
 
     SwitchSetting(
         title = stringResource(title),

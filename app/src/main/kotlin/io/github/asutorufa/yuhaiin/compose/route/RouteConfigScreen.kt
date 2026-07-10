@@ -29,7 +29,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SwipeToDismissBox
-import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -109,14 +108,7 @@ fun SharedTransitionScope.RouteConfigScreen(
                     .animateContentSize()
             ) {
                 items(items = routeList, key = { it }) { routeName ->
-                    val dismissState = rememberSwipeToDismissBoxState(
-                        confirmValueChange = {
-                            if (it == SwipeToDismissBoxValue.EndToStart) {
-                                deleteRouteName = routeName
-                                true
-                            } else false
-                        }
-                    )
+                    val dismissState = rememberSwipeToDismissBoxState()
 
                 LaunchedEffect(deleteRouteName) {
                     if (deleteRouteName == null) dismissState.reset()
@@ -124,6 +116,8 @@ fun SharedTransitionScope.RouteConfigScreen(
 
                     SwipeToDismissBox(
                         state = dismissState,
+                        enableDismissFromStartToEnd = false,
+                        onDismiss = { deleteRouteName = routeName },
                         backgroundContent = {
                             val color = MaterialTheme.colorScheme.errorContainer
                             Box(
