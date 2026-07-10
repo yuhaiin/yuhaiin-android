@@ -27,6 +27,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import io.github.asutorufa.yuhaiin.MainActivity
 import io.github.asutorufa.yuhaiin.MainApplication
+import io.github.asutorufa.yuhaiin.compose.route.RouteConfigScreen
+import io.github.asutorufa.yuhaiin.compose.route.RouteEditScreen
 
 
 @Composable
@@ -95,6 +97,24 @@ fun Main(activity: MainActivity) {
                         packageManager = activity.applicationContext.packageManager,
                         animatedVisibilityScope = this@composable,
                     )
+                }
+
+                composable("RouteConfig") {
+                    RouteConfigScreen(
+                        navController = navController,
+                        animatedContentScope = this@composable
+                    )
+                }
+
+                composable("RouteEdit/{routeName}") { backStackEntry ->
+                    val routeName = backStackEntry.arguments?.getString("routeName")
+                    if (routeName != null) {
+                        RouteEditScreen(
+                            navController = navController,
+                            routeName = routeName,
+                            animatedContentScope = this@composable
+                        )
+                    }
                 }
 
                 composable("WebView") {
