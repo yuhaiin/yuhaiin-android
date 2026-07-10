@@ -3,7 +3,7 @@ import java.util.Date
 plugins {
     id("com.android.application")
     id("androidx.navigation.safeargs.kotlin")
-    kotlin("plugin.serialization") version "2.3.0"
+    kotlin("plugin.serialization") version "2.4.0"
     id("org.jetbrains.kotlin.plugin.compose")
 }
 
@@ -54,7 +54,7 @@ tasks.withType<org.jetbrains.kotlin.gradle.internal.KaptWithoutKotlincTask>().co
 
 android {
 
-    compileSdk = 36
+    compileSdk = 37
     compileOptions {
         // Flag to enable support for the new language APIs
         sourceCompatibility = JavaVersion.VERSION_17
@@ -71,7 +71,7 @@ android {
         buildConfigField("String", "DOCUMENTS_AUTHORITY", "\"$documentsAuthorityValue\"")
         minSdk = 24
         // uses-sdk:minSdkVersion 21 cannot be smaller than version 23 declared in library [androidx.compose.material3:material3-android:1.5.0-alpha04]
-        targetSdk = 36
+        targetSdk = 37
 
         versionCode = 184
         versionName = getVersionName()
@@ -147,7 +147,6 @@ android {
         aidl = true
     }
     buildToolsVersion = "36.1.0"
-    compileSdkMinor = 1
 }
 
 base {
@@ -158,30 +157,33 @@ dependencies {
     testImplementation(kotlin("test"))
     testImplementation("junit:junit:4.13.2")
     implementation("androidx.appcompat:appcompat:1.7.1")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.10.0")
-    implementation("com.google.android.material:material:1.13.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
+    implementation("com.google.android.material:material:1.14.0")
     implementation("fastutil:fastutil:5.0.9")
+    implementation("androidx.core:core-ktx:1.19.0")
 
     // nav
-    val navVersion = "2.9.7"
+    val navVersion = "2.9.8"
     implementation("androidx.navigation:navigation-compose:${navVersion}")
+    implementation("androidx.navigation:navigation-ui-ktx:${navVersion}")
+    implementation("androidx.navigation:navigation-fragment-ktx:${navVersion}")
 
     implementation(project(":yuhaiin"))
 
-    val composeBom = platform("androidx.compose:compose-bom:2026.01.01")
+    val composeBom = platform("androidx.compose:compose-bom:2026.06.00")
     implementation(composeBom)
     androidTestImplementation(composeBom)
     implementation("androidx.compose.ui:ui-graphics")
-    implementation("androidx.compose.ui:ui-text:1.10.2")
+    implementation("androidx.compose.ui:ui-text:1.11.3")
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
-    implementation("androidx.compose.material3:material3:1.5.0-alpha13")
+    implementation("androidx.compose.material3:material3:1.5.0-alpha22")
     implementation("androidx.compose.ui:ui-tooling-preview")
-    implementation("androidx.compose.foundation:foundation:1.10.2")
+    implementation("androidx.compose.foundation:foundation:1.11.3")
     debugImplementation("androidx.compose.ui:ui-tooling")
-    implementation("androidx.compose.ui:ui:1.10.2")
-    implementation("androidx.activity:activity-compose:1.12.3")
+    implementation("androidx.compose.ui:ui:1.11.3")
+    implementation("androidx.activity:activity-compose:1.13.0")
     implementation("androidx.fragment:fragment-compose:1.8.9")
-    implementation("androidx.compose.material:material-navigation:1.10.2")
+    implementation("androidx.compose.material:material-navigation:1.11.3")
     implementation("androidx.compose.material:material-icons-core:1.7.8")
 }

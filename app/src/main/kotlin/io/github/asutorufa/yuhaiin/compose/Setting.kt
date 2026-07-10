@@ -707,7 +707,7 @@ fun PortsInputForm(
                 showBottomSheet = false
                 store?.putInt("http_port", http)
             },
-            sheetState = rememberModalBottomSheetState(true)
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
         ) {
             Box(
                 modifier = Modifier
