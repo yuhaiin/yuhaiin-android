@@ -5,7 +5,6 @@ import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -21,6 +20,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -59,7 +59,11 @@ import kotlinx.coroutines.withContext
 import yuhaiin.Store
 import yuhaiin.Yuhaiin
 
-@OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3Api::class)
+@OptIn(
+    ExperimentalSharedTransitionApi::class,
+    ExperimentalMaterial3Api::class,
+    ExperimentalMaterial3ExpressiveApi::class,
+)
 @Composable
 fun SharedTransitionScope.RouteConfigScreen(
     navController: NavController,
@@ -136,25 +140,22 @@ fun SharedTransitionScope.RouteConfigScreen(
                         }
                     ) {
                         ListItem(
-                            headlineContent = {
-                                Text(
-                                    routeName,
-                                    modifier = Modifier.sharedElement(
-                                        rememberSharedContentState(key = "ROUTE_NAME_$routeName"),
-                                        animatedVisibilityScope = this@with
-                                    )
-                                )
-                            },
+                            onClick = { navController.navigate("RouteEdit/$routeName") },
                             leadingContent = {
                                 Icon(
                                     painter = painterResource(R.drawable.router),
                                     contentDescription = null
                                 )
                             },
-                            modifier = Modifier.clickable {
-                                navController.navigate("RouteEdit/$routeName")
-                            }
-                        )
+                        ) {
+                            Text(
+                                routeName,
+                                modifier = Modifier.sharedElement(
+                                    rememberSharedContentState(key = "ROUTE_NAME_$routeName"),
+                                    animatedVisibilityScope = this@with
+                                )
+                            )
+                        }
                     }
                 }
             }
