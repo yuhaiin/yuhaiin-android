@@ -7,21 +7,19 @@ import android.os.ParcelFileDescriptor
 import android.provider.DocumentsContract
 import android.provider.DocumentsContract.Root
 import android.provider.DocumentsProvider
-import android.util.Log
 import android.webkit.MimeTypeMap
+import io.github.asutorufa.yuhaiin.BuildConfig
 import io.github.asutorufa.yuhaiin.R
 import java.io.File
 import java.io.FileNotFoundException
 import java.io.IOException
+import java.util.ArrayDeque
 import java.util.Locale
-
 
 class YuhaiinDocumentProvider : DocumentsProvider() {
     companion object {
         private const val ALL_MIME_TYPES = "*/*"
 
-        // The default columns to return information about a root if no specific
-        // columns are requested in a query.
         private val DEFAULT_ROOT_PROJECTION = arrayOf(
             Root.COLUMN_ROOT_ID,
             Root.COLUMN_MIME_TYPES,
@@ -30,136 +28,134 @@ class YuhaiinDocumentProvider : DocumentsProvider() {
             Root.COLUMN_TITLE,
             Root.COLUMN_SUMMARY,
             Root.COLUMN_DOCUMENT_ID,
-            Root.COLUMN_AVAILABLE_BYTES
+            Root.COLUMN_AVAILABLE_BYTES,
         )
 
-        // The default columns to return information about a document if no specific
-        // columns are requested in a query.
         private val DEFAULT_DOCUMENT_PROJECTION = arrayOf(
             DocumentsContract.Document.COLUMN_DOCUMENT_ID,
             DocumentsContract.Document.COLUMN_MIME_TYPE,
             DocumentsContract.Document.COLUMN_DISPLAY_NAME,
             DocumentsContract.Document.COLUMN_LAST_MODIFIED,
             DocumentsContract.Document.COLUMN_FLAGS,
-            DocumentsContract.Document.COLUMN_SIZE
+            DocumentsContract.Document.COLUMN_SIZE,
         )
     }
 
     private val baseDir by lazy {
-        context?.getExternalFilesDir("yuhaiin") ?: throw IllegalStateException("Context is null")
+        val providerContext = context ?: throw IllegalStateException("Context is null")
+        providerContext.getExternalFilesDir("yuhaiin")
+            ?: throw IllegalStateException("External files directory is unavailable")
     }
 
+    private val canonicalBaseDir by lazy { baseDir.canonicalFile }
 
     override fun onCreate(): Boolean {
-        return true
+        return baseDir.isDirectory || baseDir.mkdirs()
     }
 
     override fun queryRoots(projection: Array<out String>?): Cursor {
-        Log.d("yuhaiin", "queryRoots: ....")
         val result = MatrixCursor(projection ?: DEFAULT_ROOT_PROJECTION)
-
         val row = result.newRow()
-        row.add(Root.COLUMN_ROOT_ID, baseDir)
-        row.add(Root.COLUMN_DOCUMENT_ID, getDocIdForFile(baseDir))
-        row.add(Root.COLUMN_SUMMARY, null)
-        row.add(
+        val rootId = getDocIdForFile(baseDir)
+        addColumn(result, row, Root.COLUMN_ROOT_ID, rootId)
+        addColumn(result, row, Root.COLUMN_DOCUMENT_ID, rootId)
+        addColumn(result, row, Root.COLUMN_SUMMARY, null)
+        addColumn(
+            result,
+            row,
             Root.COLUMN_FLAGS,
-            Root.FLAG_SUPPORTS_CREATE or Root.FLAG_SUPPORTS_SEARCH or Root.FLAG_SUPPORTS_IS_CHILD
+            Root.FLAG_SUPPORTS_CREATE or Root.FLAG_SUPPORTS_SEARCH or Root.FLAG_SUPPORTS_IS_CHILD,
         )
-        row.add(Root.COLUMN_TITLE, context?.getString(R.string.app_name) ?: "yuhaiin")
-        row.add(Root.COLUMN_MIME_TYPES, ALL_MIME_TYPES)
-        row.add(Root.COLUMN_AVAILABLE_BYTES, baseDir.freeSpace)
-        row.add(Root.COLUMN_ICON, R.mipmap.ic_launcher_v2_round)
+        addColumn(
+            result,
+            row,
+            Root.COLUMN_TITLE,
+            context?.getString(R.string.app_name) ?: "yuhaiin",
+        )
+        addColumn(result, row, Root.COLUMN_MIME_TYPES, ALL_MIME_TYPES)
+        addColumn(result, row, Root.COLUMN_AVAILABLE_BYTES, baseDir.usableSpace)
+        addColumn(result, row, Root.COLUMN_ICON, R.mipmap.ic_launcher_v2_round)
         return result
     }
 
-    /**
-     * Get the document id given a file. This document id must be consistent across time as other
-     * applications may save the ID and use it to reference documents later.
-     *
-     *
-     * The reverse of @{link #getFileForDocId}.
-     */
-    private fun getDocIdForFile(file: File): String? {
-        return file.absolutePath
-    }
-
     override fun isChildDocument(parentDocumentId: String?, documentId: String?): Boolean {
-        if (documentId != null) {
-            return parentDocumentId?.let { documentId.startsWith(it) } ?: false
+        if (parentDocumentId == null || documentId == null) return false
+        return try {
+            val parent = getFileForDocId(parentDocumentId)
+            val child = getFileForDocId(documentId)
+            child != parent && child.path.startsWith(parent.path + File.separator)
+        } catch (_: FileNotFoundException) {
+            false
         }
-
-        return false
     }
 
     override fun querySearchDocuments(
         rootId: String?,
         query: String?,
-        projection: Array<out String>?
+        projection: Array<out String>?,
     ): Cursor {
-        val result = MatrixCursor(
-            projection ?: DEFAULT_DOCUMENT_PROJECTION
-        )
-        val parent = getFileForDocId(rootId!!)
+        val result = MatrixCursor(projection ?: DEFAULT_DOCUMENT_PROJECTION)
+        val parent = rootId?.let(::getFileForDocId) ?: canonicalBaseDir
+        if (!parent.isDirectory) return result
 
-        // This example implementation searches file names for the query and doesn't rank search
-        // results, so we can stop as soon as we find a sufficient number of matches.  Other
-        // implementations might rank results and use other data about files, rather than the file
-        // name, to produce a match.
+        val normalizedQuery = query.orEmpty().lowercase(Locale.ROOT)
+        if (normalizedQuery.isEmpty()) return result
 
-        // This example implementation searches file names for the query and doesn't rank search
-        // results, so we can stop as soon as we find a sufficient number of matches.  Other
-        // implementations might rank results and use other data about files, rather than the file
-        // name, to produce a match.
-        val pending = mutableListOf<File>()
+        val pending = ArrayDeque<File>()
         pending.add(parent)
-
-        val maxSearchResults = 50
-        while (!pending.isEmpty() && result.count < maxSearchResults) {
-            val file = pending.removeAt(0)
-            // Avoid directories outside the $HOME directory linked with symlinks (to avoid e.g. search
-            // through the whole SD card).
-            val isInsideHome: Boolean = try {
-                file.canonicalPath.startsWith(baseDir.toString())
+        while (!pending.isEmpty() && result.count < 50) {
+            val file = try {
+                pending.removeFirst().canonicalFile
             } catch (_: IOException) {
-                true
+                continue
             }
-            if (isInsideHome) {
-                if (file.isDirectory) {
-                    file.listFiles()?.let { pending.addAll(it) }
-                } else {
-                    if (file.name.lowercase(Locale.getDefault()).contains(query!!)) {
-                        includeFile(result, null, file)
-                    }
-                }
+            if (!isInsideBase(file)) continue
+            if (file.isDirectory) {
+                file.listFiles()?.forEach(pending::addLast)
+            } else if (file.name.lowercase(Locale.ROOT).contains(normalizedQuery)) {
+                includeFile(result, null, file)
             }
         }
-
         return result
     }
 
-    /**
-     * Get the file given a document id (the reverse of [.getDocIdForFile]).
-     */
     private fun getFileForDocId(docId: String): File {
-        val f = File(docId)
-        if (!f.exists()) throw FileNotFoundException(f.absolutePath + " not found")
-        return f
+        val file = try {
+            File(docId).canonicalFile
+        } catch (error: IOException) {
+            throw FileNotFoundException("Invalid document id $docId").apply { initCause(error) }
+        }
+        if (!isInsideBase(file) || !file.exists()) {
+            throw FileNotFoundException("Document $docId not found")
+        }
+        return file
+    }
+
+    private fun getDocIdForFile(file: File): String {
+        val canonicalFile = try {
+            file.canonicalFile
+        } catch (error: IOException) {
+            throw FileNotFoundException("Invalid document file ${file.path}").apply { initCause(error) }
+        }
+        if (!isInsideBase(canonicalFile)) {
+            throw FileNotFoundException("Document is outside the provider directory")
+        }
+        return canonicalFile.path
+    }
+
+    private fun isInsideBase(file: File): Boolean {
+        val basePath = canonicalBaseDir.path
+        return file.path == basePath || file.path.startsWith(basePath + File.separator)
     }
 
     private fun getMimeType(file: File): String {
-        return if (file.isDirectory) {
-            DocumentsContract.Document.MIME_TYPE_DIR
-        } else {
-            val name = file.name
-            val lastDot = name.lastIndexOf('.')
-            if (lastDot >= 0) {
-                val extension = name.substring(lastDot + 1).lowercase(Locale.getDefault())
-                val mime = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension)
-                if (mime != null) return mime
-            }
-            "application/octet-stream"
+        if (file.isDirectory) return DocumentsContract.Document.MIME_TYPE_DIR
+        val lastDot = file.name.lastIndexOf('.')
+        if (lastDot >= 0) {
+            val extension = file.name.substring(lastDot + 1).lowercase(Locale.ROOT)
+            MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension)?.let { return it }
         }
+        return "application/octet-stream"
     }
 
     override fun queryDocument(documentId: String?, projection: Array<out String>?): Cursor {
@@ -168,79 +164,152 @@ class YuhaiinDocumentProvider : DocumentsProvider() {
         return result
     }
 
-    /**
-     * Add a representation of a file to a cursor.
-     *
-     * @param result the cursor to modify
-     * @param docID  the document ID representing the desired file (may be null if given file)
-     * @param fil   the File object representing the desired file (may be null if given docID)
-     */
-    private fun includeFile(result: MatrixCursor, docID: String?, fil: File?) {
-        var docId: String? = docID
-        var file = fil
-        if (docId == null) {
-            docId = getDocIdForFile(file!!)
+    private fun includeFile(result: MatrixCursor, documentId: String?, file: File?) {
+        val documentFile = if (documentId != null) {
+            getFileForDocId(documentId)
         } else {
-            file = getFileForDocId(docId)
+            file?.let { getFileForDocId(getDocIdForFile(it)) }
+                ?: throw FileNotFoundException("Document file is missing")
         }
-
+        val docId = getDocIdForFile(documentFile)
         var flags = 0
-        if (file.isDirectory) {
-            if (file.canWrite()) flags = 0 or DocumentsContract.Document.FLAG_DIR_SUPPORTS_CREATE
-        } else if (file.canWrite()) {
-            flags = 0 or DocumentsContract.Document.FLAG_SUPPORTS_WRITE
+        if (documentFile.isDirectory) {
+            if (documentFile.canWrite()) {
+                flags = flags or DocumentsContract.Document.FLAG_DIR_SUPPORTS_CREATE
+            }
+        } else if (documentFile.canWrite()) {
+            flags = flags or DocumentsContract.Document.FLAG_SUPPORTS_WRITE
         }
-        if (file.parentFile?.canWrite() == true) flags =
-            flags or DocumentsContract.Document.FLAG_SUPPORTS_DELETE
-        val displayName = file.name
-        val mimeType = getMimeType(file)
-        if (mimeType.startsWith("image/")) flags =
-            flags or DocumentsContract.Document.FLAG_SUPPORTS_THUMBNAIL
-
+        if (documentFile != canonicalBaseDir && documentFile.parentFile?.canWrite() == true) {
+            flags = flags or DocumentsContract.Document.FLAG_SUPPORTS_DELETE
+            flags = flags or DocumentsContract.Document.FLAG_SUPPORTS_RENAME
+        }
+        val mimeType = getMimeType(documentFile)
+        if (mimeType.startsWith("image/")) {
+            flags = flags or DocumentsContract.Document.FLAG_SUPPORTS_THUMBNAIL
+        }
 
         val row = result.newRow()
-        row.add(DocumentsContract.Document.COLUMN_DOCUMENT_ID, docId)
-        row.add(DocumentsContract.Document.COLUMN_DISPLAY_NAME, displayName)
-        row.add(DocumentsContract.Document.COLUMN_SIZE, file.length())
-        row.add(DocumentsContract.Document.COLUMN_MIME_TYPE, mimeType)
-        row.add(DocumentsContract.Document.COLUMN_LAST_MODIFIED, file.lastModified())
-        row.add(DocumentsContract.Document.COLUMN_FLAGS, flags)
-        row.add(DocumentsContract.Document.COLUMN_ICON, R.mipmap.ic_launcher_v2_round)
+        addColumn(result, row, DocumentsContract.Document.COLUMN_DOCUMENT_ID, docId)
+        addColumn(result, row, DocumentsContract.Document.COLUMN_DISPLAY_NAME, documentFile.name)
+        addColumn(result, row, DocumentsContract.Document.COLUMN_SIZE, documentFile.length())
+        addColumn(result, row, DocumentsContract.Document.COLUMN_MIME_TYPE, mimeType)
+        addColumn(
+            result,
+            row,
+            DocumentsContract.Document.COLUMN_LAST_MODIFIED,
+            documentFile.lastModified(),
+        )
+        addColumn(result, row, DocumentsContract.Document.COLUMN_FLAGS, flags)
+        addColumn(result, row, DocumentsContract.Document.COLUMN_ICON, R.mipmap.ic_launcher_v2_round)
     }
 
     override fun queryChildDocuments(
         parentDocumentId: String?,
         projection: Array<out String>?,
-        sortOrder: String?
+        sortOrder: String?,
     ): Cursor {
         val result = MatrixCursor(projection ?: DEFAULT_DOCUMENT_PROJECTION)
-        val parent = getFileForDocId(parentDocumentId!!)
-        for (file in parent.listFiles()!!) {
-            includeFile(result, null, file!!)
-        }
+        val parent = getFileForDocId(parentDocumentId ?: throw FileNotFoundException("Parent document is missing"))
+        if (!parent.isDirectory) throw FileNotFoundException("Parent document is not a directory")
+        parent.listFiles()
+            ?.asSequence()
+            ?.mapNotNull { file ->
+                try {
+                    file.canonicalFile.takeIf(::isInsideBase)
+                } catch (_: IOException) {
+                    null
+                }
+            }
+            ?.sortedBy { it.name.lowercase(Locale.ROOT) }
+            ?.forEach { includeFile(result, null, it) }
         return result
     }
 
     override fun openDocument(
         documentId: String?,
         mode: String?,
-        signal: CancellationSignal?
+        signal: CancellationSignal?,
     ): ParcelFileDescriptor {
-        val file = documentId?.let { getFileForDocId(it) }
-        val accessMode = ParcelFileDescriptor.parseMode(mode)
-        return ParcelFileDescriptor.open(file, accessMode)
+        val file = getFileForDocId(documentId ?: throw FileNotFoundException("Document is missing"))
+        if (file.isDirectory) throw FileNotFoundException("Cannot open a directory as a file")
+        return ParcelFileDescriptor.open(file, ParcelFileDescriptor.parseMode(mode ?: "r"))
     }
 
+    override fun createDocument(parentDocumentId: String?, mimeType: String?, displayName: String?): String {
+        val parent = getFileForDocId(parentDocumentId ?: throw FileNotFoundException("Parent document is missing"))
+        if (!parent.isDirectory || !parent.canWrite()) {
+            throw FileNotFoundException("Parent document is not writable")
+        }
+        val safeName = validateDisplayName(displayName)
+        val target = File(parent, safeName).canonicalFile
+        if (!isInsideBase(target) || target.parentFile != parent) {
+            throw FileNotFoundException("Invalid document name")
+        }
+        if (target.exists()) throw FileNotFoundException("Document already exists")
 
-    override fun getDocumentType(documentId: String?): String {
-        val file = getFileForDocId(documentId!!)
-        return getMimeType(file)
+        val created = if (mimeType == DocumentsContract.Document.MIME_TYPE_DIR) {
+            target.mkdir()
+        } else {
+            target.createNewFile()
+        }
+        if (!created) throw FileNotFoundException("Failed to create document $safeName")
+        notifyChanged(parent)
+        return getDocIdForFile(target)
+    }
+
+    override fun renameDocument(documentId: String?, displayName: String?): String {
+        val source = getFileForDocId(documentId ?: throw FileNotFoundException("Document is missing"))
+        if (source == canonicalBaseDir) throw FileNotFoundException("Cannot rename the root document")
+        val safeName = validateDisplayName(displayName)
+        val target = File(source.parentFile ?: throw FileNotFoundException("Parent document is missing"), safeName)
+            .canonicalFile
+        if (!isInsideBase(target) || target.parentFile != source.parentFile) {
+            throw FileNotFoundException("Invalid document name")
+        }
+        if (target.exists()) throw FileNotFoundException("Document already exists")
+        if (!source.renameTo(target)) throw FileNotFoundException("Failed to rename document")
+        notifyChanged(source.parentFile)
+        return getDocIdForFile(target)
     }
 
     override fun deleteDocument(documentId: String?) {
-        val file = getFileForDocId(documentId!!)
-        if (!file.delete()) {
-            throw FileNotFoundException("Failed to delete document with id $documentId")
+        val file = getFileForDocId(documentId ?: throw FileNotFoundException("Document is missing"))
+        if (file == canonicalBaseDir) throw FileNotFoundException("Cannot delete the root document")
+        if (!file.deleteRecursively()) {
+            throw FileNotFoundException("Failed to delete document $documentId")
         }
+        notifyChanged(file.parentFile)
+    }
+
+    private fun validateDisplayName(displayName: String?): String {
+        val name = displayName ?: throw FileNotFoundException("Document name is missing")
+        if (name.isEmpty() || name == "." || name == ".." ||
+            name.contains('/') || name.contains('\\') || name.contains('\u0000')
+        ) {
+            throw FileNotFoundException("Invalid document name")
+        }
+        return name
+    }
+
+    private fun notifyChanged(parent: File?) {
+        val providerContext = context ?: return
+        val parentFile = parent ?: canonicalBaseDir
+        val resolver = providerContext.contentResolver
+        val authority = BuildConfig.DOCUMENTS_AUTHORITY
+        resolver.notifyChange(
+            DocumentsContract.buildChildDocumentsUri(authority, getDocIdForFile(parentFile)),
+            null,
+        )
+        resolver.notifyChange(DocumentsContract.buildRootsUri(authority), null)
+    }
+
+    private fun addColumn(
+        result: MatrixCursor,
+        row: MatrixCursor.RowBuilder,
+        column: String,
+        value: Any?,
+    ) {
+        if (result.getColumnIndex(column) >= 0) row.add(column, value)
     }
 }

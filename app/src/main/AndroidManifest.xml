@@ -87,7 +87,7 @@
         </provider>
         <provider
             android:name=".documentprovider.YuhaiinDocumentProvider"
-            android:authorities="io.github.asutorufa.yuhaiin.documents"
+            android:authorities="${documentsAuthority}"
             android:exported="true"
             android:grantUriPermissions="true"
             android:permission="android.permission.MANAGE_DOCUMENTS">
