@@ -21,6 +21,7 @@ fun getVersionCode(): Int {
 }
 
 fun getVersionName(): String {
+    System.getenv("RELEASE_VERSION")?.takeIf { it.isNotBlank() }?.let { return it }
     return try {
         val processBuilder = ProcessBuilder("git", "describe", "--tags", "--dirty")
         val output = File.createTempFile("getGitVersionName", "")
@@ -69,6 +70,7 @@ android {
         manifestPlaceholders["documentsAuthority"] = documentsAuthorityValue
         // Now we can use BuildConfig.DOCUMENTS_AUTHORITY in our code
         buildConfigField("String", "DOCUMENTS_AUTHORITY", "\"$documentsAuthorityValue\"")
+        buildConfigField("String", "GIT_COMMIT", "\"${getCommit()}\"")
         minSdk = 24
         // uses-sdk:minSdkVersion 21 cannot be smaller than version 23 declared in library [androidx.compose.material3:material3-android:1.5.0-alpha04]
         targetSdk = 37

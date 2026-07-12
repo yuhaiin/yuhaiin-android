@@ -288,6 +288,76 @@ fun SharedTransitionScope.SettingCompose(
 
                 item {
                     Text(
+                        text = stringResource(R.string.route_section),
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.padding(16.dp),
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                }
+                item {
+                    val entries = store?.getStringSet("saved_routes_list")?.associateWith { it }
+                        ?: stringArrayResource(R.array.adv_routes).associateWith { it }
+                    val default = stringResource(R.string.adv_route_all)
+
+                    ListPreferenceSetting(
+                        title = stringResource(R.string.adv_route_title),
+                        icon = painterResource(R.drawable.router),
+                        entries = entries,
+                        selected = if (entries.containsKey(route)) route!! else default,
+                        onSelectedChange = {
+                            route = it
+                            store?.putString("route", it)
+                        }
+                    )
+                }
+                item {
+                    if (navController != null) {
+                        RouteConfig(
+                            navController = navController,
+                            animatedContentScope = animatedContentScope,
+                        )
+                    }
+                }
+                item {
+                    SwitchStore(
+                        title = R.string.adv_per_app_title,
+                        icon = R.drawable.settop_component,
+                        store = store,
+                        storeKey = "per_app",
+                    )
+                }
+                item {
+                    SwitchStore(
+                        title = R.string.adv_app_bypass_title,
+                        summary = R.string.adv_app_bypass_sum,
+                        icon = R.drawable.alt_route,
+                        store = store,
+                        storeKey = "app_bypass",
+                    )
+                }
+                item {
+                    SettingsItem(
+                        textColumnModifier = Modifier.thenIfNotNull(animatedContentScope) {
+                            sharedBounds(
+                                sharedContentState = rememberSharedContentState("OPEN_APP_LIST_TITLE"),
+                                animatedVisibilityScope = it,
+                            )
+                        },
+                        iconModifier = Modifier.thenIfNotNull(animatedContentScope) {
+                            sharedBounds(
+                                sharedContentState = rememberSharedContentState("OPEN_APP_LIST_ICON"),
+                                animatedVisibilityScope = it,
+                            )
+                        },
+                        title = stringResource(R.string.adv_app_list_title),
+                        summary = stringResource(R.string.adv_app_list_sum),
+                        icon = painterResource(R.drawable.apps),
+                        onClick = { navController?.navigate("APPLIST") }
+                    )
+                }
+
+                item {
+                    Text(
                         text = stringResource(R.string.background_battery),
                         style = MaterialTheme.typography.titleMedium,
                         modifier = Modifier.padding(16.dp),
@@ -372,30 +442,6 @@ fun SharedTransitionScope.SettingCompose(
                     )
                 }
                 item {
-                    val entries = store?.getStringSet("saved_routes_list")?.associateWith { it }
-                        ?: stringArrayResource(R.array.adv_routes).associateWith { it }
-                    val default = stringResource(R.string.adv_route_all)
-
-                    ListPreferenceSetting(
-                        title = stringResource(R.string.adv_route_title),
-                        icon = painterResource(R.drawable.router),
-                        entries = entries,
-                        selected = if (entries.containsKey(route)) route!! else default,
-                        onSelectedChange = {
-                            route = it
-                            store?.putString("route", it)
-                        }
-                    )
-                }
-                item {
-                    if (navController != null) {
-                        RouteConfig(
-                            navController = navController,
-                            animatedContentScope = animatedContentScope
-                        )
-                    }
-                }
-                item {
                     SwitchStore(
                         title = R.string.sniff_title,
                         icon = R.drawable.router,
@@ -419,44 +465,6 @@ fun SharedTransitionScope.SettingCompose(
                         storeKey = Constants.AUTO_CONNECT_KEY,
                     )
                 }
-                item {
-                    SwitchStore(
-                        title = R.string.adv_per_app_title,
-                        icon = R.drawable.settop_component,
-                        store = store,
-                        storeKey = "per_app",
-                    )
-                }
-                item {
-                    SwitchStore(
-                        title = R.string.adv_app_bypass_title,
-                        summary = R.string.adv_app_bypass_sum,
-                        icon = R.drawable.alt_route,
-                        store = store,
-                        storeKey = "app_bypass",
-                    )
-                }
-                item {
-                    SettingsItem(
-                        textColumnModifier = Modifier.thenIfNotNull(animatedContentScope) {
-                            sharedBounds(
-                                sharedContentState = rememberSharedContentState("OPEN_APP_LIST_TITLE"),
-                                animatedVisibilityScope = it,
-                            )
-                        },
-                        iconModifier = Modifier.thenIfNotNull(animatedContentScope) {
-                            sharedBounds(
-                                sharedContentState = rememberSharedContentState("OPEN_APP_LIST_ICON"),
-                                animatedVisibilityScope = it,
-                            )
-                        },
-                        title = stringResource(R.string.adv_app_list_title),
-                        summary = stringResource(R.string.adv_app_list_sum),
-                        icon = painterResource(R.drawable.apps),
-                        onClick = { navController?.navigate("APPLIST") }
-                    )
-                }
-
                 // ---- Debug ----
                 item {
                     Text(
@@ -471,6 +479,28 @@ fun SharedTransitionScope.SettingCompose(
                         title = stringResource(R.string.logcat_name),
                         icon = painterResource(R.drawable.adb),
                         onClick = { navController?.navigate("LOGCAT") }
+                    )
+                }
+
+                // ---- About ----
+                item {
+                    SettingsItem(
+                        textColumnModifier = Modifier.thenIfNotNull(animatedContentScope) {
+                            sharedBounds(
+                                sharedContentState = rememberSharedContentState("OPEN_ABOUT_TITLE"),
+                                animatedVisibilityScope = it,
+                            )
+                        },
+                        iconModifier = Modifier.thenIfNotNull(animatedContentScope) {
+                            sharedBounds(
+                                sharedContentState = rememberSharedContentState("OPEN_ABOUT_ICON"),
+                                animatedVisibilityScope = it,
+                            )
+                        },
+                        title = stringResource(R.string.about),
+                        summary = stringResource(R.string.about_summary),
+                        icon = painterResource(R.drawable.handyman),
+                        onClick = { navController?.navigate("About") },
                     )
                 }
             }

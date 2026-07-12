@@ -17,4 +17,6 @@ interface IYuhaiinVpnBinder {
             int state();
             void registerCallback(IYuhaiinVpnCallback cb);
             void unregisterCallback(IYuhaiinVpnCallback cb);
+            byte[] proxyGet(String url);
+            void proxyDownload(String url, String destination);
 }

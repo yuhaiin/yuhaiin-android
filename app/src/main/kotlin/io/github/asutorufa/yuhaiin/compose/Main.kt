@@ -29,6 +29,7 @@ import io.github.asutorufa.yuhaiin.MainActivity
 import io.github.asutorufa.yuhaiin.MainApplication
 import io.github.asutorufa.yuhaiin.compose.route.RouteConfigScreen
 import io.github.asutorufa.yuhaiin.compose.route.RouteEditScreen
+import io.github.asutorufa.yuhaiin.service.YuhaiinVpnService.Companion.State
 
 
 @Composable
@@ -88,6 +89,16 @@ fun Main(activity: MainActivity) {
                         animatedContentScope = this@composable,
                         store = MainApplication.store,
                         addresses = MainApplication.getAddresses(),
+                    )
+                }
+
+                composable("About") {
+                    AboutScreen(
+                        navController = navController,
+                        updateManager = MainApplication.updateManager,
+                        proxyReady = vpnState == State.CONNECTED,
+                        startProxy = { activity.startService() },
+                        animatedContentScope = this@composable,
                     )
                 }
 
@@ -162,4 +173,3 @@ inline fun <T> Modifier.thenIfNotNull(
     value: T?,
     block: Modifier.(T) -> Modifier
 ): Modifier = if (value != null) block(value) else this
-

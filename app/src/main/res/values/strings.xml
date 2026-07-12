@@ -7,6 +7,7 @@
     <string name="yuhaiin_port_title">Yuhaiin Port</string>
 
     <string name="connection">Connection</string>
+    <string name="route_section">Route</string>
     <string name="ports_title">Ports</string>
     <string name="http_server_port_title">HTTP Port</string>
     <string name="append_http_proxy_to_vpn_title">Append HTTP Proxy to VPN</string>
@@ -83,6 +84,36 @@
     <string name="logcat">Logcat</string>
     <string name="logcat_name">Logcat</string>
     <string name="save_logcat_name">Save Logcat</string>
+    <string name="about">About</string>
+    <string name="about_summary">Version information and software updates</string>
+    <string name="about_description">A proxy client for Android</string>
+    <string name="about_version_information">Version information</string>
+    <string name="about_version">Version</string>
+    <string name="about_version_code">Version code</string>
+    <string name="about_commit">Commit</string>
+    <string name="about_android">Android</string>
+    <string name="about_abi">ABI</string>
+    <string name="about_package">Package</string>
+    <string name="unknown">Unknown</string>
+    <string name="software_update">Software Update</string>
+    <string name="software_update_summary">Check GitHub Releases for a newer Android build</string>
+    <string name="update_start_proxy_before_check">Start the proxy before checking for updates.</string>
+    <string name="update_proxy_explanation">GitHub access and APK downloads use the configured proxy chain. Direct connections are disabled, so the proxy must be running first.</string>
+    <string name="update_start_proxy">Start proxy</string>
+    <string name="update_check">Check for updates</string>
+    <string name="update_asset">Asset: %1$s</string>
+    <string name="update_available">%1$s is available</string>
+    <string name="update_latest_available">You are using the latest available version.</string>
+    <string name="update_now">Update now</string>
+    <string name="update_updating">Updating...</string>
+    <string name="update_downloading_proxy">Downloading through the configured proxy chain...</string>
+    <string name="update_progress">%1$s / %2$s (%3$d%%)</string>
+    <string name="update_failed">Update failed: %1$s</string>
+    <string name="update_installer_opened">Installer opened. Confirm the system installation dialog to finish.</string>
+    <string name="update_stage_downloading">Downloading update...</string>
+    <string name="update_stage_verifying">Verifying APK...</string>
+    <string name="update_stage_installing">Opening installer...</string>
+    <string name="update_stage_updating">Updating...</string>
     <string name="save_logcat_summary">Save logcat to
         Android/data/io.github.asutorufa.yuhaiin/files/yuhaiin/log.
     </string>

@@ -10,6 +10,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
+import io.github.asutorufa.yuhaiin.update.UpdateManager
 import yuhaiin.AddressIter
 import yuhaiin.AddressPrefix
 import yuhaiin.Interface
@@ -24,6 +25,7 @@ open class MainApplication : Application() {
 
     companion object {
         lateinit var store: Store
+        lateinit var updateManager: UpdateManager
 
         fun getAddresses(): List<String> = try {
             NetworkInterface.getNetworkInterfaces()?.asSequence()
@@ -82,6 +84,7 @@ open class MainApplication : Application() {
         Seq.setContext(this)
         Yuhaiin.setSavePath(getExternalFilesDir("yuhaiin").toString())
         store = Yuhaiin.getStore()
+        updateManager = UpdateManager(this)
         ensureBatteryDefaults()
         Yuhaiin.setInterfaces(GetInterfaces())
         Yuhaiin.setProcessDumper(UidDumper())

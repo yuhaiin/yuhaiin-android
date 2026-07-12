@@ -50,6 +50,7 @@ jobs:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
           KEYSTORE: ${{ secrets.KEYSTORE_BASE64 }}
+          RELEASE_VERSION: ${{ github.ref_type == 'tag' && github.ref_name || format('main-{0}', github.sha) }}
         run: |
           echo ${KEYSTORE} | base64 -d > ${KEYSTORE_PATH}
           chmod +x gradlew
@@ -72,20 +73,40 @@ jobs:
           path: app/build/outputs/apk/release/output-metadata.json
 
       - id: generate-release-notes
+        if: github.event_name != 'pull_request'
         run: |
-          git log $(git describe --tags --abbrev=0 --exclude=$(git describe --tags))..$(git describe --tags) --oneline > release_notes.txt
+          previous_tag=$(git describe --tags --match 'v*' --abbrev=0 2>/dev/null || true)
+          if [ -n "${previous_tag}" ]; then
+            git log "${previous_tag}..HEAD" --oneline > release_notes.txt
+          else
+            git log -n 100 --oneline > release_notes.txt
+          fi
+          sha256sum \
+            app/build/outputs/apk/release/yuhaiin-x86_64-release.apk \
+            app/build/outputs/apk/release/yuhaiin-arm64-v8a-release.apk \
+            > checksums.txt
+
+      - name: Update rolling main tag
+        if: github.event_name == 'push' && github.ref_type == 'branch' && github.ref_name == 'main'
+        run: |
+          git tag -f main "$GITHUB_SHA"
+          git push origin refs/tags/main --force
 
       - name: Release
+        if: github.event_name != 'pull_request'
         uses: softprops/action-gh-release@v3
         with:
+          tag_name: ${{ github.ref_type == 'tag' && github.ref_name || 'main' }}
           body_path: release_notes.txt
-          name: ${{ github.ref_type == 'tag' && github.ref_name || 'draft release' }}
-          draft: ${{ github.ref_type != 'tag' }}
+          name: ${{ github.ref_type == 'tag' && github.ref_name || format('main-{0}', github.sha) }}
+          draft: false
           make_latest: ${{ github.ref_type == 'tag' && !contains(github.ref_name, 'beta') && !contains(github.ref_name, 'alpha') }}
-          prerelease: ${{ contains(github.ref_name, 'beta') || contains(github.ref_name, 'alpha') }}
+          prerelease: ${{ github.ref_type != 'tag' || contains(github.ref_name, 'beta') || contains(github.ref_name, 'alpha') }}
+          overwrite_files: true
           # see: https://github.com/softprops/action-gh-release/issues/79#issuecomment-930339070
           files: |
             release_notes.txt
+            checksums.txt
             app/build/outputs/apk/release/output-metadata.json
             app/build/outputs/apk/release/yuhaiin-x86_64-release.apk
             app/build/outputs/apk/release/yuhaiin-arm64-v8a-release.apk

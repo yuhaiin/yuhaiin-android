@@ -63,6 +63,7 @@ class MainActivity : AppCompatActivity() {
     private val mConnection: ServiceConnection = object : ServiceConnection {
         override fun onServiceConnected(p1: ComponentName, binder: IBinder) {
             vpnBinder = IYuhaiinVpnBinder.Stub.asInterface(binder).also {
+                MainApplication.updateManager.setProxyBinder(it)
                 this@MainActivity.state.value = State.entries[it.state()]
                 it.registerCallback(vpnCallback)
             }
@@ -71,6 +72,7 @@ class MainActivity : AppCompatActivity() {
         override fun onServiceDisconnected(p1: ComponentName) {
             vpnBinder?.unregisterCallback(vpnCallback)
             vpnBinder = null
+            MainApplication.updateManager.setProxyBinder(null)
         }
     }
 

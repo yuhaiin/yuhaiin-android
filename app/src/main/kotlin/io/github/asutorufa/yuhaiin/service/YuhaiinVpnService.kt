@@ -145,6 +145,17 @@ class YuhaiinVpnService : VpnService() {
             if (cb != null) callbacks.unregister(cb)
         }
 
+        override fun proxyGet(url: String?): ByteArray {
+            return Yuhaiin.proxyGet(url ?: throw IllegalArgumentException("proxy URL is empty"))
+        }
+
+        override fun proxyDownload(url: String?, destination: String?) {
+            Yuhaiin.proxyDownload(
+                url ?: throw IllegalArgumentException("proxy URL is empty"),
+                destination ?: throw IllegalArgumentException("proxy destination is empty"),
+            )
+        }
+
         override fun stop() = this@YuhaiinVpnService.onRevoke()
         override fun state(): Int {
             return state.ordinal

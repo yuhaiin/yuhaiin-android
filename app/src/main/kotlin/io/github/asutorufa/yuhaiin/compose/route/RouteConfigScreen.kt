@@ -87,12 +87,24 @@ fun SharedTransitionScope.RouteConfigScreen(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.route_config_title)) },
+                title = {
+                    Text(
+                        text = stringResource(R.string.route_config_title),
+                        modifier = Modifier.sharedBounds(
+                            rememberSharedContentState(key = "OPEN_ROUTE_CONFIG_TITLE"),
+                            animatedVisibilityScope = this@with,
+                        ),
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
+                            contentDescription = "Back",
+                            modifier = Modifier.sharedBounds(
+                                rememberSharedContentState(key = "OPEN_ROUTE_CONFIG_ICON"),
+                                animatedVisibilityScope = this@with,
+                            ),
                         )
                     }
                 },
