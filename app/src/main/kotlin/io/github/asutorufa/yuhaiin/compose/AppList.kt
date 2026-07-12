@@ -40,7 +40,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SearchBar
 import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberSearchBarState
@@ -162,18 +161,15 @@ fun SharedTransitionScope.AppListComponent(
                     )
                 }
 
-                SearchBar(
-                    state = searchBarState,
-                    inputField = {
-                        SearchBarDefaults.InputField(
-                            searchBarState = searchBarState,
-                            textFieldState = textFieldState,
-                            onSearch = {},
-                            leadingIcon = {
-                                Icon(Icons.Default.Search, contentDescription = null)
-                            },
-                        )
-                    }
+                SearchBarDefaults.InputField(
+                    modifier = Modifier.weight(1f),
+                    textFieldState = textFieldState,
+                    searchBarState = searchBarState,
+                    onSearch = {},
+                    placeholder = { Text("Search") },
+                    leadingIcon = {
+                        Icon(Icons.Default.Search, contentDescription = null)
+                    },
                 )
             }
         },
