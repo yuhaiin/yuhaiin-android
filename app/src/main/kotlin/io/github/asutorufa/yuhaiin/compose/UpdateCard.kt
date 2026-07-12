@@ -171,7 +171,7 @@ fun UpdateCard(
                 Text(stringResource(R.string.update_failed, it), color = MaterialTheme.colorScheme.error)
             }
             if (state.stage == UpdateStage.COMPLETED) {
-                Text(stringResource(R.string.update_installer_opened))
+                Text(stringResource(R.string.update_install_completed))
             }
         }
     }

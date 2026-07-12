@@ -58,9 +58,13 @@
     <string name="update_progress">%1$s / %2$s（%3$d%%）</string>
     <string name="update_failed">更新に失敗しました：%1$s</string>
     <string name="update_installer_opened">インストーラーを開きました。システムのインストール画面で完了してください。</string>
+    <string name="update_install_request_sent">インストール要求を送信しました。システムの確認を待っています...</string>
+    <string name="update_install_confirmation">システムのインストール画面で確認して完了してください。</string>
+    <string name="update_install_completed">インストールが完了しました。</string>
+    <string name="update_install_failed">インストールに失敗しました。</string>
     <string name="update_stage_downloading">更新をダウンロード中...</string>
     <string name="update_stage_verifying">APKを検証中...</string>
-    <string name="update_stage_installing">インストーラーを起動中...</string>
+    <string name="update_stage_installing">インストールの確認を待っています...</string>
     <string name="update_stage_updating">更新中...</string>
     <string name="Connect">接続</string>
     <string name="Stop">停止</string>

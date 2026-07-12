@@ -110,9 +110,13 @@
     <string name="update_progress">%1$s / %2$s (%3$d%%)</string>
     <string name="update_failed">Update failed: %1$s</string>
     <string name="update_installer_opened">Installer opened. Confirm the system installation dialog to finish.</string>
+    <string name="update_install_request_sent">Installation request sent. Waiting for system confirmation...</string>
+    <string name="update_install_confirmation">Confirm the installation in the system dialog to finish.</string>
+    <string name="update_install_completed">Installation completed.</string>
+    <string name="update_install_failed">Installation failed.</string>
     <string name="update_stage_downloading">Downloading update...</string>
     <string name="update_stage_verifying">Verifying APK...</string>
-    <string name="update_stage_installing">Opening installer...</string>
+    <string name="update_stage_installing">Waiting for installation confirmation...</string>
     <string name="update_stage_updating">Updating...</string>
     <string name="save_logcat_summary">Save logcat to
         Android/data/io.github.asutorufa.yuhaiin/files/yuhaiin/log.

@@ -1,11 +1,12 @@
 package io.github.asutorufa.yuhaiin.update
 
+import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
-import androidx.core.content.FileProvider
+import android.content.pm.PackageInstaller
 import io.github.asutorufa.yuhaiin.BuildConfig
 import io.github.asutorufa.yuhaiin.IYuhaiinVpnBinder
 import io.github.asutorufa.yuhaiin.R
@@ -24,6 +25,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import java.io.File
+import java.io.FileInputStream
 import java.security.MessageDigest
 
 enum class UpdateChannel(val value: String) {
@@ -124,10 +126,35 @@ class UpdateManager(context: Context) {
                 verifyChecksum(apk, release)
                 _state.value = _state.value.copy(stage = UpdateStage.INSTALLING)
                 install(apk)
-                _state.value = _state.value.copy(stage = UpdateStage.COMPLETED, progress = 100)
+                _state.value = _state.value.copy(
+                    reason = context.getString(R.string.update_install_request_sent),
+                )
             } catch (e: Exception) {
                 _state.value = _state.value.copy(stage = UpdateStage.ERROR, error = errorMessage(e))
             }
+        }
+    }
+
+    fun onInstallResult(status: Int, message: String?) {
+        _state.value = when (status) {
+            PackageInstaller.STATUS_SUCCESS -> _state.value.copy(
+                stage = UpdateStage.COMPLETED,
+                progress = 100,
+                reason = context.getString(R.string.update_install_completed),
+                error = null,
+            )
+
+            PackageInstaller.STATUS_PENDING_USER_ACTION -> _state.value.copy(
+                stage = UpdateStage.INSTALLING,
+                reason = context.getString(R.string.update_install_confirmation),
+                error = null,
+            )
+
+            else -> _state.value.copy(
+                stage = UpdateStage.ERROR,
+                error = message?.takeIf { it.isNotBlank() }
+                    ?: context.getString(R.string.update_install_failed),
+            )
         }
     }
 
@@ -284,12 +311,38 @@ class UpdateManager(context: Context) {
             context.startActivity(settingsIntent)
             throw IllegalStateException("Allow installs from this source, then try again")
         }
-        val uri: Uri = FileProvider.getUriForFile(context, "${BuildConfig.APPLICATION_ID}.update_fileprovider", apk)
-        val intent = Intent(Intent.ACTION_VIEW).apply {
-            setDataAndType(uri, APK_MIME_TYPE)
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        val packageInstaller = context.packageManager.packageInstaller
+        val params = PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL).apply {
+            setSize(apk.length())
         }
-        context.startActivity(intent)
+        val sessionId = packageInstaller.createSession(params)
+        val resultIntent = Intent(context, UpdateInstallReceiver::class.java).apply {
+            action = INSTALL_RESULT_ACTION
+            putExtra(PackageInstaller.EXTRA_SESSION_ID, sessionId)
+        }
+        val pendingIntentFlags = PendingIntent.FLAG_UPDATE_CURRENT or
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) PendingIntent.FLAG_MUTABLE else 0
+        val resultPendingIntent = PendingIntent.getBroadcast(
+            context,
+            sessionId,
+            resultIntent,
+            pendingIntentFlags,
+        )
+        val session = packageInstaller.openSession(sessionId)
+        var committed = false
+        try {
+            FileInputStream(apk).use { input ->
+                session.openWrite("base.apk", 0, apk.length()).use { output ->
+                    input.copyTo(output)
+                    session.fsync(output)
+                }
+            }
+            session.commit(resultPendingIntent.intentSender)
+            committed = true
+        } finally {
+            session.close()
+            if (!committed) packageInstaller.abandonSession(sessionId)
+        }
     }
 
     private fun loadChannel(): UpdateChannel = when (preferences.getString(CHANNEL_KEY, null)) {
@@ -358,6 +411,7 @@ class UpdateManager(context: Context) {
         private const val RELEASES_URL = "https://api.github.com/repos/yuhaiin/yuhaiin-android/releases"
         private const val RELEASE_PAGE_LIMIT = 10
         private const val APK_MIME_TYPE = "application/vnd.android.package-archive"
+        const val INSTALL_RESULT_ACTION = "io.github.asutorufa.yuhaiin.UPDATE_INSTALL_RESULT"
         private const val DOWNLOAD_RETENTION_MS = 24 * 60 * 60 * 1000L
 
         private fun compareVersions(left: String, right: String): Int {
