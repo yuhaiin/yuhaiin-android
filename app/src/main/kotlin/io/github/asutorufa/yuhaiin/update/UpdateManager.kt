@@ -167,7 +167,7 @@ class UpdateManager(context: Context) {
     private fun fetchReleases(): List<GitHubRelease> {
         val result = mutableListOf<GitHubRelease>()
         for (page in 1..RELEASE_PAGE_LIMIT) {
-            val url = "$RELEASES_URL?per_page=100&page=$page"
+            val url = "$RELEASES_URL?per_page=100&page=$page&update_cache_bust=${System.currentTimeMillis()}"
             val response = proxyGet(url).toString(Charsets.UTF_8)
             val pageReleases = json.decodeFromString<List<GitHubRelease>>(response)
             result += pageReleases
