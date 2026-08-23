@@ -1,6 +1,7 @@
 package io.github.asutorufa.yuhaiin
 
 import android.app.Application
+import android.content.Context
 import android.net.ConnectivityManager
 import android.os.Build
 import android.util.Log
@@ -18,6 +19,9 @@ import yuhaiin.InterfaceIter
 import yuhaiin.Interfaces
 import yuhaiin.Store
 import yuhaiin.Yuhaiin
+import java.io.File
+import java.io.FileInputStream
+import java.io.FileOutputStream
 import java.net.InetSocketAddress
 import java.net.NetworkInterface
 
@@ -26,6 +30,27 @@ open class MainApplication : Application() {
     companion object {
         lateinit var store: Store
         lateinit var updateManager: UpdateManager
+
+        fun stateDatabase(context: Context): File =
+            File(File(context.filesDir, "yuhaiin").apply { mkdirs() }, "state.db")
+
+        private fun migrateLegacyState(context: Context, destination: File) {
+            if (destination.exists()) return
+
+            val legacyDirectory = context.getExternalFilesDir("yuhaiin") ?: return
+            if (!File(legacyDirectory, "state.db").exists()) return
+
+            destination.parentFile?.mkdirs()
+            listOf("state.db", "state.db-wal", "state.db-shm").forEach { name ->
+                val source = File(legacyDirectory, name)
+                if (!source.exists()) return@forEach
+                FileInputStream(source).use { input ->
+                    FileOutputStream(File(destination.parentFile, name)).use { output ->
+                        input.copyTo(output)
+                    }
+                }
+            }
+        }
 
         fun getAddresses(): List<String> = try {
             NetworkInterface.getNetworkInterfaces()?.asSequence()
@@ -82,7 +107,9 @@ open class MainApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         Seq.setContext(this)
-        Yuhaiin.setSavePath(getExternalFilesDir("yuhaiin").toString())
+        val database = stateDatabase(this)
+        migrateLegacyState(this, database)
+        Yuhaiin.setSavePath(database.parentFile!!.path)
         store = Yuhaiin.getStore()
         updateManager = UpdateManager(this)
         ensureBatteryDefaults()

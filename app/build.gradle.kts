@@ -1,5 +1,10 @@
 import java.util.Date
 
+val rustWebAssets = layout.buildDirectory.dir("generated/rustWebAssets")
+val configuredWebRoot = file(
+    System.getenv("YUHAIIN_WEB_ROOT") ?: "../../yuhaiin-react/dist"
+)
+
 plugins {
     id("com.android.application")
     id("androidx.navigation.safeargs.kotlin")
@@ -126,8 +131,19 @@ android {
     sourceSets {
         named("main") {
             java { directories.add("src/main/kotlin") }
+        assets.directories.add(rustWebAssets.get().asFile.path)
+            jniLibs.directories.add(
+                layout.buildDirectory.dir("generated/rustJniLibs").get().asFile.path
+            )
         }
     }
+
+        val prepareRustWebAssets = tasks.register<Sync>("prepareRustWebAssets") {
+            from(configuredWebRoot)
+            into(rustWebAssets.get().asFile.resolve("web"))
+            doFirst { delete(rustWebAssets) }
+        }
+    tasks.named("preBuild").configure { dependsOn(prepareRustWebAssets) }
 
     testOptions {
         execution = "ANDROIDX_TEST_ORCHESTRATOR"
