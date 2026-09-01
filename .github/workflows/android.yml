@@ -21,6 +21,31 @@ jobs:
           fetch-tags: "true"
           submodules: "recursive"
 
+      - uses: actions/checkout@v7
+        with:
+          repository: yuhaiin/yuhaiin-rust
+          path: yuhaiin-rust
+          fetch-depth: "1"
+
+      - uses: actions/checkout@v7
+        with:
+          repository: yuhaiin/yuhaiin-react
+          path: yuhaiin-react
+          fetch-depth: "1"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: yuhaiin-react/package-lock.json
+
+      - name: Build management web UI
+        working-directory: yuhaiin-react
+        run: |
+          npm ci
+          npm run build
+
       - name: get run id
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -40,11 +65,30 @@ jobs:
           java-version: "17"
           distribution: "temurin"
 
+      - name: Set up Android SDK and NDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android NDK
+        run: |
+          sdkmanager "ndk;27.2.12479018"
+          echo "ANDROID_NDK_HOME=${ANDROID_HOME}/ndk/27.2.12479018" >> "${GITHUB_ENV}"
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,x86_64-linux-android
+
+      - name: Build Rust Android runtime
+        env:
+          YUHAIIN_RUST_ROOT: ${{ github.workspace }}/yuhaiin-rust
+        run: ./scripts/build-rust-native.sh
+
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v6
 
       - name: Build with Gradle
         env:
+          YUHAIIN_WEB_ROOT: ${{ github.workspace }}/yuhaiin-react/dist
           KEYSTORE_PATH: ${{ github.workspace }}/release.keystore
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}

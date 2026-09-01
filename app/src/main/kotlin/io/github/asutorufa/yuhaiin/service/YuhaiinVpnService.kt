@@ -17,26 +17,22 @@ import android.os.ParcelFileDescriptor
 import android.os.RemoteCallbackList
 import android.util.Log
 import androidx.core.app.NotificationCompat
-import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.getSystemService
 import io.github.asutorufa.yuhaiin.BuildConfig
+import io.github.asutorufa.yuhaiin.Constants
 import io.github.asutorufa.yuhaiin.IYuhaiinVpnBinder
 import io.github.asutorufa.yuhaiin.IYuhaiinVpnCallback
 import io.github.asutorufa.yuhaiin.MainActivity
 import io.github.asutorufa.yuhaiin.MainApplication
 import io.github.asutorufa.yuhaiin.R
-import io.github.asutorufa.yuhaiin.Constants
+import io.github.asutorufa.yuhaiin.rust.RustRuntime
+import io.github.asutorufa.yuhaiin.rust.RustWebAssets
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
-import yuhaiin.App
-import yuhaiin.Closer
-import yuhaiin.NotifySpped
-import yuhaiin.Opts
-import yuhaiin.SocketProtect
-import yuhaiin.TUN
 import yuhaiin.TunAddress
 import yuhaiin.Yuhaiin
 
@@ -96,7 +92,8 @@ class YuhaiinVpnService : VpnService() {
     private var mInterface: ParcelFileDescriptor? = null
     private var underlyingNetworkCallbackRegistered = false
     private val notification by lazy { application.getSystemService<NotificationManager>()!! }
-    private val app = App()
+    private var rustHandle = 0L
+    private var rustStartJob: kotlinx.coroutines.Job? = null
 
     private fun vpnMtu(): Int =
         when (MainApplication.store.getString(Constants.VPN_MTU_PROFILE_KEY).ifBlank { "auto" }) {
@@ -157,6 +154,10 @@ class YuhaiinVpnService : VpnService() {
         }
 
         override fun stop() = this@YuhaiinVpnService.onRevoke()
+
+        override fun apiPort(): Int =
+            rustHandle.takeIf { it != 0L }?.let(RustRuntime::apiPort) ?: 0
+
         override fun state(): Int {
             return state.ordinal
         }
@@ -192,17 +193,26 @@ class YuhaiinVpnService : VpnService() {
         if (intent?.action == SERVICE_INTERFACE) super.onBind(intent) else mBinder
 
     private fun stop() {
-        if (state != State.CONNECTED) return
+        if (state == State.DISCONNECTED || state == State.DISCONNECTING) return
         state = State.DISCONNECTING
 
-        try {
-            stopForeground(STOP_FOREGROUND_REMOVE)
-            mInterface?.close()
-            app.stop()
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) unregisterUnderlyingNetworkCallback()
-            state = State.DISCONNECTED
-        } catch (e: Exception) {
-            e.printStackTrace()
+        rustStartJob?.cancel()
+        val handle = rustHandle
+        rustHandle = 0L
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                if (handle != 0L) RustRuntime.stop(handle)
+            } catch (e: Exception) {
+                Log.w(tag, "stop Rust runtime failed", e)
+            }
+            withContext(Dispatchers.Main) {
+                stopForeground(STOP_FOREGROUND_REMOVE)
+                mInterface?.close()
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                    unregisterUnderlyingNetworkCallback()
+                }
+                state = State.DISCONNECTED
+            }
         }
     }
 
@@ -226,8 +236,6 @@ class YuhaiinVpnService : VpnService() {
             configure(tunAddress)
             startNotification()
             start(tunAddress)
-
-            state = State.CONNECTED
         } catch (e: Exception) {
             e.printStackTrace()
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) unregisterUnderlyingNetworkCallback()
@@ -276,6 +284,15 @@ class YuhaiinVpnService : VpnService() {
                     if (bypass) remove(BuildConfig.APPLICATION_ID)
                     else add(BuildConfig.APPLICATION_ID)
                     forEach { bypassApp(bypass, it) }
+                }
+            } else {
+                // Rust outbound sockets run inside this process. Exclude the
+                // app itself from the VPN so those sockets do not feed back
+                // into the TUN they are servicing.
+                try {
+                    addDisallowedApplication(BuildConfig.APPLICATION_ID)
+                } catch (e: Exception) {
+                    Log.w(tag, "exclude the Rust host process from VPN", e)
                 }
             }
 
@@ -342,23 +359,56 @@ class YuhaiinVpnService : VpnService() {
     }
 
     private fun start(tunAddress: TunAddress) {
-        app.start(Opts().apply {
-            notifySpped = SpeedNotifier(
-                notificationBuilder(),
-                NotificationManagerCompat.from(this@YuhaiinVpnService)
-            )
-
-            tun = TUN().apply {
-                fd = mInterface!!.fd
-                mtu = vpnMtu()
-                portal = "${tunAddress.iPv4Address}/24"
-                portalV6 = "${tunAddress.iPv6Address}/64"
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
-                    socketProtect = SocketProtect { return@SocketProtect protect(it) }
+        val descriptor = mInterface ?: error("Android VPN interface is not established")
+        val tunFd = descriptor.detachFd()
+        mInterface = null
+        val database = MainApplication.stateDatabase(application).path
+        rustStartJob = CoroutineScope(Dispatchers.IO).launch {
+            var startedHandle = 0L
+            try {
+                val webRoot = RustWebAssets.install(applicationContext)
+                startedHandle = RustRuntime.start(
+                    database,
+                    tunFd,
+                    vpnMtu(),
+                    tunAddress.iPv4Address,
+                    24,
+                    tunAddress.iPv6Address,
+                    64,
+                    webRoot,
+                )
+                if (!isActive) {
+                    RustRuntime.stop(startedHandle)
+                    return@launch
+                }
+                val accepted = withContext(Dispatchers.Main) {
+                    if (state == State.CONNECTING) {
+                        rustHandle = startedHandle
+                        state = State.CONNECTED
+                        true
+                    } else {
+                        false
+                    }
+                }
+                if (!accepted) RustRuntime.stop(startedHandle)
+            } catch (e: Throwable) {
+                if (startedHandle != 0L) {
+                    RustRuntime.stop(startedHandle)
+                }
+                if (isActive) {
+                    withContext(Dispatchers.Main) {
+                        if (state == State.CONNECTING) {
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                                unregisterUnderlyingNetworkCallback()
+                            }
+                            stopForeground(STOP_FOREGROUND_REMOVE)
+                            state = State.DISCONNECTED
+                            callbacks.sendMsg("Rust runtime failed to start: $e")
+                        }
+                    }
+                }
             }
-
-            closeFallback = Closer { stop() }
-        })
+        }
     }
 
     private fun startNotification(name: String = "Default") {
@@ -386,23 +436,4 @@ class YuhaiinVpnService : VpnService() {
         }
     }
 
-    inner class SpeedNotifier(
-        private var builder: NotificationCompat.Builder,
-        private val notificationManagerCompat: NotificationManagerCompat
-    ) : NotifySpped {
-
-        private val enabled = notificationManagerCompat.areNotificationsEnabled()
-
-        override fun notifyEnable(): Boolean = enabled
-
-        override fun notify(str: String) {
-            if (enabled)
-                notificationManagerCompat.notify(
-                    1,
-                    builder
-                        .setContentTitle("${resources.getString(R.string.yuhaiin_running)} $str")
-                        .build()
-                )
-        }
-    }
 }

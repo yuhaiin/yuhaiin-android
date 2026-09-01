@@ -130,7 +130,7 @@ fun Main(activity: MainActivity) {
 
                 composable("WebView") {
                     WebViewComponent(this@composable, navController) {
-                        MainApplication.store.getInt("yuhaiin_port")
+                        activity.vpnBinder?.apiPort() ?: 0
                     }
                 }
 

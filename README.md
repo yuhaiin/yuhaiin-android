@@ -12,6 +12,24 @@ Android Client for [yuhaiin](https://github.com/Asutorufa/yuhaiin).
 
 Android 5.0+ (API level 21)
 
+## Rust runtime build
+
+The VPN data plane is hosted by yuhaiin-rust through a JNI library. The
+Android UI still uses the existing compatibility store while the migration is
+in progress.
+
+Build the native libraries from local checkouts with:
+
+```bash
+ANDROID_NDK_HOME=/path/to/android-ndk \
+YUHAIIN_RUST_ROOT=/Volumes/PSSD/Documents/yuhaiin-rust \
+./scripts/build-rust-native.sh
+```
+
+The script builds arm64-v8a and x86_64 libraries into
+app/build/generated/rustJniLibs. The Rust checkout is intentionally kept
+outside this repository.
+
 ## Download
 
 [Release](https://github.com/Asutorufa/yuhaiin-android/releases)
