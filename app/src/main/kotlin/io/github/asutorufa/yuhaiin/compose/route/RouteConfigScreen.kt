@@ -48,7 +48,6 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
 import io.github.asutorufa.yuhaiin.Constants
 import io.github.asutorufa.yuhaiin.MainApplication
 import io.github.asutorufa.yuhaiin.R
@@ -67,8 +66,9 @@ import yuhaiin.Yuhaiin
 )
 @Composable
 fun SharedTransitionScope.RouteConfigScreen(
-    navController: NavController,
-    animatedContentScope: AnimatedContentScope?
+    animatedContentScope: AnimatedContentScope?,
+    onBack: () -> Unit,
+    onOpenRouteEdit: (String) -> Unit,
 ) {
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     var routeList by remember { mutableStateOf(emptyList<String>()) }
@@ -98,7 +98,7 @@ fun SharedTransitionScope.RouteConfigScreen(
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
+                    IconButton(onClick = onBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
@@ -153,7 +153,7 @@ fun SharedTransitionScope.RouteConfigScreen(
                         }
                     ) {
                         ListItem(
-                            onClick = { navController.navigate("RouteEdit/$routeName") },
+                            onClick = { onOpenRouteEdit(routeName) },
                             leadingContent = {
                                 Icon(
                                     painter = painterResource(R.drawable.router),
@@ -279,9 +279,9 @@ fun SharedTransitionScope.RouteConfigScreen(
 @OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun SharedTransitionScope.RouteEditScreen(
-    navController: NavController,
     routeName: String,
-    animatedContentScope: AnimatedContentScope?
+    animatedContentScope: AnimatedContentScope?,
+    onBack: () -> Unit,
 ) {
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     var routeContent by remember {
@@ -313,7 +313,7 @@ fun SharedTransitionScope.RouteEditScreen(
                         }
                     },
                     navigationIcon = {
-                        IconButton(onClick = { navController.popBackStack() }) {
+                        IconButton(onClick = onBack) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = "Back"
@@ -332,7 +332,7 @@ fun SharedTransitionScope.RouteEditScreen(
             FloatingActionButton(onClick = {
                 if (isValid) {
                     MainApplication.store.putString("route_content_$routeName", routeContent)
-                    navController.popBackStack()
+                    onBack()
                 }
             }) {
                 Icon(painterResource(R.drawable.save), contentDescription = "Save")
@@ -404,7 +404,7 @@ fun SharedTransitionScope.RouteEditScreen(
                         }
 
                         showDeleteDialog = false
-                        navController.popBackStack()
+                        onBack()
                     }
                 ) {
                     Text(stringResource(R.string.route_config_delete_confirm_yes))

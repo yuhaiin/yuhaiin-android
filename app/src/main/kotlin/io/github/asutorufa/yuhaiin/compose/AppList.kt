@@ -58,7 +58,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
-import androidx.navigation.NavController
 import io.github.asutorufa.yuhaiin.MainApplication
 import io.github.asutorufa.yuhaiin.getStringSet
 import io.github.asutorufa.yuhaiin.putStringSet
@@ -90,9 +89,9 @@ fun PreviewAppListComponent() {
 )
 @Composable
 fun SharedTransitionScope.AppListComponent(
-    navController: NavController? = null,
     packageManager: PackageManager? = null,
     animatedVisibilityScope: AnimatedVisibilityScope,
+    onBack: () -> Unit = {},
 ) {
     val checkedApps = remember {
         mutableStateSetOf(
@@ -153,7 +152,7 @@ fun SharedTransitionScope.AppListComponent(
                 scrollBehavior = scrollBehavior,
             ) {
                 IconButton(
-                    onClick = { navController?.popBackStack() },
+                    onClick = onBack,
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Default.ArrowBack,

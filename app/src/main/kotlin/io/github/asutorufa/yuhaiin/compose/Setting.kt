@@ -84,7 +84,6 @@ import androidx.compose.ui.semantics.isTraversalGroup
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
 import io.github.asutorufa.yuhaiin.Constants
 import io.github.asutorufa.yuhaiin.R
 import io.github.asutorufa.yuhaiin.compose.route.RouteConfig
@@ -99,13 +98,17 @@ import yuhaiin.Store
 @Composable
 @Preview
 fun SharedTransitionScope.SettingCompose(
-    navController: NavController? = null,
     store: Store? = null,
     addresses: List<String>? = null,
     animatedContentScope: AnimatedContentScope? = null,
     startService: () -> Unit = {},
     stopService: () -> Unit = {},
     vpnState: State = State.DISCONNECTED,
+    onOpenAbout: () -> Unit = {},
+    onOpenAppList: () -> Unit = {},
+    onOpenRouteConfig: () -> Unit = {},
+    onOpenWebView: () -> Unit = {},
+    onOpenLogcat: () -> Unit = {},
 ) {
     var tunDriver by rememberSaveable { mutableStateOf(store?.getString("Tun Driver")) }
     var route by rememberSaveable { mutableStateOf(store?.getString("route")) }
@@ -179,7 +182,7 @@ fun SharedTransitionScope.SettingCompose(
                             }
                             .semantics { isTraversalGroup = true },
                         onClick = {
-                            navController?.navigate("WebView")
+                            onOpenWebView()
                         },
                         text = { Text(text = stringResource(R.string.Open)) },
                         icon = {
@@ -312,12 +315,10 @@ fun SharedTransitionScope.SettingCompose(
                     )
                 }
                 item {
-                    if (navController != null) {
-                        RouteConfig(
-                            navController = navController,
-                            animatedContentScope = animatedContentScope,
-                        )
-                    }
+                    RouteConfig(
+                        onOpen = onOpenRouteConfig,
+                        animatedContentScope = animatedContentScope,
+                    )
                 }
                 item {
                     SwitchStore(
@@ -353,7 +354,7 @@ fun SharedTransitionScope.SettingCompose(
                         title = stringResource(R.string.adv_app_list_title),
                         summary = stringResource(R.string.adv_app_list_sum),
                         icon = painterResource(R.drawable.apps),
-                        onClick = { navController?.navigate("APPLIST") }
+                        onClick = onOpenAppList
                     )
                 }
 
@@ -479,7 +480,7 @@ fun SharedTransitionScope.SettingCompose(
                     SettingsItem(
                         title = stringResource(R.string.logcat_name),
                         icon = painterResource(R.drawable.adb),
-                        onClick = { navController?.navigate("LOGCAT") }
+                        onClick = onOpenLogcat
                     )
                 }
 
@@ -501,7 +502,7 @@ fun SharedTransitionScope.SettingCompose(
                         title = stringResource(R.string.about),
                         summary = stringResource(R.string.about_summary),
                         icon = painterResource(R.drawable.handyman),
-                        onClick = { navController?.navigate("About") },
+                        onClick = onOpenAbout,
                     )
                 }
             }

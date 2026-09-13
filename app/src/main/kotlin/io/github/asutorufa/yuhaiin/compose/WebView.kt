@@ -46,7 +46,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.net.toUri
-import androidx.navigation.NavController
 
 @SuppressLint("SetJavaScriptEnabled")
 @OptIn(
@@ -57,7 +56,7 @@ import androidx.navigation.NavController
 @Preview
 fun SharedTransitionScope.WebViewComponent(
     animatedContentScope: AnimatedContentScope? = null,
-    navController: NavController? = null,
+    onBack: () -> Unit = {},
     getPort: () -> Int = { 0 },
 ) {
     var isLoading by remember { mutableStateOf(true) }
@@ -84,7 +83,7 @@ fun SharedTransitionScope.WebViewComponent(
                 expanded = expanded,
                 leadingContent = {
                     IconButton(
-                        onClick = { navController?.popBackStack() }) {
+                        onClick = onBack) {
                         Icon(
                             painter = rememberVectorPainter(Icons.AutoMirrored.Filled.ExitToApp),
                             contentDescription = "Return To Home"
@@ -183,7 +182,7 @@ fun SharedTransitionScope.WebViewComponent(
                 }
                 BackHandler(enabled = true) {
                     if (webView.value?.canGoBack() == true) webView.value?.goBack()
-                    else navController?.popBackStack()
+                    else onBack()
                 }
 
             }

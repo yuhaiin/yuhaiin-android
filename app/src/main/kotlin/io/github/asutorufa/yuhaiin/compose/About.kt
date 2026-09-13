@@ -25,7 +25,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
 import io.github.asutorufa.yuhaiin.BuildConfig
 import io.github.asutorufa.yuhaiin.R
 import io.github.asutorufa.yuhaiin.update.UpdateManager
@@ -33,11 +32,11 @@ import io.github.asutorufa.yuhaiin.update.UpdateManager
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun SharedTransitionScope.AboutScreen(
-    navController: NavController? = null,
     updateManager: UpdateManager? = null,
     proxyReady: Boolean = false,
     startProxy: () -> Unit = {},
     animatedContentScope: AnimatedContentScope? = null,
+    onBack: () -> Unit = {},
 ) {
     Scaffold(
         topBar = {
@@ -54,7 +53,7 @@ fun SharedTransitionScope.AboutScreen(
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = { navController?.popBackStack() }) {
+                    IconButton(onClick = onBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",

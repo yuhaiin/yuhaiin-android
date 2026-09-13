@@ -75,7 +75,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
-import androidx.navigation.NavController
 import io.github.asutorufa.yuhaiin.R
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.DelicateCoroutinesApi
@@ -114,8 +113,8 @@ fun SharedTransitionScope.LogcatScreen(
             )
         )
     },
-    navController: NavController? = null,
     animatedVisibilityScope: AnimatedVisibilityScope? = null,
+    onBack: () -> Unit = {},
 ) {
     var filterMenuExpanded by remember { mutableStateOf(false) }
     var filter by remember { mutableStateOf(LogLevel.DEBUG) }
@@ -161,7 +160,7 @@ fun SharedTransitionScope.LogcatScreen(
                     trailingContent = {},
                     leadingContent = {
                         IconButton(
-                            onClick = { navController?.popBackStack() }) {
+                            onClick = onBack) {
                             Icon(
                                 painter = rememberVectorPainter(Icons.AutoMirrored.Filled.ArrowBack),
                                 contentDescription = "Back"
@@ -622,8 +621,8 @@ fun runLogcat(
 @Composable
 fun SharedTransitionScope.LogcatCompose(
     excludeList: ArrayList<String>? = null,
-    navController: NavController? = null,
     animatedVisibilityScope: AnimatedVisibilityScope,
+    onBack: () -> Unit = {},
 ) {
     val excludeList = remember {
         val mExcludeList = ACAutomaton()
@@ -645,7 +644,7 @@ fun SharedTransitionScope.LogcatCompose(
 
     LogcatScreen(
         logs = logs,
-        navController = navController,
         animatedVisibilityScope = animatedVisibilityScope,
+        onBack = onBack,
     )
 }

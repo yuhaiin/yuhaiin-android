@@ -2,7 +2,6 @@ import java.util.Date
 
 plugins {
     id("com.android.application")
-    id("androidx.navigation.safeargs.kotlin")
     kotlin("plugin.serialization") version "2.4.20"
     id("org.jetbrains.kotlin.plugin.compose")
 }
@@ -164,11 +163,9 @@ dependencies {
     implementation("fastutil:fastutil:5.0.9")
     implementation("androidx.core:core-ktx:1.19.0")
 
-    // nav
-    val navVersion = "2.10.1"
-    implementation("androidx.navigation:navigation-compose:${navVersion}")
-    implementation("androidx.navigation:navigation-ui-ktx:${navVersion}")
-    implementation("androidx.navigation:navigation-fragment-ktx:${navVersion}")
+    val nav3Version = "1.1.7"
+    implementation("androidx.navigation3:navigation3-runtime:${nav3Version}")
+    implementation("androidx.navigation3:navigation3-ui:${nav3Version}")
 
     implementation(project(":yuhaiin"))
 
