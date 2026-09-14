@@ -94,7 +94,6 @@ fun Main(activity: MainActivity) {
                 backStack = backStack,
                 onBack = navigator::pop,
                 entryDecorators = listOf(rememberSaveableStateHolderNavEntryDecorator()),
-                sharedTransitionScope = this@SharedTransitionLayout,
                 entryProvider = entryProvider<NavKey> {
                     entry<HomeRoute> {
                         val animatedContentScope = LocalNavAnimatedContentScope.current
@@ -179,7 +178,7 @@ fun Main(activity: MainActivity) {
                         metadata = metadata {
                             put(NavDisplay.TransitionKey) {
                                 slideInVertically { it } + fadeIn() togetherWith
-                                    ExitTransition.None
+                                    ExitTransition.KeepUntilTransitionsFinished
                             }
                             put(NavDisplay.PopTransitionKey) {
                                 EnterTransition.None togetherWith
