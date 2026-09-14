@@ -41,6 +41,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -60,6 +61,7 @@ fun SharedTransitionScope.WebViewComponent(
     getPort: () -> Int = { 0 },
 ) {
     var isLoading by remember { mutableStateOf(true) }
+    var hasRenderedPage by remember { mutableStateOf(false) }
     val webView = remember { mutableStateOf<WebView?>(null) }
     var expanded by rememberSaveable { mutableStateOf(false) }
 
@@ -71,15 +73,15 @@ fun SharedTransitionScope.WebViewComponent(
     }
 
     Scaffold(
-        modifier = Modifier.thenIfNotNull(animatedContentScope) {
-            sharedBounds(
-                sharedContentState = rememberSharedContentState("OPEN_WEBVIEW"),
-                animatedVisibilityScope = it,
-            )
-        },
         floatingActionButtonPosition = FabPosition.Center,
         floatingActionButton = {
             HorizontalFloatingToolbar(
+                modifier = Modifier.thenIfNotNull(animatedContentScope) {
+                    sharedBounds(
+                        sharedContentState = rememberSharedContentState("OPEN_WEBVIEW"),
+                        animatedVisibilityScope = it,
+                    )
+                },
                 expanded = expanded,
                 leadingContent = {
                     IconButton(
@@ -163,6 +165,7 @@ fun SharedTransitionScope.WebViewComponent(
                                 override fun onPageFinished(view: WebView?, url: String?) {
                                     super.onPageFinished(view, url)
                                     isLoading = false
+                                    hasRenderedPage = true
                                 }
                             }
 
@@ -171,7 +174,9 @@ fun SharedTransitionScope.WebViewComponent(
                             webView.value = this
                         }
                     },
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .alpha(if (hasRenderedPage) 1f else 0f)
                 )
                 if (isLoading) {
                     LoadingIndicator(

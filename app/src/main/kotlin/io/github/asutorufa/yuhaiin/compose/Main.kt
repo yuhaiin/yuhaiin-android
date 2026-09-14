@@ -94,6 +94,15 @@ fun Main(activity: MainActivity) {
                 backStack = backStack,
                 onBack = navigator::pop,
                 entryDecorators = listOf(rememberSaveableStateHolderNavEntryDecorator()),
+                transitionSpec = {
+                    EnterTransition.None togetherWith ExitTransition.None
+                },
+                popTransitionSpec = {
+                    EnterTransition.None togetherWith ExitTransition.None
+                },
+                predictivePopTransitionSpec = { _ ->
+                    EnterTransition.None togetherWith ExitTransition.None
+                },
                 entryProvider = entryProvider<NavKey> {
                     entry<HomeRoute> {
                         val animatedContentScope = LocalNavAnimatedContentScope.current

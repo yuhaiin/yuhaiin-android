@@ -144,11 +144,7 @@ fun SharedTransitionScope.AppListComponent(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         bottomBar = {
             FlexibleBottomAppBar(
-                modifier = Modifier
-                    .sharedBounds(
-                        sharedContentState = rememberSharedContentState("OPEN_APP_LIST_TITLE"),
-                        animatedVisibilityScope = animatedVisibilityScope,
-                    ),
+                modifier = Modifier,
                 scrollBehavior = scrollBehavior,
             ) {
                 IconButton(
@@ -161,13 +157,31 @@ fun SharedTransitionScope.AppListComponent(
                 }
 
                 SearchBarDefaults.InputField(
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier
+                        .thenIfNotNull(animatedVisibilityScope) {
+                            sharedBounds(
+                                sharedContentState = rememberSharedContentState("OPEN_APP_LIST_TITLE"),
+                                animatedVisibilityScope = it,
+                            )
+                        }
+                        .weight(1f),
                     textFieldState = textFieldState,
                     searchBarState = searchBarState,
                     onSearch = {},
                     placeholder = { Text("Search") },
                     leadingIcon = {
-                        Icon(Icons.Default.Search, contentDescription = null)
+                        Icon(
+                            Icons.Default.Search,
+                            contentDescription = null,
+                            modifier = Modifier
+                                .thenIfNotNull(animatedVisibilityScope) {
+                                    sharedBounds(
+                                        sharedContentState = rememberSharedContentState("OPEN_APP_LIST_ICON"),
+                                        animatedVisibilityScope = it,
+                                    )
+                                }
+                                .size(24.dp),
+                        )
                     },
                 )
             }
@@ -186,16 +200,8 @@ fun SharedTransitionScope.AppListComponent(
                         modifier = Modifier
                             .align(Alignment.Center)
                             .size(55.dp)
-                            .sharedBounds(
-                                sharedContentState = rememberSharedContentState("OPEN_APP_LIST_ICON"),
-                                animatedVisibilityScope = animatedVisibilityScope,
-                            )
                     )
                     else AppList(
-                        modifier = Modifier.sharedBounds(
-                            sharedContentState = rememberSharedContentState("OPEN_APP_LIST_ICON"),
-                            animatedVisibilityScope = animatedVisibilityScope,
-                        ),
                         apps = data!!,
                         checkedApps = checkedApps,
                         filter = textFieldState.text
