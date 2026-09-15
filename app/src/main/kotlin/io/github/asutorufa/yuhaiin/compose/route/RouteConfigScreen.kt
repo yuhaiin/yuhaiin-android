@@ -51,6 +51,7 @@ import androidx.compose.ui.unit.dp
 import io.github.asutorufa.yuhaiin.Constants
 import io.github.asutorufa.yuhaiin.MainApplication
 import io.github.asutorufa.yuhaiin.R
+import io.github.asutorufa.yuhaiin.compose.navContentTransition
 import io.github.asutorufa.yuhaiin.getStringSet
 import io.github.asutorufa.yuhaiin.putStringSet
 import io.github.asutorufa.yuhaiin.remove
@@ -123,6 +124,7 @@ fun SharedTransitionScope.RouteConfigScreen(
                     .fillMaxSize()
                     .padding(padding)
                     .animateContentSize()
+                    .navContentTransition(animatedContentScope)
             ) {
                 items(items = routeList, key = { it }) { routeName ->
                     val dismissState = rememberSwipeToDismissBoxState()

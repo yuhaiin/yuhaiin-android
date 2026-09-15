@@ -66,7 +66,8 @@ fun SharedTransitionScope.AboutScreen(
         LazyColumn(
             modifier = Modifier
                 .padding(padding)
-                .fillMaxWidth(),
+                .fillMaxWidth()
+                .navContentTransition(animatedContentScope),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             item {

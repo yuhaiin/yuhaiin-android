@@ -3,6 +3,7 @@ package io.github.asutorufa.yuhaiin.compose
 import android.os.Build
 import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
@@ -12,6 +13,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
@@ -237,3 +239,14 @@ inline fun <T> Modifier.thenIfNotNull(
     value: T?,
     block: Modifier.(T) -> Modifier
 ): Modifier = if (value != null) block(value) else this
+
+fun Modifier.navContentTransition(
+    animatedVisibilityScope: AnimatedVisibilityScope?,
+): Modifier = thenIfNotNull(animatedVisibilityScope) {
+    with(it) {
+        this@navContentTransition.animateEnterExit(
+            enter = fadeIn(tween(220)) + slideInVertically(tween(220)) { it / 12 },
+            exit = fadeOut(tween(160)) + slideOutVertically(tween(160)) { -it / 12 },
+        )
+    }
+}

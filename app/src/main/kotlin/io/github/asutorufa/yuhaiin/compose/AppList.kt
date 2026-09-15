@@ -189,7 +189,8 @@ fun SharedTransitionScope.AppListComponent(
         content = { padding ->
             Box(
                 modifier = Modifier
-                    .fillMaxSize(),
+                    .fillMaxSize()
+                    .navContentTransition(animatedVisibilityScope),
             ) {
                 Box(
                     modifier = Modifier
