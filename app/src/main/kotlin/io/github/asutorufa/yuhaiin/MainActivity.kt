@@ -73,6 +73,7 @@ class MainActivity : AppCompatActivity() {
             vpnBinder?.unregisterCallback(vpnCallback)
             vpnBinder = null
             MainApplication.updateManager.setProxyBinder(null)
+            state.value = State.DISCONNECTED
         }
     }
 
