@@ -404,7 +404,7 @@ class YuhaiinDocumentProvider : DocumentsProvider() {
         return documentId
     }
 
-    override fun renameDocument(documentId: String?, displayName: String?): String {
+    override fun renameDocument(documentId: String?, displayName: String?): String? {
         val requestedId = documentId ?: throw FileNotFoundException("Document is missing")
         val source = getFileForDocId(requestedId)
         if (source == canonicalBaseDir) {
@@ -423,9 +423,20 @@ class YuhaiinDocumentProvider : DocumentsProvider() {
         if (target.exists()) throw FileNotFoundException("Document already exists")
         if (!source.renameTo(target)) throw FileNotFoundException("Failed to rename document")
 
-        updateDocumentPathsAfterRename(oldRelativePath, relativePathOf(target))
+        try {
+            updateDocumentPathsAfterRename(oldRelativePath, relativePathOf(target))
+        } catch (error: Exception) {
+            // Keep the filesystem and ID registry in sync if persistence fails.
+            target.renameTo(source)
+            throw FileNotFoundException("Failed to persist renamed document").apply {
+                initCause(error)
+            }
+        }
         notifyChanged(parent)
-        return stableDocumentId
+
+        // Opaque IDs remain valid across rename, so the framework must not migrate/revoke them.
+        // Legacy path IDs become invalid and need to be migrated to the new stable ID.
+        return if (requestedId.startsWith(DOCUMENT_ID_PREFIX)) null else stableDocumentId
     }
 
     override fun deleteDocument(documentId: String?) {
@@ -478,7 +489,7 @@ class YuhaiinDocumentProvider : DocumentsProvider() {
         if (safeName.substringAfterLast('.', "").isNotEmpty()) return safeName
 
         val extension = MimeTypeMap.getSingleton().getExtensionFromMimeType(mimeType)
-            ?.takeIf(String::isNotBlank)
+            ?.takeIf { it.isNotBlank() }
             ?: return safeName
         return "$safeName.$extension"
     }
