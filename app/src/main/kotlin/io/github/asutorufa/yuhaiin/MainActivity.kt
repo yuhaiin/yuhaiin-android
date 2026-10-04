@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 class MainActivity : AppCompatActivity() {
     var vpnBinder: IYuhaiinVpnBinder? = null
     val state = MutableStateFlow(State.DISCONNECTED)
+    private var serviceBound = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -35,19 +36,27 @@ class MainActivity : AppCompatActivity() {
 
     override fun onStart() {
         super.onStart()
-        bindService(
-            Intent(this, YuhaiinVpnService::class.java), mConnection, BIND_AUTO_CREATE
-        )
+        if (!serviceBound) {
+            serviceBound = bindService(
+                Intent(this, YuhaiinVpnService::class.java),
+                mConnection,
+                BIND_AUTO_CREATE,
+            )
+        }
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        try {
-            vpnBinder?.unregisterCallback(vpnCallback)
-            unbindService(mConnection)
-        } catch (e: Exception) {
-            e.printStackTrace()
+    override fun onStop() {
+        if (serviceBound) {
+            runCatching { vpnBinder?.unregisterCallback(vpnCallback) }
+                .onFailure { Log.w("MainActivity", "failed to unregister VPN callback", it) }
+            vpnBinder = null
+            MainApplication.updateManager.setProxyBinder(null)
+
+            runCatching { unbindService(mConnection) }
+                .onFailure { Log.w("MainActivity", "failed to unbind VPN service", it) }
+            serviceBound = false
         }
+        super.onStop()
     }
 
     val vpnCallback = object : IYuhaiinVpnCallback.Stub() {
@@ -70,7 +79,13 @@ class MainActivity : AppCompatActivity() {
         }
 
         override fun onServiceDisconnected(p1: ComponentName) {
-            vpnBinder?.unregisterCallback(vpnCallback)
+            // The remote process is already gone; do not make another Binder call here.
+            vpnBinder = null
+            MainApplication.updateManager.setProxyBinder(null)
+            state.value = State.DISCONNECTED
+        }
+
+        override fun onBindingDied(name: ComponentName) {
             vpnBinder = null
             MainApplication.updateManager.setProxyBinder(null)
             state.value = State.DISCONNECTED
