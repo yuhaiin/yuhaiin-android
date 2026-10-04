@@ -55,7 +55,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v6
 
       - name: Validate
-        run: ./gradlew :app:lintDebug :app:testDebugUnitTest :app:assembleDebugAndroidTest
+        run: ./gradlew :app:lintDebug :app:testDebugUnitTest
 
       - name: Build with Gradle
         env:
@@ -83,27 +83,6 @@ jobs:
             java -version 2>&1
           } > build-provenance.txt
 
-      - name: Device regression (API 34)
-        uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: 34
-          arch: x86_64
-          target: google_apis
-          disable-animations: true
-          script: ./gradlew :app:connectedDebugAndroidTest
-
-      - name: Device regression (Android 15, 16 KB)
-        uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: 35
-          arch: x86_64
-          target: google_apis_ps16k
-          ram-size: 4096M
-          disable-animations: true
-          script: |
-            test "$(adb shell getconf PAGESIZE | tr -d '\r')" = 16384
-            ./gradlew :app:connectedDebugAndroidTest
-
       - name: Upload verification and provenance
         if: always()
         uses: actions/upload-artifact@v7
@@ -111,7 +90,6 @@ jobs:
           name: verification
           path: |
             app/build/reports
-            app/build/outputs/androidTest-results
             build-provenance.txt
 
       - name: upload_arm64-v8a

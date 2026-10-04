@@ -2,6 +2,8 @@
 
 Use the installed Android SDK and JDK 21. `local.properties` selects the SDK; the native AAR is pinned in `yuhaiin/core-source.properties`.
 
+Automatic Android CI runs lint, unit tests, the release build and static APK/ELF alignment checks. Emulator regressions run on demand: in GitHub Actions select **Android device regression** and **Run workflow**. API 34 and Android 15 (16 KB) run in parallel with KVM enabled, a five-minute boot timeout and a twenty-minute job timeout. Run these before releasing changes to navigation, persistence, VPN lifecycle or the native core. Ordinary pushes and pull requests do not start emulators or build the instrumentation APK.
+
 - Build, lint and unit tests: `./gradlew :app:assembleDebug :app:lintDebug :app:testDebugUnitTest`
 - Device regressions: `ANDROID_SERIAL=emulator-5554 ./gradlew :app:connectedDebugAndroidTest`
 - API 35 16 KB emulator: use SDK image `system-images;android-35;google_apis_ps16k;x86_64`; check `adb shell getconf PAGESIZE` is `16384`, use at least 4 GB emulator RAM, then run the same device regressions.
