@@ -158,7 +158,7 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.11.0")
     implementation("androidx.lifecycle:lifecycle-viewmodel-navigation3:2.11.0")
     androidTestImplementation("androidx.test.ext:junit:1.3.0")
-    androidTestImplementation("androidx.test.uiautomator:uiautomator:2.3.0")
+    androidTestImplementation("androidx.test.uiautomator:uiautomator:2.4.0")
     implementation("androidx.fragment:fragment-compose:1.9.1")
     implementation("androidx.compose.material:material-navigation")
     implementation("androidx.compose.material:material-icons-core")
