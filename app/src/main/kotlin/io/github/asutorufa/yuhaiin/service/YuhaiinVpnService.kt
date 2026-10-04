@@ -109,6 +109,7 @@ class YuhaiinVpnService : VpnService() {
     private var runtimeOwned = false
     private var mInterface: ParcelFileDescriptor? = null
     private var underlyingNetworkCallbackRegistered = false
+    private var currentUnderlyingNetwork: Network? = null
     private val notification by lazy { application.getSystemService<NotificationManager>()!! }
     private val app = App()
 
@@ -136,6 +137,19 @@ class YuhaiinVpnService : VpnService() {
 
         (application as MainApplication).connectivity.unregisterNetworkCallback(defaultNetworkCallback)
         underlyingNetworkCallbackRegistered = false
+        currentUnderlyingNetwork = null
+    }
+
+    private fun updateUnderlyingNetwork(network: Network?) {
+        currentUnderlyingNetwork = network
+        if (mInterface == null) return
+
+        val applied = this@YuhaiinVpnService.setUnderlyingNetworks(
+            network?.let { arrayOf(it) }
+        )
+        if (!applied) {
+            Log.w(tag, "failed to update VPN underlying network")
+        }
     }
 
     private fun notificationBuilder(): NotificationCompat.Builder {
@@ -199,18 +213,26 @@ class YuhaiinVpnService : VpnService() {
     private val defaultNetworkCallback: ConnectivityManager.NetworkCallback =
         object : ConnectivityManager.NetworkCallback() {
             override fun onAvailable(network: Network) {
-                setUnderlyingNetworks(arrayOf(network))
+                serviceScope.launch {
+                    updateUnderlyingNetwork(network)
+                }
             }
 
             override fun onCapabilitiesChanged(
                 network: Network,
                 networkCapabilities: NetworkCapabilities
             ) {
-                setUnderlyingNetworks(arrayOf(network))
+                serviceScope.launch {
+                    updateUnderlyingNetwork(network)
+                }
             }
 
             override fun onLost(network: Network) {
-                setUnderlyingNetworks(null)
+                serviceScope.launch {
+                    if (currentUnderlyingNetwork == network) {
+                        updateUnderlyingNetwork(null)
+                    }
+                }
             }
         }
 
@@ -399,9 +421,15 @@ class YuhaiinVpnService : VpnService() {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && shouldRegisterUnderlyingNetworkCallback()) {
                 (application as MainApplication).connectivity.requestNetwork(
                     defaultNetworkRequest,
-                    defaultNetworkCallback
+                    defaultNetworkCallback,
                 )
                 underlyingNetworkCallbackRegistered = true
+
+                // A callback may have arrived before the VPN interface exists. Seed the
+                // Builder with the latest known network; later changes use VpnService API.
+                currentUnderlyingNetwork?.let {
+                    setUnderlyingNetworks(arrayOf(it))
+                }
             }
 
             val httpProxy = MainApplication.store.getInt("http_port")
@@ -415,6 +443,9 @@ class YuhaiinVpnService : VpnService() {
 
 
             mInterface = establish() ?: error("failed to establish VPN interface")
+            if (underlyingNetworkCallbackRegistered) {
+                updateUnderlyingNetwork(currentUnderlyingNetwork)
+            }
         }
     }
 
