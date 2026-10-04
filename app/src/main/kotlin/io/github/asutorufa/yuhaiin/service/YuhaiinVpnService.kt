@@ -31,6 +31,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -251,9 +252,31 @@ class YuhaiinVpnService : VpnService() {
         Log.d(tag, "stopping VPN: ${reason.name}")
         transitionTo(State.DISCONNECTING)
 
+        // Closing the TUN first unblocks native TUN setup/read paths that may
+        // already be using the Android-owned descriptor.
+        val tun = mInterface
+        mInterface = null
+        runCatching { tun?.close() }
+            .onFailure { Log.w(tag, "failed to close VPN interface", it) }
+
+        // Stop concurrently with coroutine cancellation. The Go wrapper signals
+        // its in-flight Start before waiting for its lifecycle mutex, so this can
+        // interrupt startup instead of waiting behind it.
+        val runtimeStop = if (runtimeOwned) {
+            runtimeOwned = false
+            serviceScope.async(Dispatchers.IO) {
+                runCatching { app.stop() }
+            }
+        } else {
+            null
+        }
+
         val job = startupJob
         startupJob = null
         job?.cancelAndJoin()
+
+        runtimeStop?.await()
+            ?.onFailure { Log.w(tag, "failed to stop VPN runtime", it) }
 
         cleanupResources()
         stopForegroundIfNeeded()
@@ -267,20 +290,6 @@ class YuhaiinVpnService : VpnService() {
     }
 
     private suspend fun cleanupResources() {
-        val tun = mInterface
-        mInterface = null
-        runCatching { tun?.close() }
-            .onFailure { Log.w(tag, "failed to close VPN interface", it) }
-
-        if (runtimeOwned) {
-            runtimeOwned = false
-            runCatching {
-                withContext(Dispatchers.IO) {
-                    app.stop()
-                }
-            }.onFailure { Log.w(tag, "failed to stop VPN runtime", it) }
-        }
-
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             runCatching { unregisterUnderlyingNetworkCallback() }
                 .onFailure { Log.w(tag, "failed to unregister underlying network callback", it) }
