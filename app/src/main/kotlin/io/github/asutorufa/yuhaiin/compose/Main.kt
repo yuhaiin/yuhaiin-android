@@ -24,6 +24,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
@@ -40,6 +41,8 @@ import io.github.asutorufa.yuhaiin.MainApplication
 import io.github.asutorufa.yuhaiin.compose.route.RouteConfigScreen
 import io.github.asutorufa.yuhaiin.compose.route.RouteEditScreen
 import io.github.asutorufa.yuhaiin.service.YuhaiinVpnService.Companion.State
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 
 @Composable
@@ -108,6 +111,11 @@ fun Main(activity: MainActivity) {
                 entryProvider = entryProvider<NavKey> {
                     entry<HomeRoute> {
                         val animatedContentScope = LocalNavAnimatedContentScope.current
+                        val addresses by produceState<List<String>>(emptyList()) {
+                            value = withContext(Dispatchers.IO) {
+                                MainApplication.getAddresses()
+                            }
+                        }
                         with(this@SharedTransitionLayout) {
                             SettingCompose(
                                 vpnState = vpnState,
@@ -115,7 +123,7 @@ fun Main(activity: MainActivity) {
                                 startService = { activity.startService() },
                                 animatedContentScope = animatedContentScope,
                                 store = MainApplication.store,
-                                addresses = MainApplication.getAddresses(),
+                                addresses = addresses,
                                 onOpenAbout = { navigator.push(AboutRoute) },
                                 onOpenAppList = { navigator.push(AppListRoute) },
                                 onOpenRouteConfig = { navigator.push(RouteConfigRoute) },
