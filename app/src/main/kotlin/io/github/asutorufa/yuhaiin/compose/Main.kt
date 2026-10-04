@@ -1,5 +1,8 @@
 package io.github.asutorufa.yuhaiin.compose
 
+import android.net.ConnectivityManager
+import android.net.LinkProperties
+import android.net.Network
 import android.os.Build
 import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
@@ -22,6 +25,7 @@ import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.awaitDispose
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
@@ -42,6 +46,8 @@ import io.github.asutorufa.yuhaiin.compose.route.RouteConfigScreen
 import io.github.asutorufa.yuhaiin.compose.route.RouteEditScreen
 import io.github.asutorufa.yuhaiin.service.YuhaiinVpnService.Companion.State
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 
@@ -111,9 +117,49 @@ fun Main(activity: MainActivity) {
                 entryProvider = entryProvider<NavKey> {
                     entry<HomeRoute> {
                         val animatedContentScope = LocalNavAnimatedContentScope.current
-                        val addresses by produceState<List<String>>(emptyList()) {
-                            value = withContext(Dispatchers.IO) {
-                                MainApplication.getAddresses()
+                        val context = LocalContext.current
+                        val addresses by produceState<List<String>>(
+                            initialValue = emptyList(),
+                            key1 = vpnState,
+                            key2 = context,
+                        ) {
+                            val connectivity =
+                                context.getSystemService(ConnectivityManager::class.java)
+                            val refreshRequests = Channel<Unit>(Channel.CONFLATED)
+                            val refreshJob = launch {
+                                for (ignored in refreshRequests) {
+                                    value = withContext(Dispatchers.IO) {
+                                        MainApplication.getAddresses()
+                                    }
+                                }
+                            }
+                            val networkCallback =
+                                object : ConnectivityManager.NetworkCallback() {
+                                    override fun onAvailable(network: Network) {
+                                        refreshRequests.trySend(Unit)
+                                    }
+
+                                    override fun onLost(network: Network) {
+                                        refreshRequests.trySend(Unit)
+                                    }
+
+                                    override fun onLinkPropertiesChanged(
+                                        network: Network,
+                                        linkProperties: LinkProperties,
+                                    ) {
+                                        refreshRequests.trySend(Unit)
+                                    }
+                                }
+
+                            refreshRequests.trySend(Unit)
+                            connectivity.registerDefaultNetworkCallback(networkCallback)
+
+                            awaitDispose {
+                                runCatching {
+                                    connectivity.unregisterNetworkCallback(networkCallback)
+                                }
+                                refreshRequests.close()
+                                refreshJob.cancel()
                             }
                         }
                         with(this@SharedTransitionLayout) {
