@@ -36,13 +36,16 @@ class MainActivity : AppCompatActivity() {
 
     override fun onStart() {
         super.onStart()
-        if (!serviceBound) {
-            serviceBound = bindService(
-                Intent(this, YuhaiinVpnService::class.java),
-                mConnection,
-                BIND_AUTO_CREATE,
-            )
-        }
+        bindVpnService()
+    }
+
+    private fun bindVpnService() {
+        if (serviceBound) return
+        serviceBound = bindService(
+            Intent(this, YuhaiinVpnService::class.java),
+            mConnection,
+            BIND_AUTO_CREATE,
+        )
     }
 
     override fun onStop() {
@@ -89,6 +92,13 @@ class MainActivity : AppCompatActivity() {
             vpnBinder = null
             MainApplication.updateManager.setProxyBinder(null)
             state.value = State.DISCONNECTED
+
+            if (serviceBound) {
+                runCatching { unbindService(this) }
+                    .onFailure { Log.w("MainActivity", "failed to drop dead VPN binding", it) }
+                serviceBound = false
+            }
+            bindVpnService()
         }
     }
 
