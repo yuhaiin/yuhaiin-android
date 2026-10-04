@@ -448,7 +448,7 @@ class YuhaiinDocumentProvider : DocumentsProvider() {
         val revokeIds = collectDocumentIdsForDeletion(file)
         val parent = file.parentFile
 
-        if (!file.deleteRecursively()) {
+        if (!deleteFileTree(file)) {
             throw FileNotFoundException("Failed to delete document $requestedId")
         }
 
@@ -456,6 +456,22 @@ class YuhaiinDocumentProvider : DocumentsProvider() {
         revokeIds.forEach(::revokeDocumentPermission)
         removeDocumentIdsUnder(relativePath)
         notifyChanged(parent)
+    }
+
+    private fun deleteFileTree(file: File): Boolean {
+        if (file.isDirectory) {
+            val children = file.listFiles() ?: return false
+            for (child in children) {
+                val canonicalChild = canonicalListedFile(child)
+                if (canonicalChild == null) {
+                    // A symlink or otherwise non-canonical entry: delete the entry only.
+                    if (!child.delete()) return false
+                } else if (!deleteFileTree(canonicalChild)) {
+                    return false
+                }
+            }
+        }
+        return file.delete()
     }
 
     private fun collectDocumentIdsForDeletion(root: File): Set<String> {
