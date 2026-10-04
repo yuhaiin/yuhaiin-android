@@ -26,10 +26,14 @@ import io.github.asutorufa.yuhaiin.MainActivity
 import io.github.asutorufa.yuhaiin.MainApplication
 import io.github.asutorufa.yuhaiin.R
 import io.github.asutorufa.yuhaiin.Constants
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import yuhaiin.App
 import yuhaiin.Closer
@@ -85,18 +89,35 @@ class YuhaiinVpnService : VpnService() {
         finishBroadcast()
     }
 
+    private enum class StopReason {
+        USER,
+        REVOKED,
+        RUNTIME_CLOSED,
+        START_FAILED,
+    }
+
     private val mBinder = VpnBinder()
     private val tag = this.javaClass.simpleName
-    private var state = State.DISCONNECTED
-        set(value) {
-            field = value
-            callbacks.broadcast(value)
-        }
+    private val serviceJob = SupervisorJob()
+    private val serviceScope = CoroutineScope(serviceJob + Dispatchers.Main.immediate)
 
+    @Volatile
+    private var state = State.DISCONNECTED
+    private var startupJob: Job? = null
+    private var latestStartId = 0
+    private var foregroundStarted = false
+    private var runtimeOwned = false
     private var mInterface: ParcelFileDescriptor? = null
     private var underlyingNetworkCallbackRegistered = false
     private val notification by lazy { application.getSystemService<NotificationManager>()!! }
     private val app = App()
+
+    private fun transitionTo(next: State) {
+        if (state == next) return
+        Log.d(tag, "state ${state.name} -> ${next.name}")
+        state = next
+        callbacks.broadcast(next)
+    }
 
     private fun vpnMtu(): Int =
         when (MainApplication.store.getString(Constants.VPN_MTU_PROFILE_KEY).ifBlank { "auto" }) {
@@ -138,7 +159,12 @@ class YuhaiinVpnService : VpnService() {
 
     inner class VpnBinder : IYuhaiinVpnBinder.Stub() {
         override fun registerCallback(cb: IYuhaiinVpnCallback?) {
-            if (cb != null) callbacks.register(cb)
+            if (cb == null || !callbacks.register(cb)) return
+            try {
+                cb.onStateChanged(state.ordinal)
+            } catch (e: Exception) {
+                Log.w(tag, "failed to send initial VPN state", e)
+            }
         }
 
         override fun unregisterCallback(cb: IYuhaiinVpnCallback?) {
@@ -156,7 +182,7 @@ class YuhaiinVpnService : VpnService() {
             )
         }
 
-        override fun stop() = this@YuhaiinVpnService.onRevoke()
+        override fun stop() = requestStop(StopReason.USER)
         override fun state(): Int {
             return state.ordinal
         }
@@ -191,49 +217,108 @@ class YuhaiinVpnService : VpnService() {
     override fun onBind(intent: Intent?) =
         if (intent?.action == SERVICE_INTERFACE) super.onBind(intent) else mBinder
 
-    private fun stop() {
-        if (state != State.CONNECTED) return
-        state = State.DISCONNECTING
-
-        try {
-            stopForeground(STOP_FOREGROUND_REMOVE)
-            mInterface?.close()
-            app.stop()
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) unregisterUnderlyingNetworkCallback()
-            state = State.DISCONNECTED
-        } catch (e: Exception) {
-            e.printStackTrace()
+    private fun requestStop(reason: StopReason) {
+        serviceScope.launch {
+            stopInternal(reason)
         }
     }
 
+    private suspend fun stopInternal(reason: StopReason) {
+        if (state == State.DISCONNECTED || state == State.DISCONNECTING) return
+
+        Log.d(tag, "stopping VPN: ${reason.name}")
+        transitionTo(State.DISCONNECTING)
+
+        val job = startupJob
+        startupJob = null
+        job?.cancelAndJoin()
+
+        cleanupResources()
+        stopForegroundIfNeeded()
+        transitionTo(State.DISCONNECTED)
+
+        if (latestStartId != 0) {
+            stopSelfResult(latestStartId)
+        } else {
+            stopSelf()
+        }
+    }
+
+    private suspend fun cleanupResources() {
+        val tun = mInterface
+        mInterface = null
+        runCatching { tun?.close() }
+            .onFailure { Log.w(tag, "failed to close VPN interface", it) }
+
+        if (runtimeOwned) {
+            runtimeOwned = false
+            runCatching {
+                withContext(Dispatchers.IO) {
+                    app.stop()
+                }
+            }.onFailure { Log.w(tag, "failed to stop VPN runtime", it) }
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            runCatching { unregisterUnderlyingNetworkCallback() }
+                .onFailure { Log.w(tag, "failed to unregister underlying network callback", it) }
+        }
+    }
+
+    private fun stopForegroundIfNeeded() {
+        if (!foregroundStarted) return
+        stopForeground(STOP_FOREGROUND_REMOVE)
+        foregroundStarted = false
+    }
+
     override fun onRevoke() {
-        Log.d(tag, "onRevoke")
-        stop()
+        Log.d(tag, "VPN permission revoked")
+        requestStop(StopReason.REVOKED)
         super.onRevoke()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        latestStartId = startId
         Log.d(tag, "starting")
+
         if (state != State.DISCONNECTED) {
-            Log.d(tag, "already running")
+            Log.d(tag, "ignoring start request while state=${state.name}")
             return START_STICKY
         }
 
-        state = State.CONNECTING
-
         try {
-            val tunAddress = Yuhaiin.getTunAddress()
-            configure(tunAddress)
+            // startForegroundService() callers require foreground promotion promptly.
             startNotification()
-            start(tunAddress)
-
-            state = State.CONNECTED
         } catch (e: Exception) {
-            e.printStackTrace()
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) unregisterUnderlyingNetworkCallback()
-            state = State.DISCONNECTED
+            Log.e(tag, "failed to enter foreground", e)
             callbacks.sendMsg(e.toString())
-            onRevoke()
+            stopSelfResult(startId)
+            return START_NOT_STICKY
+        }
+
+        transitionTo(State.CONNECTING)
+        startupJob = serviceScope.launch {
+            try {
+                val tunAddress = withContext(Dispatchers.IO) {
+                    Yuhaiin.getTunAddress()
+                }
+
+                if (state != State.CONNECTING) return@launch
+                establishVpnInterface(tunAddress)
+
+                if (state != State.CONNECTING) return@launch
+                startRuntime(tunAddress)
+
+                if (state == State.CONNECTING) {
+                    transitionTo(State.CONNECTED)
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.e(tag, "failed to start VPN", e)
+                callbacks.sendMsg(e.toString())
+                requestStop(StopReason.START_FAILED)
+            }
         }
 
         return START_STICKY
@@ -250,7 +335,7 @@ class YuhaiinVpnService : VpnService() {
         }
     }
 
-    private fun configure(tunAddress: TunAddress) {
+    private fun establishVpnInterface(tunAddress: TunAddress) {
         Builder().apply {
             setMtu(vpnMtu())
             setSession("Default")
@@ -291,14 +376,6 @@ class YuhaiinVpnService : VpnService() {
             val content = MainApplication.store.getString(Constants.ROUTE_CONTENT_PREFIX + routeKey)
             Log.i("VPN", "Configure route: $routeKey")
             if (content.isNotBlank()) {
-                // Using runBlocking here because configure() is likely expected to be synchronous
-                // or we are already in a background thread (onStartCommand -> configure).
-                // However, VpnService.Builder methods must be called on the same thread as establish().
-                // Since onStartCommand runs on the main thread, and establish() is synchronous,
-                // we should probably keep this on the main thread unless we move the whole configure/start logic.
-                // But splitting a large string might be heavy.
-                // Given the constraints of VpnService, we'll iterate.
-                // To avoid ANR on very large lists, we can sequence it.
                 content.lineSequence().forEach {
                     if (it.isNotBlank()) addRoute(it)
                 }
@@ -337,19 +414,20 @@ class YuhaiinVpnService : VpnService() {
             }
 
 
-            mInterface = establish()
+            mInterface = establish() ?: error("failed to establish VPN interface")
         }
     }
 
-    private fun start(tunAddress: TunAddress) {
-        app.start(Opts().apply {
+    private suspend fun startRuntime(tunAddress: TunAddress) {
+        val vpnInterface = mInterface ?: error("VPN interface is not established")
+        val opts = Opts().apply {
             notifySpped = SpeedNotifier(
                 notificationBuilder(),
                 NotificationManagerCompat.from(this@YuhaiinVpnService)
             )
 
             tun = TUN().apply {
-                fd = mInterface!!.fd
+                fd = vpnInterface.fd
                 mtu = vpnMtu()
                 portal = "${tunAddress.iPv4Address}/24"
                 portalV6 = "${tunAddress.iPv6Address}/64"
@@ -357,8 +435,15 @@ class YuhaiinVpnService : VpnService() {
                     socketProtect = SocketProtect { return@SocketProtect protect(it) }
             }
 
-            closeFallback = Closer { stop() }
-        })
+            closeFallback = Closer { requestStop(StopReason.RUNTIME_CLOSED) }
+        }
+
+        // Claim the runtime before entering native code so partial startup failures
+        // are also handled by the common cleanup path.
+        runtimeOwned = true
+        withContext(Dispatchers.IO) {
+            app.start(opts)
+        }
     }
 
     private fun startNotification(name: String = "Default") {
@@ -384,6 +469,33 @@ class YuhaiinVpnService : VpnService() {
         } else {
             startForeground(1, notificationBuilder().build())
         }
+        foregroundStarted = true
+    }
+
+    override fun onDestroy() {
+        startupJob?.cancel()
+        startupJob = null
+
+        val tun = mInterface
+        mInterface = null
+        runCatching { tun?.close() }
+            .onFailure { Log.w(tag, "failed to close VPN interface during destroy", it) }
+
+        if (runtimeOwned) {
+            runtimeOwned = false
+            runCatching { app.stop() }
+                .onFailure { Log.w(tag, "failed to stop VPN runtime during destroy", it) }
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            runCatching { unregisterUnderlyingNetworkCallback() }
+                .onFailure { Log.w(tag, "failed to unregister network callback during destroy", it) }
+        }
+
+        stopForegroundIfNeeded()
+        callbacks.kill()
+        serviceJob.cancel()
+        super.onDestroy()
     }
 
     inner class SpeedNotifier(

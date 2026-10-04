@@ -195,20 +195,21 @@ fun SharedTransitionScope.SettingCompose(
                     )
                 }
 
-                if (vpnState == State.CONNECTED || vpnState == State.DISCONNECTED)
+                val canStart = vpnState == State.DISCONNECTED || vpnState == State.ERROR
+                val canStop = vpnState == State.CONNECTED || vpnState == State.CONNECTING
+                if (canStart || canStop)
                     FloatingActionButtonMenuItem(
                         modifier = Modifier.semantics {
                             isTraversalGroup = true
                         },
                         onClick = {
-                            if (vpnState == State.DISCONNECTED) startService()
+                            if (canStart) startService()
                             else stopService()
                         },
                         text = {
                             Icon(
                                 painter = painterResource(
-                                    if (vpnState == State.CONNECTED)
-                                        R.drawable.stop else R.drawable.play_arrow
+                                    if (canStop) R.drawable.stop else R.drawable.play_arrow
                                 ),
                                 contentDescription = null,
                                 modifier = Modifier
@@ -216,7 +217,7 @@ fun SharedTransitionScope.SettingCompose(
                                     .rotate(rotation)
                             )
                             Text(
-                                text = if (vpnState == State.CONNECTED) stringResource(R.string.Stop) else stringResource(
+                                text = if (canStop) stringResource(R.string.Stop) else stringResource(
                                     R.string.Connect
                                 )
                             )
