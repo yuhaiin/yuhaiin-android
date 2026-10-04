@@ -21,7 +21,6 @@ import java.util.UUID
 class YuhaiinDocumentProvider : DocumentsProvider() {
     companion object {
         private const val ALL_MIME_TYPES = "*/*"
-        private const val ROOT_DOCUMENT_ID = "root"
         private const val DOCUMENT_ID_PREFIX = "doc:"
         private const val DOCUMENT_ID_PREFS = "yuhaiin_document_provider_ids"
         private const val ID_KEY_PREFIX = "id:"
@@ -55,6 +54,7 @@ class YuhaiinDocumentProvider : DocumentsProvider() {
             ?: throw IllegalStateException("External files directory is unavailable")
     }
     private val canonicalBaseDir by lazy { baseDir.canonicalFile }
+    private val rootDocumentId by lazy { canonicalBaseDir.path }
     private val documentIds by lazy {
         val providerContext = context ?: throw IllegalStateException("Context is null")
         providerContext.getSharedPreferences(DOCUMENT_ID_PREFS, Context.MODE_PRIVATE)
@@ -66,8 +66,8 @@ class YuhaiinDocumentProvider : DocumentsProvider() {
     override fun queryRoots(projection: Array<out String>?): Cursor {
         val result = MatrixCursor(projection ?: DEFAULT_ROOT_PROJECTION)
         val row = result.newRow()
-        addColumn(result, row, Root.COLUMN_ROOT_ID, ROOT_DOCUMENT_ID)
-        addColumn(result, row, Root.COLUMN_DOCUMENT_ID, ROOT_DOCUMENT_ID)
+        addColumn(result, row, Root.COLUMN_ROOT_ID, rootDocumentId)
+        addColumn(result, row, Root.COLUMN_DOCUMENT_ID, rootDocumentId)
         addColumn(result, row, Root.COLUMN_SUMMARY, null)
         addColumn(
             result,
@@ -104,7 +104,7 @@ class YuhaiinDocumentProvider : DocumentsProvider() {
         projection: Array<out String>?,
     ): Cursor {
         val result = MatrixCursor(projection ?: DEFAULT_DOCUMENT_PROJECTION)
-        val parentDocumentId = rootId ?: ROOT_DOCUMENT_ID
+        val parentDocumentId = rootId ?: rootDocumentId
         setChildNotificationUri(result, parentDocumentId)
 
         val parent = getFileForDocId(parentDocumentId)
@@ -133,7 +133,7 @@ class YuhaiinDocumentProvider : DocumentsProvider() {
 
     private fun getFileForDocId(docId: String): File {
         val file = when {
-            docId == ROOT_DOCUMENT_ID -> canonicalBaseDir
+            docId == rootDocumentId -> canonicalBaseDir
             docId.startsWith(DOCUMENT_ID_PREFIX) -> {
                 val relativePath = synchronized(documentIdLock) {
                     documentIds.getString(idKey(docId), null)
@@ -161,7 +161,7 @@ class YuhaiinDocumentProvider : DocumentsProvider() {
         if (!canonicalFile.exists()) {
             throw FileNotFoundException("Document ${canonicalFile.path} not found")
         }
-        if (canonicalFile == canonicalBaseDir) return ROOT_DOCUMENT_ID
+        if (canonicalFile == canonicalBaseDir) return rootDocumentId
 
         val relativePath = relativePathOf(canonicalFile)
         synchronized(documentIdLock) {
