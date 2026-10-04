@@ -1,196 +1,276 @@
 package io.github.asutorufa.yuhaiin.compose
 
 import android.annotation.SuppressLint
+import android.content.Intent
 import android.graphics.Bitmap
-import android.view.View
+import android.net.Uri
+import android.os.Bundle
 import android.view.ViewGroup
-import android.webkit.JavascriptInterface
-import android.webkit.WebSettings
-import android.webkit.WebView
-import android.webkit.WebViewClient
+import android.webkit.*
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.AnimatedContentScope
-import androidx.compose.animation.ExperimentalSharedTransitionApi
-import androidx.compose.animation.SharedTransitionScope
-import androidx.compose.animation.animateContentSize
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.automirrored.filled.ExitToApp
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.FabPosition
-import androidx.compose.material3.FilledIconButton
-import androidx.compose.material3.HorizontalFloatingToolbar
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.LoadingIndicator
-import androidx.compose.material3.Scaffold
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.graphics.vector.rememberVectorPainter
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.core.net.toUri
+import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
+import io.github.asutorufa.yuhaiin.BuildConfig
+import io.github.asutorufa.yuhaiin.R
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+
+class WebPageState(private val savedState: SavedStateHandle) : ViewModel() {
+    // History survives rotation in memory; only a small URL goes into the system saved state.
+    var history: Bundle? = null
+    var url: String?
+        get() = savedState["url"]
+        set(value) {
+            savedState["url"] = value
+        }
+}
 
 @SuppressLint("SetJavaScriptEnabled")
-@OptIn(
-    ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class,
-    ExperimentalSharedTransitionApi::class
-)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-@Preview
-fun SharedTransitionScope.WebViewComponent(
-    animatedContentScope: AnimatedContentScope? = null,
-    onBack: () -> Unit = {},
-    getPort: () -> Int = { 0 },
-) {
-    var isLoading by remember { mutableStateOf(true) }
-    var hasRenderedPage by remember { mutableStateOf(false) }
-    val webView = remember { mutableStateOf<WebView?>(null) }
-    var expanded by rememberSaveable { mutableStateOf(false) }
-
-    fun onRefresh() {
-        val currentUrl = webView.value?.url ?: return
-        val uri = currentUrl.toUri()
-        val newUri = uri.buildUpon().encodedAuthority("127.0.0.1:${getPort()}").build()
-        webView.value?.loadUrl(newUri.toString())
+fun WebViewComponent(onBack: () -> Unit, getPort: () -> Int) {
+    val state: WebPageState = viewModel()
+    val context = LocalContext.current
+    val renderError by rememberUpdatedState(stringResource(R.string.web_render_failed))
+    val scope = rememberCoroutineScope()
+    var view by remember { mutableStateOf<WebView?>(null) }
+    var loading by remember { mutableStateOf(true) }
+    var error by remember { mutableStateOf<String?>(null) }
+    var canBack by remember { mutableStateOf(false) }
+    var canForward by remember { mutableStateOf(false) }
+    var generation by remember { mutableIntStateOf(0) }
+    var port by remember { mutableIntStateOf(0) }
+    LaunchedEffect(generation) { port = withContext(Dispatchers.IO) { getPort() } }
+    fun updateHistory(web: WebView) {
+        canBack = web.canGoBack()
+        canForward = web.canGoForward()
+        state.url = web.url
     }
-
+    fun refresh() {
+        scope.launch {
+            port = withContext(Dispatchers.IO) { getPort() }
+            error = null
+            val current = view
+            if (current != null && port > 0) {
+                val path = current.url?.let(Uri::parse)
+                current.loadUrl(
+                    Uri.Builder()
+                        .scheme("http")
+                        .encodedAuthority("127.0.0.1:$port")
+                        .encodedPath(path?.encodedPath ?: "/")
+                        .encodedQuery(path?.encodedQuery)
+                        .encodedFragment(path?.encodedFragment)
+                        .build()
+                        .toString()
+                )
+            } else generation++
+        }
+    }
+    BackHandler(enabled = canBack && error == null) { view?.goBack() }
     Scaffold(
-        floatingActionButtonPosition = FabPosition.Center,
-        floatingActionButton = {
-            HorizontalFloatingToolbar(
-                modifier = Modifier.thenIfNotNull(animatedContentScope) {
-                    sharedBounds(
-                        sharedContentState = rememberSharedContentState("OPEN_WEBVIEW"),
-                        animatedVisibilityScope = it,
-                    )
-                },
-                expanded = expanded,
-                leadingContent = {
-                    IconButton(
-                        onClick = onBack) {
-                        Icon(
-                            painter = rememberVectorPainter(Icons.AutoMirrored.Filled.ExitToApp),
-                            contentDescription = "Return To Home"
-                        )
-                    }
-                    IconButton(onClick = { onRefresh() }) {
-                        Icon(
-                            imageVector = Icons.Filled.Refresh,
-                            contentDescription = "Refresh",
-                        )
+        topBar = {
+            TopAppBar(
+                title = { Text(stringResource(R.string.open_dashboard)) },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
                     }
                 },
-                trailingContent = {
-                    IconButton(
-                        onClick = { if (webView.value?.canGoBack() == true) webView.value?.goBack() }) {
-                        Icon(
-                            painter = rememberVectorPainter(Icons.AutoMirrored.Filled.ArrowBack),
-                            contentDescription = "Webview Back"
-                        )
-                    }
-                    IconButton(
-                        onClick = { if (webView.value?.canGoForward() == true) webView.value?.goForward() }) {
-                        Icon(
-                            painter = rememberVectorPainter(Icons.AutoMirrored.Filled.ArrowForward),
-                            contentDescription = "Webview Forward"
-                        )
+                actions = {
+                    IconButton(onClick = ::refresh) {
+                        Icon(Icons.Default.Refresh, stringResource(R.string.refresh))
                     }
                 },
-            ) {
-                FilledIconButton(
-                    onClick = { expanded = !expanded }
+            )
+        },
+        bottomBar = {
+            Surface(tonalElevation = 3.dp) {
+                Row(
+                    Modifier.fillMaxWidth().navigationBarsPadding(),
+                    horizontalArrangement = Arrangement.Center,
                 ) {
-                    Icon(
-                        painter = rememberVectorPainter(if (expanded) Icons.Filled.Close else Icons.Filled.Add),
-                        contentDescription = "Expand"
-                    )
+                    IconButton(enabled = canBack, onClick = { view?.goBack() }) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.web_back))
+                    }
+                    IconButton(enabled = canForward, onClick = { view?.goForward() }) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowForward,
+                            stringResource(R.string.web_forward),
+                        )
+                    }
                 }
             }
         },
-        content = { padding ->
-            Box(
-                modifier = Modifier
-                    .padding(padding)
-                    .fillMaxSize()
-                    .animateContentSize()
-            ) {
-                AndroidView(
-                    factory = { context ->
-                        WebView(context).apply {
-                            addJavascriptInterface(object {
-                                @JavascriptInterface
-                                fun setRefreshEnabled(enabled: Boolean) {
-                                }
-                            }, "Android")
-                            
-                            layoutParams = ViewGroup.LayoutParams(
-                                ViewGroup.LayoutParams.MATCH_PARENT,
-                                ViewGroup.LayoutParams.MATCH_PARENT
-                            )
+    ) { padding ->
+        Box(Modifier.fillMaxSize().padding(padding)) {
+            if (port > 0)
+                key(generation) {
+                    AndroidView(
+                        factory = { ctx ->
+                            WebView.setWebContentsDebuggingEnabled(BuildConfig.DEBUG)
+                            WebView(ctx).apply {
+                                // Give WebView a viewport instead of its wrap-content default.
+                                // A zero initial viewport also collapses CSS vh/dvh page layouts.
+                                layoutParams =
+                                    ViewGroup.LayoutParams(
+                                        ViewGroup.LayoutParams.MATCH_PARENT,
+                                        ViewGroup.LayoutParams.MATCH_PARENT,
+                                    )
+                                settings.javaScriptEnabled = true
+                                settings.domStorageEnabled = true
+                                settings.allowFileAccess = false
+                                settings.allowContentAccess = false
+                                settings.mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
+                                webChromeClient = WebChromeClient()
+                                webViewClient =
+                                    object : WebViewClient() {
+                                        override fun shouldOverrideUrlLoading(
+                                            web: WebView,
+                                            request: WebResourceRequest,
+                                        ): Boolean {
+                                            val url = request.url
+                                            if (
+                                                url.scheme == "http" &&
+                                                    url.host == "127.0.0.1" &&
+                                                    url.port == port
+                                            )
+                                                return false
+                                            if (
+                                                request.isForMainFrame &&
+                                                    request.hasGesture() &&
+                                                    url.scheme in listOf("http", "https")
+                                            )
+                                                runCatching {
+                                                    context.startActivity(
+                                                        Intent(Intent.ACTION_VIEW, url)
+                                                    )
+                                                }
+                                            return true
+                                        }
 
-                            settings.javaScriptEnabled = true
-                            settings.domStorageEnabled = true
-                            settings.layoutAlgorithm = WebSettings.LayoutAlgorithm.NORMAL
+                                        override fun onPageStarted(
+                                            web: WebView,
+                                            url: String?,
+                                            favicon: Bitmap?,
+                                        ) {
+                                            loading = true
+                                            error = null
+                                        }
 
-                            setLayerType(View.LAYER_TYPE_HARDWARE, null)
+                                        override fun onPageFinished(web: WebView, url: String?) {
+                                            loading = false
+                                            updateHistory(web)
+                                        }
 
-                            webViewClient = object : WebViewClient() {
-                                override fun onPageStarted(
-                                    view: WebView?,
-                                    url: String?,
-                                    favicon: Bitmap?
-                                ) {
-                                    super.onPageStarted(view, url, favicon)
-                                    isLoading = true
-                                }
+                                        override fun doUpdateVisitedHistory(
+                                            web: WebView,
+                                            url: String?,
+                                            reload: Boolean,
+                                        ) {
+                                            updateHistory(web)
+                                        }
 
-                                override fun onPageFinished(view: WebView?, url: String?) {
-                                    super.onPageFinished(view, url)
-                                    isLoading = false
-                                    hasRenderedPage = true
+                                        override fun onReceivedError(
+                                            web: WebView,
+                                            request: WebResourceRequest,
+                                            failure: WebResourceError,
+                                        ) {
+                                            if (request.isForMainFrame) {
+                                                loading = false
+                                                error = failure.description.toString()
+                                            }
+                                        }
+
+                                        override fun onReceivedHttpError(
+                                            web: WebView,
+                                            request: WebResourceRequest,
+                                            response: WebResourceResponse,
+                                        ) {
+                                            if (request.isForMainFrame) {
+                                                loading = false
+                                                error = "HTTP ${response.statusCode}"
+                                            }
+                                        }
+
+                                        override fun onRenderProcessGone(
+                                            web: WebView,
+                                            detail: RenderProcessGoneDetail,
+                                        ): Boolean {
+                                            loading = false
+                                            error = renderError
+                                            state.history = null
+                                            // Remove the dead instance. Retry creates a new
+                                            // renderer and view.
+                                            port = 0
+                                            return true
+                                        }
+                                    }
+                                view = this
+                                val saved = state.url?.let(Uri::parse)
+                                val local = saved?.scheme == "http" && saved.host == "127.0.0.1"
+                                // A reconnect can choose another port. Do not restore a history
+                                // whose origin now belongs to a stale listener.
+                                val history = state.history.takeIf { local && saved.port == port }
+                                if (history == null || restoreState(history) == null) {
+                                    loadUrl(
+                                        Uri.Builder()
+                                            .scheme("http")
+                                            .encodedAuthority("127.0.0.1:$port")
+                                            .encodedPath(
+                                                if (local) saved.encodedPath ?: "/" else "/"
+                                            )
+                                            .encodedQuery(if (local) saved.encodedQuery else null)
+                                            .encodedFragment(
+                                                if (local) saved.encodedFragment else null
+                                            )
+                                            .build()
+                                            .toString()
+                                    )
                                 }
                             }
-
-                            loadUrl("http://127.0.0.1:${getPort()}")
-
-                            webView.value = this
-                        }
-                    },
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .alpha(if (hasRenderedPage) 1f else 0f)
-                )
-                if (isLoading) {
-                    LoadingIndicator(
-                        modifier = Modifier
-                            .align(Alignment.Center)
-                            .size(55.dp)
+                        },
+                        onRelease = { web ->
+                            if (error == null) state.history = Bundle().also(web::saveState)
+                            web.stopLoading()
+                            web.webViewClient = WebViewClient()
+                            web.webChromeClient = null
+                            web.removeAllViews()
+                            web.destroy()
+                            if (view === web) view = null
+                        },
+                        modifier = Modifier.fillMaxSize(),
                     )
                 }
-                BackHandler(enabled = true) {
-                    if (webView.value?.canGoBack() == true) webView.value?.goBack()
-                    else onBack()
+            if (loading && error == null) LinearProgressIndicator(Modifier.fillMaxWidth())
+            if (error != null || port == 0)
+                Surface(Modifier.fillMaxSize()) {
+                    Column(
+                        Modifier.padding(24.dp),
+                        verticalArrangement = Arrangement.Center,
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        Text(
+                            error ?: stringResource(R.string.web_not_running),
+                            style = MaterialTheme.typography.titleMedium,
+                        )
+                        Button(onClick = ::refresh) { Text(stringResource(R.string.retry)) }
+                    }
                 }
-
-            }
         }
-    )
+    }
 }

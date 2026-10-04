@@ -8,6 +8,17 @@ import org.junit.Test
 
 class NavigationTest {
     @Test
+    fun outgoingToolbarCannotPopTheNextPageOnASecondTap() {
+        val backStack = mutableListOf<NavKey>(HomeRoute, RouteConfigRoute, RouteEditRoute("test"))
+        var finished = false
+        val navigator = AppNavigator(backStack) { finished = true }
+        navigator.popFrom(RouteEditRoute("test"))
+        navigator.popFrom(RouteEditRoute("test"))
+        assertEquals(listOf<NavKey>(HomeRoute, RouteConfigRoute), backStack)
+        assertFalse(finished)
+    }
+
+    @Test
     fun pushAndPopReturnsFromChildToHome() {
         val backStack = mutableListOf<NavKey>(HomeRoute)
         var finished = false
@@ -62,21 +73,13 @@ class NavigationTest {
     }
 
     @Test
-    fun duplicateRoutesRemainAndPopIndividually() {
+    fun rapidRepeatedNavigationOpensOneDestination() {
         val backStack = mutableListOf<NavKey>(HomeRoute)
-        var finished = false
-        val navigator = AppNavigator(backStack) { finished = true }
-
+        val navigator = AppNavigator(backStack) {}
         navigator.push(AboutRoute)
         navigator.push(AboutRoute)
-        navigator.pop()
-
         assertEquals(listOf<NavKey>(HomeRoute, AboutRoute), backStack)
-        assertFalse(finished)
-
         navigator.pop()
-
         assertEquals(listOf<NavKey>(HomeRoute), backStack)
-        assertFalse(finished)
     }
 }

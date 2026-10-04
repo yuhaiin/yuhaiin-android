@@ -10,15 +10,23 @@ import io.github.asutorufa.yuhaiin.MainApplication
 class UpdateInstallReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action != UpdateManager.INSTALL_RESULT_ACTION) return
+        if (!MainApplication.initialized) return
 
-        val status = intent.getIntExtra(
-            PackageInstaller.EXTRA_STATUS,
-            PackageInstaller.STATUS_FAILURE,
-        )
+        val status =
+            intent.getIntExtra(
+                PackageInstaller.EXTRA_STATUS,
+                PackageInstaller.STATUS_FAILURE,
+            )
         val message = intent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE)
         if (status == PackageInstaller.STATUS_PENDING_USER_ACTION) {
             val confirmationIntent = getConfirmationIntent(intent)
-            if (confirmationIntent != null) {
+            if (confirmationIntent == null) {
+                MainApplication.updateManager.onInstallResult(
+                    PackageInstaller.STATUS_FAILURE,
+                    context.getString(io.github.asutorufa.yuhaiin.R.string.update_install_failed),
+                )
+                return
+            } else {
                 try {
                     confirmationIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                     context.startActivity(confirmationIntent)
@@ -35,9 +43,10 @@ class UpdateInstallReceiver : BroadcastReceiver() {
     }
 
     @Suppress("DEPRECATION")
-    private fun getConfirmationIntent(intent: Intent): Intent? = if (Build.VERSION.SDK_INT >= 33) {
-        intent.getParcelableExtra(Intent.EXTRA_INTENT, Intent::class.java)
-    } else {
-        intent.getParcelableExtra(Intent.EXTRA_INTENT)
-    }
+    private fun getConfirmationIntent(intent: Intent): Intent? =
+        if (Build.VERSION.SDK_INT >= 33) {
+            intent.getParcelableExtra(Intent.EXTRA_INTENT, Intent::class.java)
+        } else {
+            intent.getParcelableExtra(Intent.EXTRA_INTENT)
+        }
 }

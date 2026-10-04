@@ -1,59 +1,31 @@
-import java.util.Date
-
 plugins {
     id("com.android.application")
+    id("androidx.baselineprofile")
     kotlin("plugin.serialization") version "2.4.20"
     id("org.jetbrains.kotlin.plugin.compose")
 }
 
-fun getVersionCode(): Int {
-    return try {
-        val processBuilder = ProcessBuilder("git", "rev-list", "--first-parent", "--count", "main")
-        val output = File.createTempFile("getGitVersionCode", "")
-        processBuilder.redirectOutput(output)
-        val process = processBuilder.start()
-        process.waitFor()
-        Integer.parseInt(output.readText().trim())
-    } catch (_: Exception) {
-        5
-    }
+fun gitOutput(vararg arguments: String): String? = runCatching {
+    val process =
+        ProcessBuilder("git", *arguments).redirectError(ProcessBuilder.Redirect.DISCARD).start()
+    val output = process.inputStream.bufferedReader().use { it.readText().trim() }
+    if (process.waitFor() == 0) output.takeIf { it.isNotBlank() } else null
 }
+    .getOrNull()
 
-fun getVersionName(): String {
-    System.getenv("RELEASE_VERSION")?.takeIf { it.isNotBlank() }?.let { return it }
-    return try {
-        val processBuilder = ProcessBuilder("git", "describe", "--tags", "--dirty")
-        val output = File.createTempFile("getGitVersionName", "")
-        processBuilder.redirectOutput(output)
-        val process = processBuilder.start()
-        process.waitFor()
-        val commit = getCommit()
-        val name = output.readText().trim()
-        return if (name.endsWith(commit)) name else "$name-$commit"
-    } catch (_: Exception) {
-        (((Date().time / 1000) - 1451606400) / 10).toString()
-    }
-}
+fun getCommit(): String = gitOutput("rev-parse", "--short", "HEAD") ?: "unknown"
 
-fun getCommit(): String {
-    return try {
-        val processBuilder = ProcessBuilder("git", "rev-parse", "--short", "HEAD")
-        val output = File.createTempFile("getGitCommit", "")
-        processBuilder.redirectOutput(output)
-        val process = processBuilder.start()
-        process.waitFor()
-        output.readText().trim()
-    } catch (_: Exception) {
-        ""
-    }
-}
+fun getVersionName(): String =
+    System.getenv("RELEASE_VERSION")?.takeIf { it.isNotBlank() }
+        ?: gitOutput("describe", "--tags", "--always", "--dirty")
+        ?: getCommit()
 
 tasks.withType<org.jetbrains.kotlin.gradle.internal.KaptWithoutKotlincTask>().configureEach {
     kaptProcessJvmArgs.add("-Xmx512m")
 }
 
 android {
-
+    namespace = "io.github.asutorufa.yuhaiin"
     compileSdk = 37
     compileOptions {
         // Flag to enable support for the new language APIs
@@ -71,7 +43,8 @@ android {
         buildConfigField("String", "DOCUMENTS_AUTHORITY", "\"$documentsAuthorityValue\"")
         buildConfigField("String", "GIT_COMMIT", "\"${getCommit()}\"")
         minSdk = 24
-        // uses-sdk:minSdkVersion 21 cannot be smaller than version 23 declared in library [androidx.compose.material3:material3-android:1.5.0-alpha04]
+        // uses-sdk:minSdkVersion 21 cannot be smaller than version 23 declared in library
+        // [androidx.compose.material3:material3-android:1.5.0-alpha04]
         targetSdk = 37
 
         versionCode = 184
@@ -83,14 +56,14 @@ android {
     }
 
     signingConfigs {
-        if (System.getenv("KEYSTORE_PATH") != null) create("releaseConfig") {
-            storeFile = file(System.getenv("KEYSTORE_PATH"))
-            keyAlias = System.getenv("KEY_ALIAS")
-            storePassword = System.getenv("KEYSTORE_PASSWORD")
-            keyPassword = System.getenv("KEY_PASSWORD")
-        }
+        if (System.getenv("KEYSTORE_PATH") != null)
+            create("releaseConfig") {
+                storeFile = file(System.getenv("KEYSTORE_PATH"))
+                keyAlias = System.getenv("KEY_ALIAS")
+                storePassword = System.getenv("KEYSTORE_PASSWORD")
+                keyPassword = System.getenv("KEY_PASSWORD")
+            }
     }
-
 
     buildTypes {
         release {
@@ -103,11 +76,12 @@ android {
             isShrinkResources = true
 
             proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
             )
 
-            if (System.getenv("KEYSTORE_PATH") != null) signingConfig =
-                signingConfigs.getByName("releaseConfig")
+            if (System.getenv("KEYSTORE_PATH") != null)
+                signingConfig = signingConfigs.getByName("releaseConfig")
         }
     }
 
@@ -129,8 +103,6 @@ android {
     }
 
     testOptions {
-        execution = "ANDROIDX_TEST_ORCHESTRATOR"
-
         unitTests.apply {
             isIncludeAndroidResources = true
         }
@@ -138,8 +110,6 @@ android {
         unitTests.all {
             it.useJUnit()
         }
-
-        namespace = "io.github.asutorufa.yuhaiin"
     }
 
     buildFeatures {
@@ -155,6 +125,8 @@ base {
 }
 
 dependencies {
+    baselineProfile(project(":benchmark"))
+    implementation("androidx.profileinstaller:profileinstaller:1.4.1")
     testImplementation(kotlin("test"))
     testImplementation("junit:junit:4.13.2")
     implementation("androidx.appcompat:appcompat:1.8.0")
@@ -173,16 +145,28 @@ dependencies {
     implementation(composeBom)
     androidTestImplementation(composeBom)
     implementation("androidx.compose.ui:ui-graphics")
-    implementation("androidx.compose.ui:ui-text:1.12.1")
+    implementation("androidx.compose.ui:ui-text")
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
-    implementation("androidx.compose.material3:material3:1.5.0-alpha29")
+    implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.ui:ui-tooling-preview")
-    implementation("androidx.compose.foundation:foundation:1.12.1")
+    implementation("androidx.compose.foundation:foundation")
     debugImplementation("androidx.compose.ui:ui-tooling")
-    implementation("androidx.compose.ui:ui:1.12.1")
+    implementation("androidx.compose.ui:ui")
     implementation("androidx.activity:activity-compose:1.13.0")
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.11.0")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.11.0")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-navigation3:2.11.0")
+    androidTestImplementation("androidx.test.ext:junit:1.3.0")
+    androidTestImplementation("androidx.test.uiautomator:uiautomator:2.3.0")
     implementation("androidx.fragment:fragment-compose:1.9.1")
-    implementation("androidx.compose.material:material-navigation:1.12.1")
-    implementation("androidx.compose.material:material-icons-core:1.7.8")
+    implementation("androidx.compose.material:material-navigation")
+    implementation("androidx.compose.material:material-icons-core")
+}
+
+// Profiles are generated explicitly on a connected API 33+ device, then reviewed into source
+// control.
+baselineProfile {
+    automaticGenerationDuringBuild = false
+    saveInSrc = true
 }

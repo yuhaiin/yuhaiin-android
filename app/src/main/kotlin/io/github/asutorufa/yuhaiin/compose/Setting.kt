@@ -1,831 +1,300 @@
 package io.github.asutorufa.yuhaiin.compose
 
-import android.graphics.RenderEffect
-import android.graphics.Shader
-import android.os.Build
-import androidx.activity.compose.BackHandler
-import androidx.annotation.DrawableRes
-import androidx.annotation.StringRes
-import androidx.compose.animation.AnimatedContentScope
-import androidx.compose.animation.ExperimentalSharedTransitionApi
-import androidx.compose.animation.SharedTransitionScope
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.selection.SelectionContainer
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.ContainedLoadingIndicator
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.ExposedDropdownMenu
-import androidx.compose.material3.ExposedDropdownMenuAnchorType
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.FabPosition
-import androidx.compose.material3.FloatingActionButtonMenu
-import androidx.compose.material3.FloatingActionButtonMenuItem
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SheetValue
-import androidx.compose.material3.Switch
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
-import androidx.compose.material3.ToggleFloatingActionButton
-import androidx.compose.material3.ToggleFloatingActionButtonDefaults.animateIcon
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.rememberBottomSheetState
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asComposeRenderEffect
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.painter.Painter
-import androidx.compose.ui.graphics.vector.rememberVectorPainter
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.isTraversalGroup
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.asutorufa.yuhaiin.Constants
+import io.github.asutorufa.yuhaiin.MainApplication
 import io.github.asutorufa.yuhaiin.R
-import io.github.asutorufa.yuhaiin.compose.route.RouteConfig
-import io.github.asutorufa.yuhaiin.getStringSet
+import io.github.asutorufa.yuhaiin.data.SettingKey
+import io.github.asutorufa.yuhaiin.data.Settings
 import io.github.asutorufa.yuhaiin.service.YuhaiinVpnService.Companion.State
-import yuhaiin.Store
 
-@OptIn(
-    ExperimentalMaterial3Api::class, ExperimentalSharedTransitionApi::class,
-    ExperimentalMaterial3ExpressiveApi::class
-)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-@Preview
-fun SharedTransitionScope.SettingCompose(
-    store: Store? = null,
-    addresses: List<String>? = null,
-    animatedContentScope: AnimatedContentScope? = null,
-    startService: () -> Unit = {},
-    stopService: () -> Unit = {},
-    vpnState: State = State.DISCONNECTED,
-    onOpenAbout: () -> Unit = {},
-    onOpenAppList: () -> Unit = {},
-    onOpenRouteConfig: () -> Unit = {},
-    onOpenWebView: () -> Unit = {},
-    onOpenLogcat: () -> Unit = {},
+fun SettingCompose(
+    vpnState: State,
+    stopService: () -> Unit,
+    startService: () -> Unit,
+    addresses: List<String>,
+    onOpenAbout: () -> Unit,
+    onOpenAppList: () -> Unit,
+    onOpenRouteConfig: () -> Unit,
+    onOpenWebView: () -> Unit,
+    onOpenLogcat: () -> Unit,
+    error: String? = null,
 ) {
-    var tunDriver by rememberSaveable { mutableStateOf(store?.getString("Tun Driver")) }
-    var route by rememberSaveable { mutableStateOf(store?.getString("route")) }
-    var processLookupMode by rememberSaveable {
-        mutableStateOf(
-            store?.getString(Constants.PROCESS_LOOKUP_MODE_KEY)
-                ?.takeIf { it == "off" || it == "rules_only" || it == "always" }
-                ?: "always"
-        )
-    }
-    var vpnMtuProfile by rememberSaveable {
-        mutableStateOf(store?.getString(Constants.VPN_MTU_PROFILE_KEY))
-    }
-    var bootConnectPolicy by rememberSaveable {
-        mutableStateOf(store?.getString(Constants.BOOT_CONNECT_POLICY_KEY))
-    }
-    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
-    var fabMenuExpanded by rememberSaveable { mutableStateOf(false) }
-    BackHandler(fabMenuExpanded) { fabMenuExpanded = false }
-    val blur = remember { Animatable(0f) }
-
-    LaunchedEffect(fabMenuExpanded) {
-        if (fabMenuExpanded) blur.animateTo(30f, tween(400))
-        else blur.animateTo(0f, tween(400))
-    }
-
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                scrollBehavior = scrollBehavior,
-                title = {
-                    Text(stringResource(R.string.yuhaiin))
-                }
-            )
-        },
-        floatingActionButtonPosition = FabPosition.End,
-        floatingActionButton = {
-            FloatingActionButtonMenu(
-                modifier = Modifier.thenIfNotNull(animatedContentScope) {
-                    sharedBounds(
-                        sharedContentState = rememberSharedContentState("OPEN_LOGCAT_FAB"),
-                        animatedVisibilityScope = it,
-                    )
-                },
-                expanded = fabMenuExpanded,
-                button = {
-                    ToggleFloatingActionButton(
-                        checked = fabMenuExpanded,
-                        onCheckedChange = { fabMenuExpanded = !fabMenuExpanded }
-                    ) {
-                        val imageVector by remember {
-                            derivedStateOf { if (checkedProgress > 0.5f) Icons.Filled.Close else Icons.Filled.Add }
+    val settings = MainApplication.settings
+    val values by settings.snapshot.collectAsStateWithLifecycle()
+    val settingsError by settings.failure.collectAsStateWithLifecycle()
+    LaunchedEffect(Unit) { settings.refresh() }
+    Scaffold(topBar = { TopAppBar(title = { Text(stringResource(R.string.yuhaiin)) }) }) { padding
+        ->
+        BoxWithConstraints(Modifier.fillMaxSize().padding(padding)) {
+            val wide = maxWidth >= 840.dp
+            Row {
+                if (wide)
+                    NavigationRail {
+                        val destinations =
+                            listOf(
+                                Triple(R.drawable.apps, R.string.adv_app_list_title, onOpenAppList),
+                                Triple(
+                                    R.drawable.router,
+                                    R.string.route_config_title,
+                                    onOpenRouteConfig,
+                                ),
+                                Triple(R.drawable.adb, R.string.logcat, onOpenLogcat),
+                                Triple(R.drawable.handyman, R.string.about, onOpenAbout),
+                            )
+                        destinations.forEach { (icon, label, action) ->
+                            NavigationRailItem(
+                                selected = false,
+                                onClick = action,
+                                icon = { Icon(painterResource(icon), null) },
+                                label = { Text(stringResource(label)) },
+                            )
                         }
-                        Icon(
-                            painter = rememberVectorPainter(imageVector),
-                            contentDescription = null,
-                            modifier = Modifier.animateIcon({ checkedProgress }),
-                        )
                     }
-                }
-            ) {
-                val rotation by animateFloatAsState(targetValue = if (vpnState == State.CONNECTED) 90f else 0f)
-                if (vpnState == State.CONNECTED) {
-                    FloatingActionButtonMenuItem(
-                        modifier = Modifier
-                            .thenIfNotNull(animatedContentScope) {
-                                sharedBounds(
-                                    sharedContentState = rememberSharedContentState("OPEN_WEBVIEW"),
-                                    animatedVisibilityScope = it,
-                                )
+                ReadingPane {
+                    LazyColumn(contentPadding = PaddingValues(bottom = 24.dp)) {
+                        item {
+                            ConnectionCard(
+                                vpnState,
+                                error ?: settingsError,
+                                startService,
+                                stopService,
+                                onOpenWebView,
+                            )
+                        }
+                        item {
+                            Text(
+                                stringResource(R.string.settings_reconnect_hint),
+                                Modifier.padding(horizontal = 24.dp),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        item { SectionHeading(stringResource(R.string.connection)) }
+                        item { PortsInputForm(MainApplication.store, addresses) }
+                        item {
+                            BooleanPreference(
+                                R.string.append_http_proxy_to_vpn_title,
+                                Settings.httpProxy,
+                                values,
+                                R.drawable.http,
+                                R.string.append_http_proxy_to_vpn_sum,
+                            )
+                        }
+                        item {
+                            BooleanPreference(
+                                R.string.allow_lan_title,
+                                Settings.allowLan,
+                                values,
+                                R.drawable.lan,
+                            )
+                        }
+                        item {
+                            BooleanPreference(
+                                R.string.network_speed_title,
+                                Settings.speed,
+                                values,
+                                R.drawable.speed_24px,
+                                R.string.network_speed_sum,
+                            )
+                        }
+                        item { SectionHeading(stringResource(R.string.route_section)) }
+                        item {
+                            val routes =
+                                values.setting(Settings.routes).associateWith { routeLabel(it) }
+                            ListPreferenceSetting(
+                                stringResource(R.string.adv_route_title),
+                                painterResource(R.drawable.router),
+                                routes,
+                                values.setting(Settings.route),
+                            ) {
+                                settings.set(Settings.route, it)
                             }
-                            .semantics { isTraversalGroup = true },
-                        onClick = {
-                            onOpenWebView()
-                        },
-                        text = { Text(text = stringResource(R.string.Open)) },
-                        icon = {
-                            Icon(
-                                painter = painterResource(id = R.drawable.open_in_browser),
-                                contentDescription = null,
-                                modifier = Modifier.size(24.dp)
+                        }
+                        item {
+                            SettingsItem(
+                                stringResource(R.string.route_config_title),
+                                icon = painterResource(R.drawable.router),
+                                onClick = onOpenRouteConfig,
                             )
-                        },
-                    )
-                }
-
-                when (vpnState) {
-                    State.DISCONNECTED, State.ERROR -> FloatingActionButtonMenuItem(
-                        modifier = Modifier.semantics {
-                            isTraversalGroup = true
-                        },
-                        onClick = startService,
-                        text = {
-                            Text(text = stringResource(R.string.Connect))
-                        },
-                        icon = {
-                            Icon(
-                                painter = painterResource(R.drawable.play_arrow),
-                                contentDescription = null,
-                                modifier = Modifier.size(30.dp)
+                        }
+                        item {
+                            BooleanPreference(
+                                R.string.adv_per_app_title,
+                                Settings.perApp,
+                                values,
+                                R.drawable.settop_component,
                             )
-                        },
-                    )
-
-                    State.CONNECTING -> FloatingActionButtonMenuItem(
-                        modifier = Modifier.semantics {
-                            isTraversalGroup = true
-                        },
-                        onClick = stopService,
-                        text = {
-                            Text(text = stringResource(R.string.Stop))
-                        },
-                        icon = {
-                            ContainedLoadingIndicator(
-                                modifier = Modifier.size(30.dp)
+                        }
+                        item {
+                            BooleanPreference(
+                                R.string.adv_app_bypass_title,
+                                Settings.bypass,
+                                values,
+                                R.drawable.alt_route,
+                                R.string.adv_app_bypass_sum,
                             )
-                        },
-                    )
-
-                    State.CONNECTED -> FloatingActionButtonMenuItem(
-                        modifier = Modifier.semantics {
-                            isTraversalGroup = true
-                        },
-                        onClick = stopService,
-                        text = {
-                            Text(text = stringResource(R.string.Stop))
-                        },
-                        icon = {
-                            Icon(
-                                painter = painterResource(R.drawable.stop),
-                                contentDescription = null,
-                                modifier = Modifier
-                                    .size(30.dp)
-                                    .rotate(rotation)
+                        }
+                        item {
+                            SettingsItem(
+                                stringResource(R.string.adv_app_list_title),
+                                stringResource(R.string.adv_app_list_sum),
+                                painterResource(R.drawable.apps),
+                                onOpenAppList,
                             )
-                        },
-                    )
-
-                    State.DISCONNECTING -> ContainedLoadingIndicator(
-                        modifier = Modifier.size(60.dp)
-                    )
-                }
-            }
-        },
-        content = { padding ->
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .then(
-                        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S)
-                            Modifier.background(
-                                Color.Black.copy(
-                                    alpha = if (fabMenuExpanded) 0.5f else 0f
-                                )
+                        }
+                        item { SectionHeading(stringResource(R.string.background_battery)) }
+                        item {
+                            TextPreference(
+                                R.string.process_lookup_mode_title,
+                                Settings.processLookup,
+                                values,
+                                R.array.process_lookup_mode_values,
+                                R.array.process_lookup_mode_entries,
+                                R.drawable.person,
                             )
-                        else Modifier
-                    )
-                    .graphicsLayer {
-                        renderEffect =
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && blur.value > 0) RenderEffect.createBlurEffect(
-                                blur.value, blur.value, Shader.TileMode.CLAMP
-                            ).asComposeRenderEffect()
-                            else null
+                        }
+                        item {
+                            TextPreference(
+                                R.string.vpn_mtu_profile_title,
+                                Settings.mtu,
+                                values,
+                                R.array.vpn_mtu_profile_values,
+                                R.array.vpn_mtu_profile_entries,
+                                R.drawable.speed_24px,
+                            )
+                        }
+                        item {
+                            BooleanPreference(
+                                R.string.register_underlying_network_callback_title,
+                                Settings.trackNetwork,
+                                values,
+                                R.drawable.hub,
+                                R.string.register_underlying_network_callback_summary,
+                            )
+                        }
+                        item {
+                            BooleanPreference(
+                                R.string.adv_auto_connect_title,
+                                Settings.autoConnect,
+                                values,
+                                R.drawable.auto_mode,
+                            )
+                        }
+                        item {
+                            TextPreference(
+                                R.string.boot_connect_policy_title,
+                                Settings.bootPolicy,
+                                values,
+                                R.array.boot_connect_policy_values,
+                                R.array.boot_connect_policy_entries,
+                                R.drawable.auto_mode,
+                            )
+                        }
+                        item { SectionHeading(stringResource(R.string.advanced)) }
+                        item {
+                            TextPreference(
+                                R.string.adv_tun_driver_title,
+                                Settings.tunDriver,
+                                values,
+                                R.array.tun_drivers_value,
+                                R.array.tun_drivers,
+                                R.drawable.delivery_truck_bolt_24px,
+                            )
+                        }
+                        item {
+                            BooleanPreference(
+                                R.string.sniff_title,
+                                Settings.sniff,
+                                values,
+                                R.drawable.spoke,
+                            )
+                        }
+                        item {
+                            BooleanPreference(
+                                R.string.dns_dns_hijacking_title,
+                                Settings.dnsHijacking,
+                                values,
+                                R.drawable.dns,
+                            )
+                        }
+                        item { SectionHeading(stringResource(R.string.debug)) }
+                        item {
+                            SettingsItem(
+                                stringResource(R.string.logcat),
+                                icon = painterResource(R.drawable.adb),
+                                onClick = onOpenLogcat,
+                            )
+                        }
+                        item {
+                            SettingsItem(
+                                stringResource(R.string.about),
+                                stringResource(R.string.about_summary),
+                                painterResource(R.drawable.handyman),
+                                onOpenAbout,
+                            )
+                        }
                     }
-                    .padding(padding)
-                    .nestedScroll(scrollBehavior.nestedScrollConnection)
-            ) {
-                item {
-                    Row(modifier = Modifier.fillMaxWidth()) {
-                        Text(
-                            text = stringResource(R.string.connection),
-                            style = MaterialTheme.typography.titleMedium,
-                            modifier = Modifier.padding(16.dp),
-                        )
-                    }
                 }
-                item {
-                    PortsInputForm(store, addresses)
-                }
-                item {
-                    SwitchStore(
-                        title = R.string.append_http_proxy_to_vpn_title,
-                        summary = R.string.append_http_proxy_to_vpn_sum,
-                        store = store,
-                        storeKey = "append_http_proxy_to_vpn",
-                    )
-                }
-                item {
-                    SwitchStore(
-                        title = R.string.allow_lan_title,
-                        icon = R.drawable.lan,
-                        store = store,
-                        storeKey = "allow_lan",
-                    )
-                }
-                item {
-                    SwitchStore(
-                        title = R.string.network_speed_title,
-                        summary = R.string.network_speed_sum,
-                        icon = R.drawable.speed_24px,
-                        store = store,
-                        storeKey = "network_speed",
-                    )
-                }
-
-                item {
-                    Text(
-                        text = stringResource(R.string.route_section),
-                        style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.padding(16.dp),
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
-                }
-                item {
-                    val entries = store?.getStringSet("saved_routes_list")?.associateWith { it }
-                        ?: stringArrayResource(R.array.adv_routes).associateWith { it }
-                    val default = stringResource(R.string.adv_route_all)
-
-                    ListPreferenceSetting(
-                        title = stringResource(R.string.adv_route_title),
-                        icon = painterResource(R.drawable.router),
-                        entries = entries,
-                        selected = if (entries.containsKey(route)) route!! else default,
-                        onSelectedChange = {
-                            route = it
-                            store?.putString("route", it)
-                        }
-                    )
-                }
-                item {
-                    RouteConfig(
-                        onOpen = onOpenRouteConfig,
-                        animatedContentScope = animatedContentScope,
-                    )
-                }
-                item {
-                    SwitchStore(
-                        title = R.string.adv_per_app_title,
-                        icon = R.drawable.settop_component,
-                        store = store,
-                        storeKey = "per_app",
-                    )
-                }
-                item {
-                    SwitchStore(
-                        title = R.string.adv_app_bypass_title,
-                        summary = R.string.adv_app_bypass_sum,
-                        icon = R.drawable.alt_route,
-                        store = store,
-                        storeKey = "app_bypass",
-                    )
-                }
-                item {
-                    SettingsItem(
-                        textColumnModifier = Modifier.thenIfNotNull(animatedContentScope) {
-                            sharedBounds(
-                                sharedContentState = rememberSharedContentState("OPEN_APP_LIST_TITLE"),
-                                animatedVisibilityScope = it,
-                            )
-                        },
-                        iconModifier = Modifier.thenIfNotNull(animatedContentScope) {
-                            sharedBounds(
-                                sharedContentState = rememberSharedContentState("OPEN_APP_LIST_ICON"),
-                                animatedVisibilityScope = it,
-                            )
-                        },
-                        title = stringResource(R.string.adv_app_list_title),
-                        summary = stringResource(R.string.adv_app_list_sum),
-                        icon = painterResource(R.drawable.apps),
-                        onClick = onOpenAppList
-                    )
-                }
-
-                item {
-                    Text(
-                        text = stringResource(R.string.background_battery),
-                        style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.padding(16.dp),
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                }
-                item {
-                    ListPreferenceSetting(
-                        title = stringResource(R.string.process_lookup_mode_title),
-                        icon = painterResource(R.drawable.person),
-                        entries = stringArrayResource(R.array.process_lookup_mode_values).zip(
-                            stringArrayResource(R.array.process_lookup_mode_entries)
-                        ).toMap(),
-                        selected = processLookupMode,
-                        onSelectedChange = {
-                            processLookupMode = it
-                            store?.putString(Constants.PROCESS_LOOKUP_MODE_KEY, it)
-                        }
-                    )
-                }
-                item {
-                    ListPreferenceSetting(
-                        title = stringResource(R.string.vpn_mtu_profile_title),
-                        icon = painterResource(R.drawable.vpn_key),
-                        entries = stringArrayResource(R.array.vpn_mtu_profile_values).zip(
-                            stringArrayResource(R.array.vpn_mtu_profile_entries)
-                        ).toMap(),
-                        selected = vpnMtuProfile
-                            ?: stringResource(R.string.vpn_mtu_auto_value),
-                        onSelectedChange = {
-                            vpnMtuProfile = it
-                            store?.putString(Constants.VPN_MTU_PROFILE_KEY, it)
-                        }
-                    )
-                }
-                item {
-                    SwitchStore(
-                        title = R.string.register_underlying_network_callback_title,
-                        summary = R.string.register_underlying_network_callback_summary,
-                        icon = R.drawable.hub,
-                        store = store,
-                        storeKey = Constants.REGISTER_UNDERLYING_NETWORK_CALLBACK_KEY,
-                        defaultValue = true,
-                    )
-                }
-                item {
-                    ListPreferenceSetting(
-                        title = stringResource(R.string.boot_connect_policy_title),
-                        icon = painterResource(R.drawable.speed_24px),
-                        entries = stringArrayResource(R.array.boot_connect_policy_values).zip(
-                            stringArrayResource(R.array.boot_connect_policy_entries)
-                        ).toMap(),
-                        selected = bootConnectPolicy
-                            ?: stringResource(R.string.boot_connect_policy_always_value),
-                        onSelectedChange = {
-                            bootConnectPolicy = it
-                            store?.putString(Constants.BOOT_CONNECT_POLICY_KEY, it)
-                        }
-                    )
-                }
-
-                item {
-                    Text(
-                        text = stringResource(R.string.advanced),
-                        style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.padding(16.dp),
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                }
-                item {
-                    ListPreferenceSetting(
-                        title = stringResource(R.string.adv_tun_driver_title),
-                        icon = painterResource(R.drawable.handyman),
-                        entries = stringArrayResource(R.array.tun_drivers_value).zip(
-                            stringArrayResource(R.array.tun_drivers)
-                        ).toMap(),
-                        selected = tunDriver ?: stringResource(R.string.tun_driver_fdbased_value),
-                        onSelectedChange = {
-                            tunDriver = it
-                            store?.putString("Tun Driver", it)
-                        }
-                    )
-                }
-                item {
-                    SwitchStore(
-                        title = R.string.sniff_title,
-                        icon = R.drawable.router,
-                        store = store,
-                        storeKey = Constants.SNIFF_KEY,
-                    )
-                }
-                item {
-                    SwitchStore(
-                        title = R.string.dns_dns_hijacking_title,
-                        icon = R.drawable.router,
-                        store = store,
-                        storeKey = Constants.DNS_HIJACKING_KEY,
-                    )
-                }
-                item {
-                    SwitchStore(
-                        title = R.string.adv_auto_connect_title,
-                        icon = R.drawable.auto_mode,
-                        store = store,
-                        storeKey = Constants.AUTO_CONNECT_KEY,
-                    )
-                }
-                // ---- Debug ----
-                item {
-                    Text(
-                        text = stringResource(R.string.debug),
-                        style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.padding(16.dp),
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                }
-                item {
-                    SettingsItem(
-                        title = stringResource(R.string.logcat_name),
-                        icon = painterResource(R.drawable.adb),
-                        onClick = onOpenLogcat
-                    )
-                }
-
-                // ---- About ----
-                item {
-                    SettingsItem(
-                        textColumnModifier = Modifier.thenIfNotNull(animatedContentScope) {
-                            sharedBounds(
-                                sharedContentState = rememberSharedContentState("OPEN_ABOUT_TITLE"),
-                                animatedVisibilityScope = it,
-                            )
-                        },
-                        iconModifier = Modifier.thenIfNotNull(animatedContentScope) {
-                            sharedBounds(
-                                sharedContentState = rememberSharedContentState("OPEN_ABOUT_ICON"),
-                                animatedVisibilityScope = it,
-                            )
-                        },
-                        title = stringResource(R.string.about),
-                        summary = stringResource(R.string.about_summary),
-                        icon = painterResource(R.drawable.handyman),
-                        onClick = onOpenAbout,
-                    )
-                }
-            }
-
-            if (fabMenuExpanded) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .clickable(
-                            indication = null,
-                            interactionSource = remember { MutableInteractionSource() }
-                        ) {
-                            fabMenuExpanded = false
-                        }
-                )
-            }
-        })
-}
-
-@Composable
-@Preview
-fun SettingsItem(
-    modifier: Modifier = Modifier,
-    iconModifier: Modifier = Modifier,
-    textModifier: Modifier = Modifier,
-    textColumnModifier: Modifier = Modifier,
-    title: String = "Test Item",
-    summary: String? = null,
-    icon: Painter? = rememberVectorPainter(Icons.Filled.Settings),
-    onClick: () -> Unit = {},
-) {
-    Row(
-        modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(16.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        if (icon != null) {
-            Icon(
-                painter = icon,
-                contentDescription = null,
-                modifier = iconModifier.size(24.dp),
-                tint = MaterialTheme.colorScheme.onSurface,
-            )
-            Spacer(Modifier.width(16.dp))
-        }
-        Column(textColumnModifier.weight(1f)) {
-            Text(
-                modifier = textModifier,
-                text = title,
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-            if (summary != null) {
-                Text(
-                    summary,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
             }
         }
     }
 }
 
 @Composable
-@Preview
-fun SwitchStore(
-    @StringRes title: Int = R.string.app_name,
-    @StringRes summary: Int? = null,
-    @DrawableRes icon: Int? = null,
-    store: Store? = null,
-    storeKey: String = "",
-    defaultValue: Boolean = false,
+private fun BooleanPreference(
+    title: Int,
+    key: SettingKey<Boolean>,
+    values: Map<String, Any>,
+    icon: Int,
+    summary: Int? = null,
 ) {
-    var checked by rememberSaveable { mutableStateOf(store?.getBoolean(storeKey) ?: defaultValue) }
-
     SwitchSetting(
-        title = stringResource(title),
-        icon = if (icon != null) painterResource(icon) else null,
-        summary = if (summary != null) stringResource(summary) else null,
-        checked = checked,
-        onCheckedChange = {
-            checked = it
-            store?.putBoolean(storeKey, it)
-        }
-    )
-}
-
-@Composable
-@Preview
-fun SwitchSetting(
-    title: String = "Test Switch",
-    summary: String? = null,
-    icon: Painter? = rememberVectorPainter(Icons.Filled.Settings),
-    checked: Boolean = false,
-    onCheckedChange: (Boolean) -> Unit = {}
-) {
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .clickable {
-                onCheckedChange(!checked)
-            }
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
+        stringResource(title),
+        summary?.let { stringResource(it) },
+        painterResource(icon),
+        values.setting(key),
     ) {
-        if (icon != null) {
-            Icon(
-                painter = icon,
-                contentDescription = null,
-                modifier = Modifier.size(24.dp),
-                tint = MaterialTheme.colorScheme.onSurface
-            )
-            Spacer(Modifier.width(16.dp))
-        }
-        Column(Modifier.weight(1f)) {
-            Text(
-                title,
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            if (summary != null) {
-                Text(
-                    summary,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-
-        Spacer(Modifier.width(16.dp))
-
-        Switch(checked = checked, onCheckedChange = onCheckedChange)
+        MainApplication.settings.set(key, it)
     }
 }
 
-@OptIn(ExperimentalSharedTransitionApi::class, ExperimentalMaterial3Api::class)
 @Composable
-@Preview
-fun ListPreferenceSetting(
-    title: String? = null,
-    icon: Painter? = null,
-    entries: Map<String, String> = hashMapOf(
-        "one" to "1",
-        "two" to "2",
-        "three" to "3"
-    ),
-    selected: String = "",
-    onSelectedChange: (String) -> Unit = {}
+private fun TextPreference(
+    title: Int,
+    key: SettingKey<String>,
+    values: Map<String, Any>,
+    entryKeys: Int,
+    entryLabels: Int,
+    icon: Int,
 ) {
-    var expanded by rememberSaveable { mutableStateOf(false) }
-    Row(
-        modifier = Modifier
-            .padding(horizontal = 16.dp, vertical = 12.dp)
+    val entries = stringArrayResource(entryKeys).zip(stringArrayResource(entryLabels)).toMap()
+    ListPreferenceSetting(
+        stringResource(title),
+        painterResource(icon),
+        entries,
+        values.setting(key),
     ) {
-        ExposedDropdownMenuBox(
-            expanded = expanded,
-            onExpandedChange = { expanded = !expanded }
-        ) {
-            TextField(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .menuAnchor(
-                        ExposedDropdownMenuAnchorType.PrimaryNotEditable,
-                        true
-                    ),
-                label = { if (title != null) Text(title) },
-                value = entries[selected] ?: "NotSelect",
-                onValueChange = { },
-                readOnly = true,
-                trailingIcon = {
-                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
-                },
-                leadingIcon = {
-                    if (icon != null) Icon(
-                        painter = icon,
-                        contentDescription = null,
-                        modifier = Modifier.size(24.dp),
-                        tint = MaterialTheme.colorScheme.onSurface
-                    )
-                }
-            )
-
-            ExposedDropdownMenu(
-                expanded = expanded,
-                onDismissRequest = { expanded = false }
-            ) {
-                for ((key, value) in entries) {
-                    DropdownMenuItem(
-                        onClick = {
-                            expanded = false
-                            onSelectedChange(key)
-                        },
-                        text = { Text(value) },
-                        trailingIcon = {
-                            if (selected == key) Icon(
-                                imageVector = Icons.Filled.Check,
-                                contentDescription = key,
-                            )
-                        }
-                    )
-                }
-            }
-        }
+        MainApplication.settings.set(key, it)
     }
 }
 
-@OptIn(ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class)
 @Composable
-@Preview
-fun PortsInputForm(
-    store: Store? = null,
-    addresses: List<String>? = listOf("1.1.1.1", "1.2.3.4"),
-) {
-    var showBottomSheet by remember { mutableStateOf(false) }
-
-
-    SettingsItem(
-        title = "Listener",
-        icon = painterResource(R.drawable.vpn_lock),
-        onClick = { showBottomSheet = true },
-    )
-
-    if (showBottomSheet) {
-        var http by rememberSaveable { mutableIntStateOf(store?.getInt("http_port") ?: 0) }
-        var yuhaiin by rememberSaveable {
-            mutableIntStateOf(
-                store?.getInt("yuhaiin_port") ?: 0
-            )
-        }
-
-        ModalBottomSheet(
-            onDismissRequest = {
-                showBottomSheet = false
-                store?.putInt("http_port", http)
-            },
-            sheetState = rememberBottomSheetState(
-                initialValue = SheetValue.Hidden,
-                enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded),
-            )
-        ) {
-            Box(
-                modifier = Modifier
-                    .padding(horizontal = 16.dp)
-                    .padding(bottom = 16.dp)
-            ) {
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    OutlinedTextField(
-                        value = http.toString(),
-                        onValueChange = { text ->
-                            when {
-                                text.isEmpty() -> http = 0
-                                text.all { it.isDigit() } -> {
-                                    text.toIntOrNull()?.let { number ->
-                                        if (number in 0..65535) {
-                                            http = number
-                                        }
-                                    }
-                                }
-                            }
-                        },
-                        label = { Text("HTTP & SOCKS5") },
-                        singleLine = true,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                    )
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    OutlinedTextField(
-                        value = yuhaiin.toString(),
-                        onValueChange = { },
-                        label = { Text("YUHAIIN") },
-                        singleLine = true,
-                        enabled = false,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                    )
-
-                    if (!addresses.isNullOrEmpty()) {
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .verticalScroll(rememberScrollState())
-                                .background(
-                                    MaterialTheme.colorScheme.surfaceVariant,
-                                    shape = MaterialTheme.shapes.medium
-                                )
-                                .padding(10.dp)
-                        ) {
-                            SelectionContainer {
-                                Text(addresses.joinToString("\n"))
-                            }
-                        }
-                    }
-                }
-            }
-        }
+fun routeLabel(id: String): String =
+    when (id) {
+        Constants.ALL_ROUTE -> stringResource(R.string.route_all_label)
+        Constants.NON_LOCAL_ROUTE -> stringResource(R.string.route_non_local_label)
+        Constants.NON_CHINESE_ROUTE -> stringResource(R.string.route_non_chinese_label)
+        else -> id
     }
-}

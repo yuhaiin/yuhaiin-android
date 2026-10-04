@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string-array name="simple_route">
+    <string-array translatable="false" name="simple_route">
         <item>1.0.0.0/15</item>
         <item>1.2.0.0/16</item>
         <item>1.4.0.0/14</item>
@@ -1153,7 +1153,7 @@
 
 
     <!--    https://gist.github.com/kylelemons/53690e0f756a8b97dbde97b603984073-->
-    <string-array name="all_routes_except_local">
+    <string-array translatable="false" name="all_routes_except_local">
         <item>0.0.0.0/5</item>
         <item>8.0.0.0/7</item>
         <item>11.0.0.0/8</item>

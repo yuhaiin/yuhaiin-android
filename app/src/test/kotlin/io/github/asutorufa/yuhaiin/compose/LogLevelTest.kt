@@ -1,8 +1,9 @@
 package io.github.asutorufa.yuhaiin.compose
 
-import org.junit.Test
+import io.github.asutorufa.yuhaiin.logging.LogLevel
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import org.junit.Test
 
 class LogLevelTest {
 

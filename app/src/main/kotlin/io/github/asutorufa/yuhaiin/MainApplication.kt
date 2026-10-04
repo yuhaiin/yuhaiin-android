@@ -6,11 +6,14 @@ import android.os.Build
 import android.util.Log
 import androidx.core.content.getSystemService
 import go.Seq
+import io.github.asutorufa.yuhaiin.data.AppSettings
+import io.github.asutorufa.yuhaiin.update.UpdateManager
+import java.net.InetSocketAddress
+import java.net.NetworkInterface
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.serialization.json.Json
-import io.github.asutorufa.yuhaiin.update.UpdateManager
 import yuhaiin.AddressIter
 import yuhaiin.AddressPrefix
 import yuhaiin.Interface
@@ -18,34 +21,42 @@ import yuhaiin.InterfaceIter
 import yuhaiin.Interfaces
 import yuhaiin.Store
 import yuhaiin.Yuhaiin
-import java.net.InetSocketAddress
-import java.net.NetworkInterface
 
 open class MainApplication : Application() {
 
     companion object {
         lateinit var store: Store
-        lateinit var updateManager: UpdateManager
+        // Full restore uses Android's restricted Application and may deliver queued broadcasts.
+        val initialized: Boolean
+            get() = ::store.isInitialized && ::settings.isInitialized
 
-        fun getAddresses(): List<String> = try {
-            NetworkInterface.getNetworkInterfaces()?.asSequence()
-                ?.filter {
-                    it.isUp &&
+        lateinit var updateManager: UpdateManager
+        lateinit var settings: AppSettings
+        lateinit var installedApps: io.github.asutorufa.yuhaiin.data.InstalledAppsRepository
+
+        fun getAddresses(): List<String> =
+            try {
+                NetworkInterface.getNetworkInterfaces()
+                    ?.asSequence()
+                    ?.filter {
+                        it.isUp &&
                             !it.isLoopback &&
                             !it.isVirtual &&
                             !it.name.startsWith("dummy") &&
                             !it.name.startsWith("lo")
-                }
-                ?.flatMap { nif ->
-                    nif.interfaceAddresses.asSequence().mapNotNull { ia ->
-                        ia.address?.hostAddress?.substringBefore('%')
-                            ?.let { "$it (${nif.name})" }
                     }
-                }?.toList() ?: emptyList()
-        } catch (e: java.net.SocketException) {
-            Log.e("MainApplication", "Could not get network interfaces", e)
-            emptyList()
-        }
+                    ?.flatMap { nif ->
+                        nif.interfaceAddresses.asSequence().mapNotNull { ia ->
+                            ia.address?.hostAddress?.substringBefore('%')?.let {
+                                "$it (${nif.name})"
+                            }
+                        }
+                    }
+                    ?.toList() ?: emptyList()
+            } catch (e: java.net.SocketException) {
+                Log.e("MainApplication", "Could not get network interfaces", e)
+                emptyList()
+            }
     }
 
     val connectivity by lazy { this.getSystemService<ConnectivityManager>()!! }
@@ -59,7 +70,7 @@ open class MainApplication : Application() {
             srcIp: String?,
             srcPort: Int,
             destIp: String?,
-            destPort: Int
+            destPort: Int,
         ): Int =
             if (processLookupMode() == "off") {
                 0
@@ -67,7 +78,7 @@ open class MainApplication : Application() {
                 connectivity.getConnectionOwnerUid(
                     p0,
                     InetSocketAddress(srcIp, srcPort),
-                    InetSocketAddress(destIp, destPort)
+                    InetSocketAddress(destIp, destPort),
                 )
             } else {
                 0
@@ -82,15 +93,25 @@ open class MainApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         Seq.setContext(this)
-        Yuhaiin.setSavePath(getExternalFilesDir("yuhaiin").toString())
+        Yuhaiin.setSavePath(
+            (getExternalFilesDir("yuhaiin") ?: java.io.File(filesDir, "yuhaiin"))
+                .apply { mkdirs() }
+                .absolutePath
+        )
         store = Yuhaiin.getStore()
         updateManager = UpdateManager(this)
-        ensureBatteryDefaults()
+        installedApps = io.github.asutorufa.yuhaiin.data.InstalledAppsRepository(packageManager)
+        settings =
+            AppSettings(
+                store,
+                CoroutineScope(SupervisorJob() + Dispatchers.IO),
+                java.io.File(noBackupFilesDir, "settings-init.lock"),
+            ) {
+                ensureBatteryDefaults()
+                initRoutes()
+            }
         Yuhaiin.setInterfaces(GetInterfaces())
         Yuhaiin.setProcessDumper(UidDumper())
-        CoroutineScope(Dispatchers.IO).launch {
-            initRoutes()
-        }
     }
 
     private fun ensureBatteryDefaults() {
@@ -109,26 +130,30 @@ open class MainApplication : Application() {
     }
 
     private fun initRoutes() {
-        val savedRoutes = store.getStringSet(Constants.SAVED_ROUTES_LIST)
+        val raw = store.getString(Constants.SAVED_ROUTES_LIST)
+        // Do not replace user rules when the persisted list cannot be decoded.
+        val savedRoutes =
+            if (raw.isBlank()) emptySet<String>()
+            else kotlinx.serialization.json.Json.decodeFromString<Set<String>>(raw)
         if (savedRoutes.isEmpty()) {
-            val all = getString(R.string.adv_route_all)
-            val nonLocal = getString(R.string.adv_route_non_local)
-            val nonChn = getString(R.string.adv_route_non_chn)
-
-            store.putStringSet(Constants.SAVED_ROUTES_LIST, setOf(all, nonLocal, nonChn))
+            val all = Constants.ALL_ROUTE
+            val nonLocal = Constants.NON_LOCAL_ROUTE
+            val nonChn = Constants.NON_CHINESE_ROUTE
 
             store.putString(
                 Constants.ROUTE_CONTENT_PREFIX + all,
-                "0.0.0.0/0\n::/0"
+                "0.0.0.0/0\n::/0",
             )
             store.putString(
                 Constants.ROUTE_CONTENT_PREFIX + nonLocal,
-                resources.getStringArray(R.array.all_routes_except_local).joinToString("\n")
+                resources.getStringArray(R.array.all_routes_except_local).joinToString("\n"),
             )
             store.putString(
                 Constants.ROUTE_CONTENT_PREFIX + nonChn,
-                resources.getStringArray(R.array.simple_route).joinToString("\n")
+                resources.getStringArray(R.array.simple_route).joinToString("\n"),
             )
+            // Publish the list last, so an interrupted first launch retries initialization.
+            store.putStringSet(Constants.SAVED_ROUTES_LIST, setOf(all, nonLocal, nonChn))
         }
     }
 
@@ -150,9 +175,7 @@ open class MainApplication : Application() {
         }
     }
 
-    class AddressIterImpl(
-        private val data: ArrayList<AddressPrefix>
-    ) : AddressIter {
+    class AddressIterImpl(private val data: ArrayList<AddressPrefix>) : AddressIter {
         private var index = 0
 
         override fun next(): AddressPrefix? {
@@ -180,28 +203,36 @@ open class MainApplication : Application() {
             for (nif in interfaces) {
 
                 try {
-                    sb.add(Interface().apply {
-                        name = nif.name
-                        displayName = nif.displayName
-                        index = nif.index
-                        mtu = nif.mtu
-                        isVirtual = nif.isVirtual
-                        hardwareAddr = nif.hardwareAddress
-                        isUp = nif.isUp
-                        broadcast = nif.supportsMulticast()
-                        isLoopback = nif.isLoopback
-                        isPointToPoint = nif.isPointToPoint
-                        supportsMulticast = nif.supportsMulticast()
-                        address = AddressIterImpl(ArrayList<AddressPrefix>().apply {
-                            for (ia in nif.interfaceAddresses) {
-                                add(AddressPrefix().apply {
-                                    address = ia.address.toString().trimStart('/')
-                                    mask = ia.networkPrefixLength.toInt()
-                                    broadcast = ia.broadcast?.toString()?.trimStart('/')
-                                })
-                            }
-                        })
-                    })
+                    sb.add(
+                        Interface().apply {
+                            name = nif.name
+                            displayName = nif.displayName
+                            index = nif.index
+                            mtu = nif.mtu
+                            isVirtual = nif.isVirtual
+                            hardwareAddr = nif.hardwareAddress
+                            isUp = nif.isUp
+                            broadcast = nif.supportsMulticast()
+                            isLoopback = nif.isLoopback
+                            isPointToPoint = nif.isPointToPoint
+                            supportsMulticast = nif.supportsMulticast()
+                            address =
+                                AddressIterImpl(
+                                    ArrayList<AddressPrefix>().apply {
+                                        for (ia in nif.interfaceAddresses) {
+                                            add(
+                                                AddressPrefix().apply {
+                                                    address = ia.address.toString().trimStart('/')
+                                                    mask = ia.networkPrefixLength.toInt()
+                                                    broadcast =
+                                                        ia.broadcast?.toString()?.trimStart('/')
+                                                }
+                                            )
+                                        }
+                                    }
+                                )
+                        }
+                    )
                 } catch (_: Exception) {
                     continue
                 }
@@ -212,11 +243,14 @@ open class MainApplication : Application() {
     }
 }
 
-
 fun Store.getStringSet(key: String?): Set<String> {
     val data = getString(key)
     if (data.isEmpty()) return HashSet()
-    return Json.decodeFromString<Set<String>>(data)
+    return runCatching { Json.decodeFromString<Set<String>>(data) }
+        .getOrElse {
+            Log.e("Store", "Invalid string set for $key", it)
+            emptySet()
+        }
 }
 
 fun Store.putStringSet(key: String?, values: Set<String?>?) {

@@ -6,17 +6,15 @@ import android.net.Network
 import android.os.Build
 import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
-import androidx.compose.animation.EnterTransition
-import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.SharedTransitionLayout
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
-import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
@@ -25,16 +23,16 @@ import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
-import androidx.navigation3.runtime.metadata
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.LocalNavAnimatedContentScope
@@ -50,28 +48,27 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-
 @Composable
 private fun ChangeSystemBarsTheme(activity: MainActivity, lightTheme: Boolean) {
     val barColor = MaterialTheme.colorScheme.background.toArgb()
     LaunchedEffect(lightTheme) {
         if (lightTheme) {
             activity.enableEdgeToEdge(
-                statusBarStyle = SystemBarStyle.light(
-                    barColor, barColor,
-                ),
-                navigationBarStyle = SystemBarStyle.light(
-                    barColor, barColor,
-                ),
+                statusBarStyle =
+                    SystemBarStyle.light(
+                        barColor,
+                        barColor,
+                    ),
+                navigationBarStyle =
+                    SystemBarStyle.light(
+                        barColor,
+                        barColor,
+                    ),
             )
         } else {
             activity.enableEdgeToEdge(
-                statusBarStyle = SystemBarStyle.dark(
-                    barColor,
-                ),
-                navigationBarStyle = SystemBarStyle.dark(
-                    barColor,
-                ),
+                statusBarStyle = SystemBarStyle.dark(barColor),
+                navigationBarStyle = SystemBarStyle.dark(barColor),
             )
         }
     }
@@ -80,229 +77,201 @@ private fun ChangeSystemBarsTheme(activity: MainActivity, lightTheme: Boolean) {
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun Main(activity: MainActivity) {
-    val vpnState by activity.state.collectAsState()
-    val colorScheme = when {
-        Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (isSystemInDarkTheme()) dynamicDarkColorScheme(context)
-            else dynamicLightColorScheme(context)
+    val vpnState by activity.state.collectAsStateWithLifecycle()
+    val error by activity.error.collectAsStateWithLifecycle()
+    val colorScheme =
+        when {
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
+                val context = LocalContext.current
+                if (isSystemInDarkTheme()) dynamicDarkColorScheme(context)
+                else dynamicLightColorScheme(context)
+            }
+
+            isSystemInDarkTheme() -> darkColorScheme()
+            else -> lightColorScheme()
         }
 
-        isSystemInDarkTheme() -> darkColorScheme()
-        else -> lightColorScheme()
+    androidx.activity.compose.ReportDrawnAfter {
+        runCatching { MainApplication.settings.ready.await() }
     }
-
-    MaterialTheme(
-        colorScheme = colorScheme
-    ) {
-        SharedTransitionLayout {
+    MaterialTheme(colorScheme = colorScheme) {
+        ChangeSystemBarsTheme(activity, !isSystemInDarkTheme())
+        SharedTransitionLayout(modifier = Modifier.background(colorScheme.surface)) {
             val backStack = rememberNavBackStack(HomeRoute)
-            val navigator = remember(backStack) {
-                AppNavigator(backStack, activity::finish)
-            }
+            val navigator =
+                remember(backStack) {
+                    AppNavigator(backStack, activity::finish)
+                }
 
             NavDisplay(
                 backStack = backStack,
                 onBack = navigator::pop,
-                entryDecorators = listOf(rememberSaveableStateHolderNavEntryDecorator()),
+                entryDecorators =
+                    listOf(
+                        rememberSaveableStateHolderNavEntryDecorator(),
+                        rememberViewModelStoreNavEntryDecorator(),
+                    ),
                 transitionSpec = {
-                    EnterTransition.None togetherWith ExitTransition.None
+                    fadeIn(tween(240)) + slideInVertically(tween(240)) { it / 24 } togetherWith
+                        fadeOut(tween(120))
                 },
                 popTransitionSpec = {
-                    EnterTransition.None togetherWith ExitTransition.None
+                    fadeIn(tween(180)) togetherWith
+                        fadeOut(tween(180)) + slideOutVertically(tween(180)) { it / 24 }
                 },
                 predictivePopTransitionSpec = { _ ->
-                    EnterTransition.None togetherWith ExitTransition.None
+                    fadeIn(tween(180)) togetherWith
+                        fadeOut(tween(180)) + slideOutVertically(tween(180)) { it / 24 }
                 },
-                entryProvider = entryProvider<NavKey> {
-                    entry<HomeRoute> {
-                        val animatedContentScope = LocalNavAnimatedContentScope.current
-                        val context = LocalContext.current
-                        val addresses by produceState<List<String>>(
-                            initialValue = emptyList(),
-                            key1 = vpnState,
-                            key2 = context,
-                        ) {
-                            val connectivity =
-                                context.getSystemService(ConnectivityManager::class.java)
-                            val refreshRequests = Channel<Unit>(Channel.CONFLATED)
-                            val refreshJob = launch {
-                                for (ignored in refreshRequests) {
-                                    value = withContext(Dispatchers.IO) {
-                                        MainApplication.getAddresses()
+                entryProvider =
+                    entryProvider<NavKey> {
+                        entry<HomeRoute> {
+                            val context = LocalContext.current
+                            val addresses by
+                                produceState<List<String>>(
+                                    initialValue = emptyList(),
+                                    key1 = vpnState,
+                                    key2 = context,
+                                ) {
+                                    val connectivity =
+                                        context.getSystemService(ConnectivityManager::class.java)
+                                    val refreshRequests = Channel<Unit>(Channel.CONFLATED)
+                                    val refreshJob = launch {
+                                        for (ignored in refreshRequests) {
+                                            value =
+                                                withContext(Dispatchers.IO) {
+                                                    MainApplication.getAddresses()
+                                                }
+                                        }
+                                    }
+                                    val networkCallback =
+                                        object : ConnectivityManager.NetworkCallback() {
+                                            override fun onAvailable(network: Network) {
+                                                refreshRequests.trySend(Unit)
+                                            }
+
+                                            override fun onLost(network: Network) {
+                                                refreshRequests.trySend(Unit)
+                                            }
+
+                                            override fun onLinkPropertiesChanged(
+                                                network: Network,
+                                                linkProperties: LinkProperties,
+                                            ) {
+                                                refreshRequests.trySend(Unit)
+                                            }
+                                        }
+
+                                    refreshRequests.trySend(Unit)
+                                    connectivity.registerDefaultNetworkCallback(networkCallback)
+
+                                    try {
+                                        awaitCancellation()
+                                    } finally {
+                                        runCatching {
+                                            connectivity.unregisterNetworkCallback(networkCallback)
+                                        }
+                                        refreshRequests.close()
+                                        refreshJob.cancel()
                                     }
                                 }
+                            with(this@SharedTransitionLayout) {
+                                SettingCompose(
+                                    vpnState = vpnState,
+                                    error = error,
+                                    stopService = { activity.vpnBinder?.stop() },
+                                    startService = { activity.startService() },
+                                    addresses = addresses,
+                                    onOpenAbout = { navigator.push(AboutRoute) },
+                                    onOpenAppList = { navigator.push(AppListRoute) },
+                                    onOpenRouteConfig = { navigator.push(RouteConfigRoute) },
+                                    onOpenWebView = { navigator.push(WebViewRoute) },
+                                    onOpenLogcat = { navigator.push(LogcatRoute) },
+                                )
                             }
-                            val networkCallback =
-                                object : ConnectivityManager.NetworkCallback() {
-                                    override fun onAvailable(network: Network) {
-                                        refreshRequests.trySend(Unit)
-                                    }
+                        }
 
-                                    override fun onLost(network: Network) {
-                                        refreshRequests.trySend(Unit)
-                                    }
+                        entry<AboutRoute> {
+                            with(this@SharedTransitionLayout) {
+                                AboutScreen(
+                                    onBack = { navigator.popFrom(AboutRoute) },
+                                    updateManager = MainApplication.updateManager,
+                                    proxyReady = vpnState == State.CONNECTED,
+                                    startProxy = { activity.startService() },
+                                )
+                            }
+                        }
 
-                                    override fun onLinkPropertiesChanged(
-                                        network: Network,
-                                        linkProperties: LinkProperties,
-                                    ) {
-                                        refreshRequests.trySend(Unit)
-                                    }
+                        entry<AppListRoute> {
+                            with(this@SharedTransitionLayout) {
+                                AppListComponent(onBack = { navigator.popFrom(AppListRoute) })
+                            }
+                        }
+
+                        entry<RouteConfigRoute> {
+                            val animatedContentScope = LocalNavAnimatedContentScope.current
+                            with(this@SharedTransitionLayout) {
+                                RouteConfigScreen(
+                                    animatedContentScope = animatedContentScope,
+                                    onBack = { navigator.popFrom(RouteConfigRoute) },
+                                    onOpenRouteEdit = { routeName ->
+                                        navigator.push(RouteEditRoute(routeName))
+                                    },
+                                )
+                            }
+                        }
+
+                        entry<RouteEditRoute> { route ->
+                            val animatedContentScope = LocalNavAnimatedContentScope.current
+                            with(this@SharedTransitionLayout) {
+                                RouteEditScreen(
+                                    animatedContentScope = animatedContentScope,
+                                    onBack = { navigator.popFrom(route) },
+                                    routeName = route.routeName,
+                                )
+                            }
+                        }
+
+                        entry<WebViewRoute> {
+                            with(this@SharedTransitionLayout) {
+                                WebViewComponent(onBack = { navigator.popFrom(WebViewRoute) }) {
+                                    MainApplication.store.getInt(
+                                        io.github.asutorufa.yuhaiin.Constants.WEB_PORT_KEY
+                                    )
                                 }
-
-                            refreshRequests.trySend(Unit)
-                            connectivity.registerDefaultNetworkCallback(networkCallback)
-
-                            try {
-                                awaitCancellation()
-                            } finally {
-                                runCatching {
-                                    connectivity.unregisterNetworkCallback(networkCallback)
-                                }
-                                refreshRequests.close()
-                                refreshJob.cancel()
                             }
                         }
-                        with(this@SharedTransitionLayout) {
-                            SettingCompose(
-                                vpnState = vpnState,
-                                stopService = { activity.vpnBinder?.stop() },
-                                startService = { activity.startService() },
-                                animatedContentScope = animatedContentScope,
-                                store = MainApplication.store,
-                                addresses = addresses,
-                                onOpenAbout = { navigator.push(AboutRoute) },
-                                onOpenAppList = { navigator.push(AppListRoute) },
-                                onOpenRouteConfig = { navigator.push(RouteConfigRoute) },
-                                onOpenWebView = { navigator.push(WebViewRoute) },
-                                onOpenLogcat = { navigator.push(LogcatRoute) },
-                            )
-                        }
-                    }
 
-                    entry<AboutRoute> {
-                        val animatedContentScope = LocalNavAnimatedContentScope.current
-                        with(this@SharedTransitionLayout) {
-                            AboutScreen(
-                                onBack = navigator::pop,
-                                updateManager = MainApplication.updateManager,
-                                proxyReady = vpnState == State.CONNECTED,
-                                startProxy = { activity.startService() },
-                                animatedContentScope = animatedContentScope,
-                            )
-                        }
-                    }
+                        entry<LogcatRoute> {
+                            val logcatExcludeRules =
+                                arrayListOf(
+                                    "]: processMotionEvent MotionEvent { action=ACTION_",
+                                    "]: dispatchPointerEvent handled=true, event=MotionEvent { action=ACTION_",
+                                    "Davey! duration=",
+                                    // android popup window select text debug log
+                                    "Attempted to finish an input event but the input event receiver has already been disposed",
+                                    "endAllActiveAnimators on ",
+                                    "Initializing SystemTextClassifier,",
+                                    "TextClassifier called on main thread",
+                                    "android added item ",
+                                    "No package ID ",
+                                    "eglMakeCurrent:",
+                                    "NotificationManager: io.github.asutorufa.yuhaiin: notify",
+                                    "InputEventReceiver_DOT: IER.scheduleInputVsync",
+                                    "ViewRootImpl@",
+                                    "androidx.compose",
+                                    "ViewPostIme",
+                                )
 
-                    entry<AppListRoute> {
-                        val animatedContentScope = LocalNavAnimatedContentScope.current
-                        with(this@SharedTransitionLayout) {
-                            AppListComponent(
-                                onBack = navigator::pop,
-                                packageManager = activity.applicationContext.packageManager,
-                                animatedVisibilityScope = animatedContentScope,
-                            )
-                        }
-                    }
-
-                    entry<RouteConfigRoute> {
-                        val animatedContentScope = LocalNavAnimatedContentScope.current
-                        with(this@SharedTransitionLayout) {
-                            RouteConfigScreen(
-                                onBack = navigator::pop,
-                                onOpenRouteEdit = { routeName ->
-                                    navigator.push(RouteEditRoute(routeName))
-                                },
-                                animatedContentScope = animatedContentScope,
-                            )
-                        }
-                    }
-
-                    entry<RouteEditRoute> { route ->
-                        val animatedContentScope = LocalNavAnimatedContentScope.current
-                        with(this@SharedTransitionLayout) {
-                            RouteEditScreen(
-                                onBack = navigator::pop,
-                                routeName = route.routeName,
-                                animatedContentScope = animatedContentScope,
-                            )
-                        }
-                    }
-
-                    entry<WebViewRoute> {
-                        val animatedContentScope = LocalNavAnimatedContentScope.current
-                        with(this@SharedTransitionLayout) {
-                            WebViewComponent(
-                                animatedContentScope = animatedContentScope,
-                                onBack = navigator::pop,
-                            ) {
-                                MainApplication.store.getInt("yuhaiin_port")
+                            with(this@SharedTransitionLayout) {
+                                LogcatCompose(
+                                    excludeList = logcatExcludeRules,
+                                    onBack = { navigator.popFrom(LogcatRoute) },
+                                )
                             }
                         }
-                    }
-
-                    entry<LogcatRoute>(
-                        metadata = metadata {
-                            put(NavDisplay.TransitionKey) {
-                                slideInVertically { it } + fadeIn() togetherWith
-                                    ExitTransition.KeepUntilTransitionsFinished
-                            }
-                            put(NavDisplay.PopTransitionKey) {
-                                EnterTransition.None togetherWith
-                                    slideOutVertically { it } + fadeOut()
-                            }
-                            put(NavDisplay.PredictivePopTransitionKey) { _: Int ->
-                                EnterTransition.None togetherWith
-                                    slideOutVertically { it } + fadeOut()
-                            }
-                        }
-                    ) {
-                        val animatedContentScope = LocalNavAnimatedContentScope.current
-                        val logcatExcludeRules = arrayListOf(
-                            "]: processMotionEvent MotionEvent \\{ action=ACTION_",
-                            "]: dispatchPointerEvent handled=true, event=MotionEvent \\{ action=ACTION_",
-                            "Davey! duration=",
-                            // android popup window select text debug log
-                            "Attempted to finish an input event but the input event receiver has already been disposed",
-                            "endAllActiveAnimators on ",
-                            "Initializing SystemTextClassifier,",
-                            "TextClassifier called on main thread",
-                            "android added item ",
-                            "No package ID ",
-                            "eglMakeCurrent:",
-                            "NotificationManager: io.github.asutorufa.yuhaiin: notify",
-                            "InputEventReceiver_DOT: IER.scheduleInputVsync",
-                            "ViewRootImpl@",
-                            "androidx.compose",
-                            "ViewPostIme"
-                        )
-
-                        with(this@SharedTransitionLayout) {
-                            LogcatCompose(
-                                excludeList = logcatExcludeRules,
-                                onBack = navigator::pop,
-                                animatedVisibilityScope = animatedContentScope,
-                            )
-                        }
-                    }
-                },
+                    },
             )
         }
-    }
-}
-
-inline fun <T> Modifier.thenIfNotNull(
-    value: T?,
-    block: Modifier.(T) -> Modifier
-): Modifier = if (value != null) block(value) else this
-
-fun Modifier.navContentTransition(
-    animatedVisibilityScope: AnimatedVisibilityScope?,
-): Modifier = thenIfNotNull(animatedVisibilityScope) {
-    with(it) {
-        this@navContentTransition.animateEnterExit(
-            enter = fadeIn(tween(220)) + slideInVertically(tween(220)) { it / 12 },
-            exit = fadeOut(tween(160)) + slideOutVertically(tween(160)) { -it / 12 },
-        )
     }
 }

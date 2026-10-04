@@ -1,330 +1,205 @@
 package io.github.asutorufa.yuhaiin.compose
 
-import android.content.pm.ApplicationInfo
-import android.content.pm.PackageManager
-import android.graphics.drawable.Drawable
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.AnimatedVisibilityScope
-import androidx.compose.animation.ExperimentalSharedTransitionApi
-import androidx.compose.animation.SharedTransitionLayout
-import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.text.input.rememberTextFieldState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.BottomAppBarDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.FlexibleBottomAppBar
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.LoadingIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SearchBarDefaults
-import androidx.compose.material3.Text
-import androidx.compose.material3.rememberSearchBarState
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateSetOf
-import androidx.compose.runtime.produceState
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.snapshots.SnapshotStateSet
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.core.graphics.drawable.toBitmap
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.asutorufa.yuhaiin.MainApplication
-import io.github.asutorufa.yuhaiin.getStringSet
-import io.github.asutorufa.yuhaiin.putStringSet
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.withContext
+import io.github.asutorufa.yuhaiin.R
+import io.github.asutorufa.yuhaiin.data.InstalledApp
+import io.github.asutorufa.yuhaiin.data.Settings
 
-data class AppListData(
-    val appName: String,
-    val packageName: String,
-    val appIcon: Drawable? = null,
-    val isSystemApp: Boolean = false,
-)
-
-@OptIn(ExperimentalSharedTransitionApi::class)
-@Preview
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PreviewAppListComponent() {
-    SharedTransitionLayout {
-        AnimatedVisibility(visible = true) {
-            AppListComponent(animatedVisibilityScope = this@AnimatedVisibility)
-        }
+fun AppListComponent(onBack: () -> Unit) {
+    val repository = MainApplication.installedApps
+    val settings by MainApplication.settings.snapshot.collectAsStateWithLifecycle()
+    val selected = settings.setting(Settings.applications)
+    var query by rememberSaveable { mutableStateOf("") }
+    var filter by rememberSaveable { mutableStateOf("all") }
+    var apps by remember { mutableStateOf<List<InstalledApp>?>(null) }
+    var error by remember { mutableStateOf<String?>(null) }
+    var reload by remember { mutableIntStateOf(0) }
+    LaunchedEffect(reload) {
+        error = null
+        runCatching { repository.load(reload > 0) }
+            .onSuccess { apps = it }
+            .onFailure { error = it.message }
     }
-}
-
-@OptIn(
-    ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3Api::class,
-    ExperimentalSharedTransitionApi::class
-)
-@Composable
-fun SharedTransitionScope.AppListComponent(
-    packageManager: PackageManager? = null,
-    animatedVisibilityScope: AnimatedVisibilityScope,
-    onBack: () -> Unit = {},
-) {
-    val checkedApps = remember {
-        mutableStateSetOf(
-            *MainApplication.Companion.store.getStringSet("app_list").toTypedArray()
-        )
-    }
-
-    val data by produceState<MutableList<AppListData>?>(initialValue = null) {
-        value = withContext(Dispatchers.IO) {
-            val startTime = System.currentTimeMillis()
-
-            val packages = packageManager?.getInstalledApplications(PackageManager.GET_PERMISSIONS)
-
-            val checkedApps = MainApplication.Companion.store.getStringSet("app_list")
-            val apps = mutableListOf<AppListData>()
-
-            val appList = packages?.map {
-                AppListData(
-                    it.loadLabel(packageManager).toString(), // app name
-                    it.packageName, it.loadIcon(packageManager), // icon
-                    (it.flags and ApplicationInfo.FLAG_SYSTEM) > 0, // is system
-                )
-            }?.sortedBy { it.appName }
-
-            var index = 0
-            appList?.forEach { app ->
-                if (checkedApps.contains(app.packageName)) apps.add(index++, app)
-                else apps.add(app)
+    val visible =
+        remember(apps, query, filter, selected) {
+            apps.orEmpty().filter { app ->
+                (filter != "selected" || app.packageName in selected) &&
+                    (filter != "system" || app.system) &&
+                    (filter != "user" || !app.system) &&
+                    (app.name.contains(query, true) || app.packageName.contains(query, true))
             }
-
-            (System.currentTimeMillis() - startTime).apply {
-                if (this < 500) delay(500 - this)
-            }
-            apps
         }
-    }
-
-    DisposableEffect(Unit) {
-        onDispose {
-            MainApplication.Companion.store.putStringSet("app_list", checkedApps.toSet())
-        }
-    }
-
-    val textFieldState = rememberTextFieldState()
-    val searchBarState = rememberSearchBarState()
-    val scrollBehavior = BottomAppBarDefaults.exitAlwaysScrollBehavior()
-
     Scaffold(
-        modifier = Modifier
-            .nestedScroll(scrollBehavior.nestedScrollConnection),
-        contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        bottomBar = {
-            FlexibleBottomAppBar(
-                modifier = Modifier,
-                scrollBehavior = scrollBehavior,
-            ) {
-                IconButton(
-                    onClick = onBack,
-                ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Default.ArrowBack,
-                        contentDescription = "Back"
-                    )
-                }
-
-                SearchBarDefaults.InputField(
-                    modifier = Modifier
-                        .thenIfNotNull(animatedVisibilityScope) {
-                            sharedBounds(
-                                sharedContentState = rememberSharedContentState("OPEN_APP_LIST_TITLE"),
-                                animatedVisibilityScope = it,
-                            )
-                        }
-                        .weight(1f),
-                    textFieldState = textFieldState,
-                    searchBarState = searchBarState,
-                    onSearch = {},
-                    placeholder = { Text("Search") },
-                    leadingIcon = {
+        topBar = {
+            TopAppBar(
+                title = { Text(stringResource(R.string.adv_app_list_title)) },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
+                    }
+                },
+                actions = {
+                    IconButton(onClick = { reload++ }) {
                         Icon(
-                            Icons.Default.Search,
-                            contentDescription = null,
-                            modifier = Modifier
-                                .thenIfNotNull(animatedVisibilityScope) {
-                                    sharedBounds(
-                                        sharedContentState = rememberSharedContentState("OPEN_APP_LIST_ICON"),
-                                        animatedVisibilityScope = it,
-                                    )
-                                }
-                                .size(24.dp),
+                            painterResource(R.drawable.refresh_24px),
+                            stringResource(R.string.refresh),
                         )
+                    }
+                },
+            )
+        }
+    ) { padding ->
+        ReadingPane(Modifier.padding(padding)) {
+            Column {
+                OutlinedTextField(
+                    query,
+                    { query = it },
+                    singleLine = true,
+                    placeholder = { Text(stringResource(R.string.search_apps)) },
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                    trailingIcon = {
+                        if (query.isNotEmpty())
+                            TextButton(onClick = { query = "" }) {
+                                Text(stringResource(R.string.clear))
+                            }
                     },
                 )
-            }
-        },
-        content = { padding ->
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .navContentTransition(animatedVisibilityScope),
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding)
+                FlowRow(
+                    Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
-                    if (data == null) LoadingIndicator(
-                        modifier = Modifier
-                            .align(Alignment.Center)
-                            .size(55.dp)
-                    )
-                    else AppList(
-                        apps = data!!,
-                        checkedApps = checkedApps,
-                        filter = textFieldState.text
-                    )
+                    listOf(
+                            "all" to R.string.apps_all,
+                            "user" to R.string.apps_user,
+                            "selected" to R.string.apps_selected,
+                            "system" to R.string.apps_system,
+                        )
+                        .forEach { (id, label) ->
+                            FilterChip(
+                                selected = filter == id,
+                                onClick = { filter = id },
+                                label = { Text(stringResource(label)) },
+                            )
+                        }
+                }
+                Text(
+                    stringResource(R.string.apps_selection_summary, selected.size, visible.size),
+                    Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Text(
+                    stringResource(R.string.settings_reconnect_hint),
+                    Modifier.padding(horizontal = 24.dp, vertical = 4.dp),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                when {
+                    error != null ->
+                        Column(Modifier.padding(24.dp)) {
+                            Text(error!!, color = MaterialTheme.colorScheme.error)
+                            Button(onClick = { reload++ }) { Text(stringResource(R.string.retry)) }
+                        }
+                    apps == null ->
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator()
+                        }
+                    visible.isEmpty() ->
+                        Column(Modifier.padding(24.dp)) {
+                            Text(
+                                stringResource(R.string.apps_no_results),
+                                style = MaterialTheme.typography.titleMedium,
+                            )
+                            TextButton(
+                                onClick = {
+                                    query = ""
+                                    filter = "all"
+                                }
+                            ) {
+                                Text(stringResource(R.string.reset_filters))
+                            }
+                        }
+                    else ->
+                        LazyColumn(contentPadding = PaddingValues(bottom = 24.dp)) {
+                            items(visible, key = { it.packageName }) { app ->
+                                val checked = app.packageName in selected
+                                val icon by
+                                    produceState<android.graphics.Bitmap?>(null, app.packageName) {
+                                        value = repository.icon(app.packageName)
+                                    }
+                                ListItem(
+                                    modifier =
+                                        Modifier.toggleable(checked, role = Role.Checkbox) { enabled
+                                            ->
+                                            val next =
+                                                selected.toMutableSet().apply {
+                                                    if (enabled) add(app.packageName)
+                                                    else remove(app.packageName)
+                                                }
+                                            MainApplication.settings.set(
+                                                Settings.applications,
+                                                next,
+                                            )
+                                        },
+                                    colors =
+                                        ListItemDefaults.colors(
+                                            containerColor =
+                                                if (checked)
+                                                    MaterialTheme.colorScheme.secondaryContainer
+                                                else MaterialTheme.colorScheme.surface
+                                        ),
+                                    headlineContent = {
+                                        Text(
+                                            app.name,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                        )
+                                    },
+                                    supportingContent = {
+                                        Text(
+                                            app.packageName,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                        )
+                                    },
+                                    leadingContent = {
+                                        Box(Modifier.size(40.dp)) {
+                                            icon?.let {
+                                                Image(
+                                                    it.asImageBitmap(),
+                                                    null,
+                                                    Modifier.fillMaxSize(),
+                                                )
+                                            }
+                                        }
+                                    },
+                                    trailingContent = { Checkbox(checked, onCheckedChange = null) },
+                                )
+                            }
+                        }
                 }
             }
         }
-    )
-}
-
-@Composable
-@Preview
-fun AppList(
-    modifier: Modifier = Modifier,
-    checkedApps: SnapshotStateSet<String> = SnapshotStateSet(),
-    apps: MutableList<AppListData> = mutableListOf(
-        AppListData(
-            "test",
-            "com.example.test",
-            appIcon = null,
-            false
-        ),
-        AppListData(
-            "test",
-            "com.example.test",
-            appIcon = null,
-            false
-        )
-    ),
-    filter: CharSequence? = null
-) {
-    val filteredApps = remember(apps, filter) {
-        if (filter.isNullOrBlank()) {
-            apps
-        } else {
-            apps.filter { app ->
-                app.packageName.contains(filter, ignoreCase = true) ||
-                        app.appName.contains(filter, ignoreCase = true)
-            }
-        }
-    }
-
-    val statusBarHeight = WindowInsets.statusBars
-        .getTop(LocalDensity.current)
-
-    LazyColumn(
-        modifier = modifier
-            .fillMaxSize(),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-        contentPadding = PaddingValues(bottom = 16.dp, top = statusBarHeight.dp)
-    ) {
-        items(filteredApps) { app ->
-            Card(
-                modifier = Modifier
-                    .padding(horizontal = 6.dp)
-            ) {
-                AppListItem(app, onClick = {
-                    if (checkedApps.contains(app.packageName)) checkedApps.remove(app.packageName)
-                    else checkedApps.add(app.packageName)
-                }, checkedApps = checkedApps)
-            }
-        }
-    }
-
-
-}
-
-@Composable
-@Preview
-fun AppListItem(
-    app: AppListData = AppListData(
-        "test",
-        "com.example.test",
-        null,
-        false
-    ),
-    checkedApps: SnapshotStateSet<String> = SnapshotStateSet(),
-    onClick: () -> Unit = {}
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() }
-            .heightIn(min = 48.dp)
-            .background(MaterialTheme.colorScheme.primaryContainer),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        if (app.appIcon != null) Image(
-            bitmap = remember(app.appIcon) {
-                app.appIcon.toBitmap(height = 128, width = 128).asImageBitmap()
-            },
-            contentDescription = null,
-            modifier = Modifier
-                .size(60.dp)
-                .padding(8.dp)
-        )
-
-        Column(
-            modifier = Modifier
-                .weight(1f)
-                .padding(horizontal = 8.dp),
-            verticalArrangement = Arrangement.Center
-        ) {
-            Text(
-                text = app.appName,
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
-            )
-            Text(
-                text = app.packageName,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
-            )
-        }
-
-        Checkbox(
-            checked = checkedApps.contains(app.packageName),
-            onCheckedChange = null,
-            enabled = false,
-            modifier = Modifier
-                .padding(start = 2.dp, end = 20.dp)
-        )
     }
 }

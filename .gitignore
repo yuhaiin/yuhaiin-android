@@ -17,3 +17,6 @@ app/release/
 /yuhaiin/yuhaiin-sources.jar
 /yuhaiin/build_local.sh
 *.keystore
+/benchmark/build
+/.kotlin
+/app/src/release

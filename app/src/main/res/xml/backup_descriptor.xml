@@ -1,12 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <full-backup-content>
-    <include
-        domain="database"
-        path="." />
-    <include
-        domain="file"
-        path="." />
-    <exclude
-        domain="file"
-        path="./yuhaiin/log" />
+    <include domain="external" path="yuhaiin/" />
+    <include domain="file" path="." />
+    <include domain="database" path="." />
+    <include domain="sharedpref" path="." />
+    <exclude domain="external" path="yuhaiin/log/" />
+    <exclude domain="external" path="yuhaiin/cache/" />
+    <exclude domain="external" path="yuhaiin/pebble_cache/" />
+    <exclude domain="file" path="yuhaiin/log/" />
+    <exclude domain="file" path="yuhaiin/cache/" />
+    <exclude domain="file" path="yuhaiin/pebble_cache/" />
+    <exclude domain="sharedpref" path="software_update.xml" />
+    <exclude domain="sharedpref" path="yuhaiin_document_provider_ids.xml" />
 </full-backup-content>
