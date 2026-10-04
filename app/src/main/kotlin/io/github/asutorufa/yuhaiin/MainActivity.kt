@@ -52,8 +52,9 @@ class MainActivity : AppCompatActivity() {
         if (serviceBound) {
             runCatching { vpnBinder?.unregisterCallback(vpnCallback) }
                 .onFailure { Log.w("MainActivity", "failed to unregister VPN callback", it) }
+            // Keep UpdateManager's Binder reference alive so an in-flight update can
+            // finish after the Activity moves to the background.
             vpnBinder = null
-            MainApplication.updateManager.setProxyBinder(null)
 
             runCatching { unbindService(mConnection) }
                 .onFailure { Log.w("MainActivity", "failed to unbind VPN service", it) }
