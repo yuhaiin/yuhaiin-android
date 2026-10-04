@@ -37,20 +37,32 @@ class BootReceiver : BroadcastReceiver() {
     }
 
     override fun onReceive(context: Context, intent: Intent) {
-        val autoConnect = MainApplication.store.getBoolean(Constants.AUTO_CONNECT_KEY)
+        val action = intent.action ?: return
         if (
-            Intent.ACTION_BOOT_COMPLETED == intent.action
-            && autoConnect
-            && shouldAutoConnect(context)
-            && VpnService.prepare(context) == null
+            action != Intent.ACTION_BOOT_COMPLETED &&
+            action != Intent.ACTION_MY_PACKAGE_REPLACED
         ) {
-            Log.d(tag, "starting VPN service on boot")
-            ContextCompat.startForegroundService(
-                context,
-                Intent(context, YuhaiinVpnService::class.java)
-            )
-        } else if (Intent.ACTION_BOOT_COMPLETED == intent.action && autoConnect) {
-            Log.d(tag, "skipping VPN service start on boot due to boot connect policy")
+            return
         }
+
+        if (!MainApplication.store.getBoolean(Constants.AUTO_CONNECT_KEY)) {
+            return
+        }
+
+        if (!shouldAutoConnect(context)) {
+            Log.d(tag, "skipping VPN auto-connect for $action due to connect policy")
+            return
+        }
+
+        if (VpnService.prepare(context) != null) {
+            Log.d(tag, "skipping VPN auto-connect for $action because permission is unavailable")
+            return
+        }
+
+        Log.d(tag, "starting VPN service for $action")
+        ContextCompat.startForegroundService(
+            context,
+            Intent(context, YuhaiinVpnService::class.java),
+        )
     }
 }

@@ -31,6 +31,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -109,6 +110,7 @@ class YuhaiinVpnService : VpnService() {
     private var runtimeOwned = false
     private var mInterface: ParcelFileDescriptor? = null
     private var underlyingNetworkCallbackRegistered = false
+    private var currentUnderlyingNetwork: Network? = null
     private val notification by lazy { application.getSystemService<NotificationManager>()!! }
     private val app = App()
 
@@ -136,6 +138,19 @@ class YuhaiinVpnService : VpnService() {
 
         (application as MainApplication).connectivity.unregisterNetworkCallback(defaultNetworkCallback)
         underlyingNetworkCallbackRegistered = false
+        currentUnderlyingNetwork = null
+    }
+
+    private fun updateUnderlyingNetwork(network: Network?) {
+        currentUnderlyingNetwork = network
+        if (mInterface == null) return
+
+        val applied = this@YuhaiinVpnService.setUnderlyingNetworks(
+            network?.let { arrayOf(it) }
+        )
+        if (!applied) {
+            Log.w(tag, "failed to update VPN underlying network")
+        }
     }
 
     private fun notificationBuilder(): NotificationCompat.Builder {
@@ -199,18 +214,26 @@ class YuhaiinVpnService : VpnService() {
     private val defaultNetworkCallback: ConnectivityManager.NetworkCallback =
         object : ConnectivityManager.NetworkCallback() {
             override fun onAvailable(network: Network) {
-                setUnderlyingNetworks(arrayOf(network))
+                serviceScope.launch {
+                    updateUnderlyingNetwork(network)
+                }
             }
 
             override fun onCapabilitiesChanged(
                 network: Network,
                 networkCapabilities: NetworkCapabilities
             ) {
-                setUnderlyingNetworks(arrayOf(network))
+                serviceScope.launch {
+                    updateUnderlyingNetwork(network)
+                }
             }
 
             override fun onLost(network: Network) {
-                setUnderlyingNetworks(null)
+                serviceScope.launch {
+                    if (currentUnderlyingNetwork == network) {
+                        updateUnderlyingNetwork(null)
+                    }
+                }
             }
         }
 
@@ -229,9 +252,31 @@ class YuhaiinVpnService : VpnService() {
         Log.d(tag, "stopping VPN: ${reason.name}")
         transitionTo(State.DISCONNECTING)
 
+        // Closing the TUN first unblocks native TUN setup/read paths that may
+        // already be using the Android-owned descriptor.
+        val tun = mInterface
+        mInterface = null
+        runCatching { tun?.close() }
+            .onFailure { Log.w(tag, "failed to close VPN interface", it) }
+
+        // Stop concurrently with coroutine cancellation. The Go wrapper signals
+        // its in-flight Start before waiting for its lifecycle mutex, so this can
+        // interrupt startup instead of waiting behind it.
+        val runtimeStop = if (runtimeOwned) {
+            runtimeOwned = false
+            serviceScope.async(Dispatchers.IO) {
+                runCatching { app.stop() }
+            }
+        } else {
+            null
+        }
+
         val job = startupJob
         startupJob = null
         job?.cancelAndJoin()
+
+        runtimeStop?.await()
+            ?.onFailure { Log.w(tag, "failed to stop VPN runtime", it) }
 
         cleanupResources()
         stopForegroundIfNeeded()
@@ -245,20 +290,6 @@ class YuhaiinVpnService : VpnService() {
     }
 
     private suspend fun cleanupResources() {
-        val tun = mInterface
-        mInterface = null
-        runCatching { tun?.close() }
-            .onFailure { Log.w(tag, "failed to close VPN interface", it) }
-
-        if (runtimeOwned) {
-            runtimeOwned = false
-            runCatching {
-                withContext(Dispatchers.IO) {
-                    app.stop()
-                }
-            }.onFailure { Log.w(tag, "failed to stop VPN runtime", it) }
-        }
-
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             runCatching { unregisterUnderlyingNetworkCallback() }
                 .onFailure { Log.w(tag, "failed to unregister underlying network callback", it) }
@@ -399,9 +430,15 @@ class YuhaiinVpnService : VpnService() {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && shouldRegisterUnderlyingNetworkCallback()) {
                 (application as MainApplication).connectivity.requestNetwork(
                     defaultNetworkRequest,
-                    defaultNetworkCallback
+                    defaultNetworkCallback,
                 )
                 underlyingNetworkCallbackRegistered = true
+
+                // A callback may have arrived before the VPN interface exists. Seed the
+                // Builder with the latest known network; later changes use VpnService API.
+                currentUnderlyingNetwork?.let {
+                    setUnderlyingNetworks(arrayOf(it))
+                }
             }
 
             val httpProxy = MainApplication.store.getInt("http_port")
@@ -415,6 +452,9 @@ class YuhaiinVpnService : VpnService() {
 
 
             mInterface = establish() ?: error("failed to establish VPN interface")
+            if (underlyingNetworkCallbackRegistered) {
+                updateUnderlyingNetwork(currentUnderlyingNetwork)
+            }
         }
     }
 

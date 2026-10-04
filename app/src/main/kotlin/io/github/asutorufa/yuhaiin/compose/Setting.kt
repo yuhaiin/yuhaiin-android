@@ -195,39 +195,62 @@ fun SharedTransitionScope.SettingCompose(
                     )
                 }
 
-                val canStart = vpnState == State.DISCONNECTED || vpnState == State.ERROR
-                val canStop = vpnState == State.CONNECTED || vpnState == State.CONNECTING
-                if (canStart || canStop)
-                    FloatingActionButtonMenuItem(
+                when (vpnState) {
+                    State.DISCONNECTED, State.ERROR -> FloatingActionButtonMenuItem(
                         modifier = Modifier.semantics {
                             isTraversalGroup = true
                         },
-                        onClick = {
-                            if (canStart) startService()
-                            else stopService()
-                        },
+                        onClick = startService,
                         text = {
+                            Text(text = stringResource(R.string.Connect))
+                        },
+                        icon = {
                             Icon(
-                                painter = painterResource(
-                                    if (canStop) R.drawable.stop else R.drawable.play_arrow
-                                ),
+                                painter = painterResource(R.drawable.play_arrow),
+                                contentDescription = null,
+                                modifier = Modifier.size(30.dp)
+                            )
+                        },
+                    )
+
+                    State.CONNECTING -> FloatingActionButtonMenuItem(
+                        modifier = Modifier.semantics {
+                            isTraversalGroup = true
+                        },
+                        onClick = stopService,
+                        text = {
+                            Text(text = stringResource(R.string.Stop))
+                        },
+                        icon = {
+                            ContainedLoadingIndicator(
+                                modifier = Modifier.size(30.dp)
+                            )
+                        },
+                    )
+
+                    State.CONNECTED -> FloatingActionButtonMenuItem(
+                        modifier = Modifier.semantics {
+                            isTraversalGroup = true
+                        },
+                        onClick = stopService,
+                        text = {
+                            Text(text = stringResource(R.string.Stop))
+                        },
+                        icon = {
+                            Icon(
+                                painter = painterResource(R.drawable.stop),
                                 contentDescription = null,
                                 modifier = Modifier
                                     .size(30.dp)
                                     .rotate(rotation)
                             )
-                            Text(
-                                text = if (canStop) stringResource(R.string.Stop) else stringResource(
-                                    R.string.Connect
-                                )
-                            )
-
                         },
-                        icon = {}
                     )
-                else ContainedLoadingIndicator(
-                    modifier = Modifier.size(60.dp)
-                )
+
+                    State.DISCONNECTING -> ContainedLoadingIndicator(
+                        modifier = Modifier.size(60.dp)
+                    )
+                }
             }
         },
         content = { padding ->

@@ -8,6 +8,7 @@ import android.os.ParcelFileDescriptor
 import android.provider.DocumentsContract
 import android.provider.DocumentsContract.Root
 import android.provider.DocumentsProvider
+import android.util.Log
 import android.webkit.MimeTypeMap
 import io.github.asutorufa.yuhaiin.BuildConfig
 import io.github.asutorufa.yuhaiin.R
@@ -60,6 +61,11 @@ class YuhaiinDocumentProvider : DocumentsProvider() {
         providerContext.getSharedPreferences(DOCUMENT_ID_PREFS, Context.MODE_PRIVATE)
     }
     private val documentIdLock = Any()
+
+    private data class DeletionEntry(
+        val relativePath: String,
+        val permissionIds: Set<String>,
+    )
 
     override fun onCreate(): Boolean = baseDir.isDirectory || baseDir.mkdirs()
 
@@ -271,19 +277,6 @@ class YuhaiinDocumentProvider : DocumentsProvider() {
         }
     }
 
-    private fun removeDocumentIdsUnder(relativePath: String) {
-        synchronized(documentIdLock) {
-            val editor = documentIds.edit()
-            documentIds.all.forEach { (key, value) ->
-                if (!key.startsWith(ID_KEY_PREFIX) || value !is String) return@forEach
-                if (value != relativePath && !value.startsWith("$relativePath/")) return@forEach
-                editor.remove(key)
-                editor.remove(pathKey(value))
-            }
-            editor.apply()
-        }
-    }
-
     private fun getMimeType(file: File): String {
         if (file.isDirectory) return DocumentsContract.Document.MIME_TYPE_DIR
         val extension = file.name.substringAfterLast('.', "").lowercase(Locale.ROOT)
@@ -444,21 +437,22 @@ class YuhaiinDocumentProvider : DocumentsProvider() {
         val file = getFileForDocId(requestedId)
         if (file == canonicalBaseDir) throw FileNotFoundException("Cannot delete the root document")
 
-        val relativePath = relativePathOf(file)
-        val revokeIds = collectDocumentIdsForDeletion(file)
+        val entries = collectDocumentsForDeletion(file)
+        val deletedPaths = LinkedHashSet<String>()
         val parent = file.parentFile
+        val deletedAll = deleteFileTree(file, deletedPaths)
 
-        if (!deleteFileTree(file)) {
-            throw FileNotFoundException("Failed to delete document $requestedId")
+        cleanupDeletedDocuments(entries, deletedPaths)
+        if (deletedPaths.isNotEmpty()) {
+            notifyChanged(parent)
         }
 
-        // The framework revokes requestedId after return; descendants are our responsibility.
-        revokeIds.forEach(::revokeDocumentPermission)
-        removeDocumentIdsUnder(relativePath)
-        notifyChanged(parent)
+        if (!deletedAll) {
+            throw FileNotFoundException("Failed to delete document $requestedId")
+        }
     }
 
-    private fun deleteFileTree(file: File): Boolean {
+    private fun deleteFileTree(file: File, deletedPaths: MutableSet<String>): Boolean {
         if (file.isDirectory) {
             val children = file.listFiles() ?: return false
             for (child in children) {
@@ -466,16 +460,20 @@ class YuhaiinDocumentProvider : DocumentsProvider() {
                 if (canonicalChild == null) {
                     // A symlink or otherwise non-canonical entry: delete the entry only.
                     if (!child.delete()) return false
-                } else if (!deleteFileTree(canonicalChild)) {
+                    deletedPaths.add(child.absoluteFile.path)
+                } else if (!deleteFileTree(canonicalChild, deletedPaths)) {
                     return false
                 }
             }
         }
-        return file.delete()
+
+        if (!file.delete()) return false
+        deletedPaths.add(file.path)
+        return true
     }
 
-    private fun collectDocumentIdsForDeletion(root: File): Set<String> {
-        val result = LinkedHashSet<String>()
+    private fun collectDocumentsForDeletion(root: File): Map<String, DeletionEntry> {
+        val result = LinkedHashMap<String, DeletionEntry>()
         val pending = ArrayDeque<File>()
         val visited = HashSet<String>()
         pending.add(root)
@@ -489,12 +487,55 @@ class YuhaiinDocumentProvider : DocumentsProvider() {
             }
             if (!visited.add(file.path)) continue
 
-            result.add(getDocIdForFile(file))
-            result.add(file.path) // Revoke grants issued by path-based older versions.
+            result[file.path] = DeletionEntry(
+                relativePath = relativePathOf(file),
+                permissionIds = linkedSetOf(
+                    getDocIdForFile(file),
+                    file.path, // Grants issued by path-based older versions.
+                ),
+            )
 
             if (file.isDirectory) file.listFiles()?.forEach(pending::addLast)
         }
         return result
+    }
+
+    private fun cleanupDeletedDocuments(
+        entries: Map<String, DeletionEntry>,
+        deletedPaths: Set<String>,
+    ) {
+        if (deletedPaths.isEmpty()) return
+
+        val relativePaths = LinkedHashSet<String>()
+        deletedPaths.forEach { path ->
+            val entry = entries[path] ?: return@forEach
+            relativePaths.add(entry.relativePath)
+            entry.permissionIds.forEach { documentId ->
+                runCatching { revokeDocumentPermission(documentId) }
+                    .onFailure {
+                        Log.w("YuhaiinDocumentProvider", "failed to revoke $documentId", it)
+                    }
+            }
+        }
+        removeDocumentIds(relativePaths)
+    }
+
+    private fun removeDocumentIds(relativePaths: Set<String>) {
+        if (relativePaths.isEmpty()) return
+
+        synchronized(documentIdLock) {
+            val editor = documentIds.edit()
+            documentIds.all.forEach { (key, value) ->
+                if (!key.startsWith(ID_KEY_PREFIX) || value !is String) return@forEach
+                if (value !in relativePaths) return@forEach
+
+                editor.remove(key)
+                editor.remove(pathKey(value))
+            }
+            if (!editor.commit()) {
+                Log.w("YuhaiinDocumentProvider", "failed to persist deleted document ids")
+            }
+        }
     }
 
     private fun resolveCreateDisplayName(mimeType: String?, displayName: String?): String {
