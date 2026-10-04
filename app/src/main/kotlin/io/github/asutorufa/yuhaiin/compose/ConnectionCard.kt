@@ -53,7 +53,7 @@ fun ConnectionCard(
                     color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.bodyMedium,
                 )
-            if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
+            if (busy) MaterialLinearProgressIndicator()
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Button(onClick = if (state == State.CONNECTED) stop else start, enabled = !busy) {
                     Text(

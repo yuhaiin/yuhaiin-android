@@ -43,12 +43,15 @@ fun AppListComponent(onBack: () -> Unit) {
     }
     val visible =
         remember(apps, query, filter, selected) {
-            apps.orEmpty().filter { app ->
-                (filter != "selected" || app.packageName in selected) &&
-                    (filter != "system" || app.system) &&
-                    (filter != "user" || !app.system) &&
-                    (app.name.contains(query, true) || app.packageName.contains(query, true))
-            }
+            apps
+                .orEmpty()
+                .filter { app ->
+                    (filter != "selected" || app.packageName in selected) &&
+                        (filter != "system" || app.system) &&
+                        (filter != "user" || !app.system) &&
+                        (app.name.contains(query, true) || app.packageName.contains(query, true))
+                }
+                .sortedBy { it.packageName !in selected }
         }
     Scaffold(
         topBar = {
@@ -123,7 +126,7 @@ fun AppListComponent(onBack: () -> Unit) {
                         }
                     apps == null ->
                         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            CircularProgressIndicator()
+                            MaterialLoadingIndicator()
                         }
                     visible.isEmpty() ->
                         Column(Modifier.padding(24.dp)) {

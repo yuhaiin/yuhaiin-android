@@ -23,6 +23,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import io.github.asutorufa.yuhaiin.R
+import io.github.asutorufa.yuhaiin.compose.MaterialLinearProgressIndicator
 import io.github.asutorufa.yuhaiin.compose.copyText
 import io.github.asutorufa.yuhaiin.compose.routeLabel
 import kotlinx.coroutines.Dispatchers
@@ -130,7 +131,7 @@ fun SharedTransitionScope.RouteEditScreen(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(bottom = 8.dp),
             )
-            if (draft.validating) LinearProgressIndicator(Modifier.fillMaxWidth())
+            if (draft.validating) MaterialLinearProgressIndicator()
             val error = draft.failure ?: importingError
             if (error != null) Text(error, color = MaterialTheme.colorScheme.error)
             draft.invalidLine?.let {

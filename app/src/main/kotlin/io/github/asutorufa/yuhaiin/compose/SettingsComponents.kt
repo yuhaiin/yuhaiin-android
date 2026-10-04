@@ -2,20 +2,19 @@ package io.github.asutorufa.yuhaiin.compose
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.toggleable
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.painter.Painter
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import io.github.asutorufa.yuhaiin.R
 import io.github.asutorufa.yuhaiin.data.SettingKey
 
 @Suppress("UNCHECKED_CAST")
@@ -65,6 +64,7 @@ fun SwitchSetting(
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ListPreferenceSetting(
     title: String,
@@ -74,37 +74,44 @@ fun ListPreferenceSetting(
     onSelectedChange: (String) -> Unit,
 ) {
     var expanded by rememberSaveable { mutableStateOf(false) }
-    SettingsItem(title, entries[selected] ?: selected, icon) { expanded = true }
-    if (expanded)
-        AlertDialog(
-            onDismissRequest = { expanded = false },
-            title = { Text(title) },
-            text = {
-                Column(Modifier.heightIn(max = 400.dp).verticalScroll(rememberScrollState())) {
-                    entries.forEach { (key, label) ->
-                        Row(
-                            Modifier.fillMaxWidth()
-                                .selectable(
-                                    selected == key,
-                                    role = Role.RadioButton,
-                                    onClick = {
-                                        onSelectedChange(key)
-                                        expanded = false
-                                    },
-                                )
-                                .padding(vertical = 12.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            RadioButton(selected == key, onClick = null)
-                            Text(label, Modifier.padding(start = 12.dp))
-                        }
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { expanded = false }) { Text(stringResource(R.string.close)) }
-            },
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = it },
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+    ) {
+        OutlinedTextField(
+            value = entries[selected] ?: selected,
+            onValueChange = {},
+            readOnly = true,
+            singleLine = true,
+            label = { Text(title) },
+            leadingIcon = icon?.let { { Icon(it, contentDescription = null) } },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
+            modifier =
+                Modifier.menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
+                    .fillMaxWidth(),
         )
+        ExposedDropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+        ) {
+            entries.forEach { (key, label) ->
+                val isSelected = selected == key
+                DropdownMenuItem(
+                    text = { Text(label) },
+                    onClick = {
+                        expanded = false
+                        onSelectedChange(key)
+                    },
+                    trailingIcon = {
+                        if (isSelected) Icon(Icons.Default.Check, contentDescription = null)
+                    },
+                    contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding,
+                    modifier = Modifier.semantics { this.selected = isSelected },
+                )
+            }
+        }
+    }
 }
 
 @Composable

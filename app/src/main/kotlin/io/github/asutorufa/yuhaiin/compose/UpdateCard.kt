@@ -10,11 +10,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -106,9 +105,9 @@ fun UpdateCard(
 
                 Button(onClick = manager::check, enabled = !busy && proxyReady) {
                     if (state.checking) {
-                        CircularProgressIndicator(
-                            strokeWidth = 2.dp,
-                            modifier = Modifier.padding(end = 8.dp).size(18.dp),
+                        MaterialLoadingIndicator(
+                            color = LocalContentColor.current,
+                            modifier = Modifier.padding(end = 8.dp).size(24.dp),
                         )
                     } else {
                         Icon(
@@ -153,10 +152,7 @@ fun UpdateCard(
             ) {
                 Text(updateStageLabel(state), style = MaterialTheme.typography.bodyMedium)
                 if (state.stage == UpdateStage.DOWNLOADING && state.totalBytes > 0) {
-                    LinearProgressIndicator(
-                        progress = { state.progress / 100f },
-                        modifier = Modifier.fillMaxWidth(),
-                    )
+                    MaterialLinearProgressIndicator(progress = state.progress / 100f)
                     Text(
                         stringResource(
                             R.string.update_progress,
@@ -168,17 +164,14 @@ fun UpdateCard(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 } else if (state.stage == UpdateStage.DOWNLOADING) {
-                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                    MaterialLinearProgressIndicator()
                     Text(
                         stringResource(R.string.update_downloading_proxy),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 } else if (state.totalBytes > 0) {
-                    LinearProgressIndicator(
-                        progress = { state.progress / 100f },
-                        modifier = Modifier.fillMaxWidth(),
-                    )
+                    MaterialLinearProgressIndicator(progress = state.progress / 100f)
                     Text(
                         stringResource(
                             R.string.update_progress,
@@ -190,7 +183,7 @@ fun UpdateCard(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 } else {
-                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                    MaterialLinearProgressIndicator()
                 }
             }
 

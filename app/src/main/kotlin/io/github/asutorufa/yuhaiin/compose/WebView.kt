@@ -256,7 +256,7 @@ fun WebViewComponent(onBack: () -> Unit, getPort: () -> Int) {
                         modifier = Modifier.fillMaxSize(),
                     )
                 }
-            if (loading && error == null) LinearProgressIndicator(Modifier.fillMaxWidth())
+            if (loading && error == null) MaterialLinearProgressIndicator()
             if (error != null || port == 0)
                 Surface(Modifier.fillMaxSize()) {
                     Column(
