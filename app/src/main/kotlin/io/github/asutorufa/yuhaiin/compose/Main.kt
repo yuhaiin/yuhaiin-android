@@ -25,7 +25,6 @@ import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.awaitDispose
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
@@ -46,6 +45,7 @@ import io.github.asutorufa.yuhaiin.compose.route.RouteConfigScreen
 import io.github.asutorufa.yuhaiin.compose.route.RouteEditScreen
 import io.github.asutorufa.yuhaiin.service.YuhaiinVpnService.Companion.State
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -154,7 +154,9 @@ fun Main(activity: MainActivity) {
                             refreshRequests.trySend(Unit)
                             connectivity.registerDefaultNetworkCallback(networkCallback)
 
-                            awaitDispose {
+                            try {
+                                awaitCancellation()
+                            } finally {
                                 runCatching {
                                     connectivity.unregisterNetworkCallback(networkCallback)
                                 }
