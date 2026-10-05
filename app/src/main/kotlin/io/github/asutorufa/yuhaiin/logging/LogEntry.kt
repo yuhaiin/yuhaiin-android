@@ -69,7 +69,7 @@ fun parseLogv2(line: String): LogEntry {
 }
 
 /** Bounded independently of Compose and safe for a producer and a UI/export consumer. */
-class LogBuffer(private val capacity: Int = 2000) {
+class LogBuffer(private val capacity: Int = LOG_HISTORY_CAPACITY) {
     private val entries = java.util.ArrayDeque<LogEntry>()
 
     @Synchronized

@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.asStateFlow
  */
 class LogViewModel : ViewModel() {
     val buffer = LogBuffer()
+    internal val cursor = LogcatCursor()
     private val _entries = MutableStateFlow(emptyList<LogEntry>())
     val entries = _entries.asStateFlow()
 
