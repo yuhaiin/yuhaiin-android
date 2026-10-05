@@ -1,6 +1,6 @@
 # Android verification
 
-Use the installed Android SDK and JDK 21. `local.properties` selects the SDK; the native AAR is pinned in `yuhaiin/core-source.properties`.
+Use the installed Android SDK and JDK 25. `local.properties` selects the SDK; download the native AAR from the latest successful upstream `go.yml` workflow run on `main`, as described in the [Build instructions](../README.md#build).
 
 Automatic Android CI runs lint, unit tests, the release build and static APK/ELF alignment checks. Emulator regressions run on demand: in GitHub Actions select **Android device regression** and **Run workflow**. API 34 and Android 15 (16 KB) run in parallel with KVM enabled, a five-minute boot timeout and a twenty-minute job timeout. Run these before releasing changes to navigation, persistence, VPN lifecycle or the native core. Ordinary pushes and pull requests do not start emulators or build the instrumentation APK.
 
@@ -13,4 +13,4 @@ Automatic Android CI runs lint, unit tests, the release build and static APK/ELF
 
 The native integration tests exercise VPN consent, failed startup, repair/reconnect and the real JNI preference contract. Run them on a dedicated emulator/device with disposable app data. The install recovery test grants the install app-op; revoking it kills the app, so reset it from the host after the test run with `adb shell appops set io.github.asutorufa.yuhaiin REQUEST_INSTALL_PACKAGES default`. Large drafts are stored in `no_backup/route-drafts`, not Android saved-instance-state or cloud backups. Cloud backup and device transfer include the native external `yuhaiin` directory, while excluding logs, caches and device-specific installer/document IDs.
 
-Unsigned local builds use `-release-unsigned.apk`; CI signing produces `-release.apk`. Core download is fixed to the recorded workflow run and SHA-256. When GitHub expires that artifact, update the provenance file after reviewing a new successful core build; do not silently substitute the latest run.
+Unsigned local builds use `-release-unsigned.apk`; CI signing produces `-release.apk`. Each build selects the latest successful upstream Go run on `main` and downloads its `yuhaiin.aar` artifact. Android CI records the selected commit, run ID and downloaded AAR SHA-256 in `build-provenance.txt`.

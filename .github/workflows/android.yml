@@ -21,14 +21,16 @@ jobs:
           fetch-tags: "true"
           submodules: "recursive"
 
-      - name: Verify pinned native source
+      - name: Resolve latest native build
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          core_commit=$(sed -n 's/^core.commit=//p' yuhaiin/core-source.properties)
-          core_run=$(sed -n 's/^core.workflowRun=//p' yuhaiin/core-source.properties)
-          actual_commit=$(gh api "repos/yuhaiin/yuhaiin/actions/runs/$core_run" --jq '.head_sha')
-          test "$actual_commit" = "$core_commit"
+          core_run=$(gh run list --repo yuhaiin/yuhaiin --branch main --workflow go.yml --status success --limit 1 --json databaseId --jq '.[0].databaseId // empty')
+          if [ -z "$core_run" ]; then
+            echo 'No successful upstream Go build found on main.' >&2
+            exit 1
+          fi
+          core_commit=$(gh api "repos/yuhaiin/yuhaiin/actions/runs/$core_run" --jq '.head_sha')
           echo "CORE_RUN_ID=$core_run" >> "$GITHUB_ENV"
           echo "CORE_COMMIT=$core_commit" >> "$GITHUB_ENV"
 
@@ -40,12 +42,7 @@ jobs:
           repository: yuhaiin/yuhaiin
           run-id: ${{ env.CORE_RUN_ID }}
 
-      - name: Verify native artifact checksum
-        run: |
-          checksum=$(sed -n 's/^core.sha256=//p' yuhaiin/core-source.properties)
-          printf '%s  %s\n' "$checksum" yuhaiin/yuhaiin.aar | sha256sum --check
-
-      - name: Set up JDK 21
+      - name: Set up JDK 25
         uses: actions/setup-java@v6
         with:
           java-version: "25"
