@@ -25,16 +25,16 @@ git clone https://github.com/Asutorufa/yuhaiin-android.git
 cd yuhaiin-android
 ```
 
-Download the native AAR from the latest successful `go.yml` workflow run on the upstream `main` branch, using an authenticated GitHub CLI (`gh auth login`). CI selects the same way:
+Download the latest available native AAR from a successful upstream `go.yml` build on `main`, using an authenticated GitHub CLI (`gh auth login`). The shared resolver selects published AAR artifacts and verifies their individual workflow runs, avoiding stale results from GitHub's workflow-run listing API. CI uses the same resolver:
 
 ```bash
 set -e
-core_run=$(gh run list --repo yuhaiin/yuhaiin --branch main --workflow go.yml --status success --limit 1 --json databaseId --jq '.[0].databaseId // empty')
-test -n "$core_run"
+core_source=$(bash scripts/resolve-latest-core.sh)
+core_run=$(printf '%s\n' "$core_source" | sed -n 's/^CORE_RUN_ID=//p')
 gh run download "$core_run" --repo yuhaiin/yuhaiin --name yuhaiin.aar --dir yuhaiin
 ```
 
-Android CI records the selected upstream commit, workflow run and downloaded AAR checksum in `build-provenance.txt`. See [Android verification](scripts/README.md) for more details.
+Android CI downloads the selected artifact by ID and records its upstream commit, workflow run, artifact ID and AAR checksum in `build-provenance.txt`. See [Android verification](scripts/README.md) for more details.
 
 Run lint and unit tests, then build the release APKs:
 

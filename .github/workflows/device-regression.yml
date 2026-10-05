@@ -29,17 +29,11 @@ jobs:
       - name: Resolve latest native build
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          core_run=$(gh run list --repo yuhaiin/yuhaiin --branch main --workflow go.yml --status success --limit 1 --json databaseId --jq '.[0].databaseId // empty')
-          if [ -z "$core_run" ]; then
-            echo 'No successful upstream Go build found on main.' >&2
-            exit 1
-          fi
-          echo "CORE_RUN_ID=$core_run" >> "$GITHUB_ENV"
+        run: bash scripts/resolve-latest-core.sh >> "$GITHUB_ENV"
 
       - uses: actions/download-artifact@v8
         with:
-          name: yuhaiin.aar
+          artifact-ids: ${{ env.CORE_ARTIFACT_ID }}
           path: yuhaiin
           github-token: ${{ secrets.GITHUB_TOKEN }}
           repository: yuhaiin/yuhaiin
