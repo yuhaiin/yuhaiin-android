@@ -48,7 +48,7 @@ fun LogcatCompose(excludeList: ArrayList<String>? = null, onBack: () -> Unit) {
     LaunchedEffect(lifecycle) {
         lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
             runCatching {
-                readLogcat(excludeList.orEmpty()) { batch ->
+                readLogcat(excludeList.orEmpty(), model.cursor) { batch ->
                     val current = buffer.append(batch)
                     if (!currentlyPaused) model.publish(current)
                 }
