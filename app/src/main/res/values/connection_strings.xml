@@ -23,4 +23,9 @@
     <string name="switch_route">Switch Route</string>
     <string-array name="metered_entries"><item>Auto</item><item>Metered</item><item>Unmetered</item></string-array>
     <string-array name="metered_values"><item>auto</item><item>metered</item><item>unmetered</item></string-array>
+    <string name="connection_details">Connection details</string>
+    <string name="connection_details_show">Show connection details</string>
+    <string name="connection_details_hide">Hide connection details</string>
+    <string name="connection_download_rate">Download rate</string>
+    <string name="connection_upload_rate">Upload rate</string>
 </resources>
