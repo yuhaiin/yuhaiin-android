@@ -78,3 +78,13 @@ Signed APK names end in `-release.apk`. Release alignment checks, device regress
 - Long-press the launcher icon for Connect / Disconnect / Switch Route, or add the home-screen status widget. Switching Route while connected saves the selection and reconnects automatically. These use the existing Android Route configurations; the app has no separate native Profile model.
 
 Notification speed display remains optional. The native home page and widget receive the existing core speed callback independently of that display preference; no new core API or Web Dashboard polling is required.
+
+## Backup, exit health and session summary
+
+Open **Backup and restore** on the native home page to export a JSON backup through Android's file picker, import an existing file, or open the system Share Sheet. A single file includes core settings, nodes and selections, subscriptions, DNS, routing rules/lists and Android preferences, including custom Routes and per-app selections. Backups contain node passwords and subscription credentials. Runtime traffic/history, caches, installer state, document IDs and session summaries are excluded. Imports show a preview, ask before replacing configuration, disconnect the VPN and restore in one SQLite transaction. Reconnect afterwards to apply the restored configuration. Invalid, incomplete, incompatible or oversized files (over 32 MiB) are rejected; a failed restore rolls back the entire change.
+
+The home connection card shows selected TCP/UDP node names, reachability and latency without opening the Dashboard. TCP uses the core HTTP probe and UDP uses its DNS probe. Checks run on connection, node/network changes, every minute, or with **Check now**. The check time is shown; these default-node checks do not certify every tagged route or destination. A missing default node is shown explicitly.
+
+Traffic summaries show upload/download for this VPN session, active/opened/failed connection counts and persisted lifetime totals. Disconnecting preserves the last session summary on the device. These values measure traffic accounted by the Go core, including proxy traffic outside Android TUN routes, rather than Android system-wide data usage.
+
+These features require the matching Go core changes in `cmd/android` and `pkg/storage/sqlite`. For a local build with the adjacent `yuhaiin` checkout, run `bash yuhaiin/build.sh` before Gradle so the AAR contains the new backup/status JNI methods. Upstream Android CI needs an AAR built from that core revision.

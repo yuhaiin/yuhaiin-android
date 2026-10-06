@@ -98,6 +98,7 @@ open class MainApplication : Application() {
                 .apply { mkdirs() }
                 .absolutePath
         )
+        Yuhaiin.setConfigLockPath(java.io.File(noBackupFilesDir, "configuration.lock").absolutePath)
         store = Yuhaiin.getStore()
         updateManager = UpdateManager(this)
         installedApps = io.github.asutorufa.yuhaiin.data.InstalledAppsRepository(packageManager)

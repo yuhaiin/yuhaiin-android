@@ -156,14 +156,28 @@ class MainActivity : AppCompatActivity() {
                 vpnBinder = null
                 MainApplication.updateManager.setProxyBinder(null)
                 state.value = State.DISCONNECTED
-                status.value = VpnStatus()
+                status.value =
+                    status.value.copy(
+                        state = State.DISCONNECTED,
+                        connectedAt = 0,
+                        speed = "",
+                        nativeHealth = "",
+                        healthChecking = false,
+                    )
             }
 
             override fun onBindingDied(name: ComponentName) {
                 vpnBinder = null
                 MainApplication.updateManager.setProxyBinder(null)
                 state.value = State.DISCONNECTED
-                status.value = VpnStatus()
+                status.value =
+                    status.value.copy(
+                        state = State.DISCONNECTED,
+                        connectedAt = 0,
+                        speed = "",
+                        nativeHealth = "",
+                        healthChecking = false,
+                    )
 
                 if (serviceBound) {
                     runCatching { unbindService(this) }

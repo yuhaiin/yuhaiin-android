@@ -17,6 +17,8 @@ import kotlinx.serialization.Serializable
 
 @Serializable data object WebViewRoute : AppRoute
 
+@Serializable data object BackupRoute : AppRoute
+
 @Serializable data object LogcatRoute : AppRoute
 
 class AppNavigator(

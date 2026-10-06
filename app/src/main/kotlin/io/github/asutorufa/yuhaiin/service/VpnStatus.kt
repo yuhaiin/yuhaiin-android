@@ -15,6 +15,10 @@ data class VpnStatus(
     val ipv4: String = "",
     val ipv6: String = "",
     val route: String = "",
+    val nativeStatus: String = "",
+    val nativeHealth: String = "",
+    val healthChecking: Boolean = false,
+    val healthError: String = "",
 ) {
     fun toBundle() =
         Bundle().apply {
@@ -27,6 +31,10 @@ data class VpnStatus(
             putString("ipv4", ipv4)
             putString("ipv6", ipv6)
             putString("route", route)
+            putString("nativeStatus", nativeStatus)
+            putString("nativeHealth", nativeHealth)
+            putBoolean("healthChecking", healthChecking)
+            putString("healthError", healthError)
         }
 
     companion object {
@@ -42,6 +50,10 @@ data class VpnStatus(
                 bundle.getString("ipv4").orEmpty(),
                 bundle.getString("ipv6").orEmpty(),
                 bundle.getString("route").orEmpty(),
+                bundle.getString("nativeStatus").orEmpty(),
+                bundle.getString("nativeHealth").orEmpty(),
+                bundle.getBoolean("healthChecking"),
+                bundle.getString("healthError").orEmpty(),
             )
     }
 }

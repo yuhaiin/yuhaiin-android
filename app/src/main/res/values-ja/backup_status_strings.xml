@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_title">バックアップと復元</string>
+    <string name="backup_summary">すべての設定をエクスポート、インポート、共有</string>
+    <string name="backup_back">戻る</string>
+    <string name="backup_cancel">キャンセル</string>
+    <string name="backup_description">コア設定、ノード、サブスクリプション、DNS、ルーティングルール、Android 設定を一つのファイルに保存します。通信履歴、キャッシュ、セッション概要は端末に残ります。</string>
+    <string name="backup_credentials">バックアップにはノードのパスワードと認証情報が含まれます。安全な場所に保存し、信頼できる相手とのみ共有してください。</string>
+    <string name="backup_export">バックアップをエクスポート</string>
+    <string name="backup_share">バックアップを共有</string>
+    <string name="backup_import">バックアップをインポート</string>
+    <string name="backup_completed">完了しました</string>
+    <string name="backup_restore_title">このバックアップを復元しますか？</string>
+    <string name="backup_preview">作成日時：%1$s\nノード：%2$d · ルール：%3$d · Android 設定：%4$d</string>
+    <string name="backup_restore_hint">現在の設定を置き換え、VPN を切断します。復元後に再接続すると、インポートした設定が適用されます。</string>
+    <string name="backup_restore">復元</string>
+    <string name="native_health_title">現在の出口の状態</string>
+    <string name="native_health_check">今すぐ確認</string>
+    <string name="native_health_checking">確認中…</string>
+    <string name="native_health_checked">最終確認：%1$s</string>
+    <string name="native_health_hint">TCP は HTTP、UDP は DNS の到達性を確認します。結果は確認時に選択されていた既定のノードに対応します。</string>
+    <string name="native_health_unconfigured">既定のノードが未選択</string>
+    <string name="native_health_unknown">未確認</string>
+    <string name="native_health_ok">到達可能 · %1$d ms</string>
+    <string name="native_health_failed">確認失敗</string>
+    <string name="native_session_title">今回のセッション</string>
+    <string name="native_session_last">前回のセッション</string>
+    <string name="native_session_bytes">受信 %1$s · 送信 %2$s</string>
+    <string name="native_session_counts">接続中 %1$d · 確立 %2$s · 失敗 %3$s</string>
+    <string name="native_session_last_counts">切断前の接続 %1$d · 確立 %2$s · 失敗 %3$s</string>
+    <string name="native_total_bytes">累計：↓ %1$s · ↑ %2$s</string>
+</resources>

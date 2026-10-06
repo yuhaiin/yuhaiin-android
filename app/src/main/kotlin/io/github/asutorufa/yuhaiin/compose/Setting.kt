@@ -29,6 +29,8 @@ fun SettingCompose(
     onOpenRouteConfig: () -> Unit,
     onOpenWebView: () -> Unit,
     onOpenLogcat: () -> Unit,
+    onOpenBackup: () -> Unit = {},
+    checkHealth: () -> Unit = {},
     error: String? = null,
     status: io.github.asutorufa.yuhaiin.service.VpnStatus =
         io.github.asutorufa.yuhaiin.service.VpnStatus(),
@@ -77,6 +79,10 @@ fun SettingCompose(
                                 status,
                                 snooze,
                             )
+                        }
+                        item {
+                            if (vpnState == State.CONNECTED || status.nativeStatus.isNotBlank())
+                                NativeStatusCard(status, vpnState == State.CONNECTED, checkHealth)
                         }
                         item {
                             Text(
@@ -247,6 +253,15 @@ fun SettingCompose(
                                 Settings.dnsHijacking,
                                 values,
                                 R.drawable.dns,
+                            )
+                        }
+                        item { SectionHeading(stringResource(R.string.backup_title)) }
+                        item {
+                            SettingsItem(
+                                stringResource(R.string.backup_title),
+                                stringResource(R.string.backup_summary),
+                                painterResource(R.drawable.save),
+                                onOpenBackup,
                             )
                         }
                         item { SectionHeading(stringResource(R.string.debug)) }
