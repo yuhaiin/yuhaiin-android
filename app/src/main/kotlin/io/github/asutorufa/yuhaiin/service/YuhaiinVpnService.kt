@@ -225,23 +225,11 @@ class YuhaiinVpnService : VpnService() {
 
     private fun refreshNetworkStatus() {
         val connectivity = (application as MainApplication).connectivity
-        val active = connectivity.activeNetwork?.let(connectivity::getNetworkCapabilities)
         val caps =
             currentUnderlyingNetwork?.let(connectivity::getNetworkCapabilities)
-                ?: active?.takeIf {
-                    // VPN capabilities can include the transports of the actual underlying
-                    // network, even when the optional network monitor is disabled.
-                    it.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
-                        it.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) ||
-                        it.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)
-                }
-                ?: connectivity.allNetworks
-                    .asSequence()
-                    .mapNotNull(connectivity::getNetworkCapabilities)
-                    .firstOrNull {
-                        it.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN) &&
-                            it.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-                    }
+                // The default VPN network includes its underlying transports. Use the
+                // selected/default network rather than an arbitrary available network.
+                ?: connectivity.activeNetwork?.let(connectivity::getNetworkCapabilities)
         val network =
             when {
                 caps == null -> ""
