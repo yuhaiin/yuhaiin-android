@@ -12,6 +12,7 @@
         <exclude domain="file" path="yuhaiin/cache/" />
         <exclude domain="file" path="yuhaiin/pebble_cache/" />
         <exclude domain="sharedpref" path="software_update.xml" />
+        <exclude domain="sharedpref" path="vpn_pause.xml" />
         <exclude domain="sharedpref" path="yuhaiin_document_provider_ids.xml" />
     </cloud-backup>
     <device-transfer>
@@ -26,6 +27,7 @@
         <exclude domain="file" path="yuhaiin/cache/" />
         <exclude domain="file" path="yuhaiin/pebble_cache/" />
         <exclude domain="sharedpref" path="software_update.xml" />
+        <exclude domain="sharedpref" path="vpn_pause.xml" />
         <exclude domain="sharedpref" path="yuhaiin_document_provider_ids.xml" />
     </device-transfer>
 </data-extraction-rules>

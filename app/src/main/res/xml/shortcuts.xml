@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut android:shortcutId="connect" android:icon="@drawable/vpn_key" android:shortcutShortLabel="@string/Connect">
+        <intent android:action="io.github.asutorufa.yuhaiin.CONNECT" android:targetPackage="io.github.asutorufa.yuhaiin" android:targetClass="io.github.asutorufa.yuhaiin.MainActivity" />
+    </shortcut>
+    <shortcut android:shortcutId="disconnect" android:icon="@drawable/vpn_lock" android:shortcutShortLabel="@string/Stop">
+        <intent android:action="io.github.asutorufa.yuhaiin.DISCONNECT" android:targetPackage="io.github.asutorufa.yuhaiin" android:targetClass="io.github.asutorufa.yuhaiin.MainActivity" />
+    </shortcut>
+    <shortcut android:shortcutId="routes" android:icon="@drawable/router" android:shortcutShortLabel="@string/switch_route">
+        <intent android:action="io.github.asutorufa.yuhaiin.ROUTES" android:targetPackage="io.github.asutorufa.yuhaiin" android:targetClass="io.github.asutorufa.yuhaiin.MainActivity" />
+    </shortcut>
+</shortcuts>

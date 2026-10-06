@@ -4,6 +4,7 @@ package io.github.asutorufa.yuhaiin;
 // Declare any non-default types here with import statements
 
 import io.github.asutorufa.yuhaiin.IYuhaiinVpnCallback;
+import android.os.Bundle;
 
 interface IYuhaiinVpnBinder {
     /**
@@ -15,6 +16,8 @@ interface IYuhaiinVpnBinder {
 
             void stop();
             int state();
+            Bundle snapshot();
+            void snooze(int minutes);
             void registerCallback(IYuhaiinVpnCallback cb);
             void unregisterCallback(IYuhaiinVpnCallback cb);
             byte[] proxyGet(String url);

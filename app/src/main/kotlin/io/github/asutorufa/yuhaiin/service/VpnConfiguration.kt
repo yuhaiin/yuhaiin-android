@@ -73,7 +73,8 @@ fun VpnService.Builder.configure(
     addDnsServer(address.iPv6Portal)
     Yuhaiin.addFakeDnsCidr { addRoute(it.ip, it.mask) }
     if (Build.VERSION.SDK_INT >= 29) {
-        setMetered(false)
+        // false inherits underlying network meteredness; Android cannot force unmetered.
+        setMetered(store.getString(Constants.METERED_MODE_KEY) == "metered")
         val port = store.getInt(Constants.HTTP_PORT_KEY)
         if (port in 1..65535 && store.getBoolean(Constants.APPEND_HTTP_PROXY_KEY))
             setHttpProxy(ProxyInfo.buildDirectProxy("127.0.0.1", port))

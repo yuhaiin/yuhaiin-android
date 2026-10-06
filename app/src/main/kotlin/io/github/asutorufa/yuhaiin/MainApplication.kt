@@ -115,6 +115,15 @@ open class MainApplication : Application() {
     }
 
     private fun ensureBatteryDefaults() {
+        // The core's callback also feeds the native status page. Preserve the old notification
+        // preference separately before enabling collection, including an explicit false.
+        if (store.getString(Constants.NOTIFICATION_SPEED_KEY).isBlank()) {
+            store.putBoolean(
+                Constants.NOTIFICATION_SPEED_KEY,
+                store.getBoolean(Constants.NETWORK_SPEED_KEY),
+            )
+        }
+        store.putBoolean(Constants.NETWORK_SPEED_KEY, true)
         if (store.getString(Constants.PROCESS_LOOKUP_MODE_KEY).isBlank()) {
             store.putString(Constants.PROCESS_LOOKUP_MODE_KEY, "always")
         }

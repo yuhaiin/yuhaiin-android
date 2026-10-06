@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="metered_mode">Metered mode</string>
+    <string name="metered_hint">Auto follows the underlying network. Android also inherits underlying meteredness in Unmetered mode. Reconnect to apply.</string>
+    <string name="status_paused">Paused</string>
+    <string name="cancel_resume">Cancel auto-resume</string>
+    <string name="resume_now">Resume now</string>
+    <string name="reconnect">Reconnect</string>
+    <string name="resume_time">Resumes at %1$s</string>
+    <string name="snooze">Pause connection</string>
+    <string name="snooze_minutes">Pause for %1$d minutes</string>
+    <string name="pause_remaining">Auto-resume in %1$d minutes</string>
+    <string name="snooze_hint">Resume may be delayed while the device is asleep. Always-on VPN lockdown can block traffic while paused.</string>
+    <string name="connection_duration">Duration: %1$s</string>
+    <string name="speed_waiting">Waiting for traffic rates…</string>
+    <string name="connection_network">Network: %1$s · MTU: %2$d</string>
+    <string name="connection_route">Route: %1$s</string>
+    <string name="network_wifi">Wi-Fi</string>
+    <string name="network_cellular">Cellular</string>
+    <string name="network_ethernet">Ethernet</string>
+    <string name="network_other">Other</string>
+    <string name="widget_description">VPN connection status and quick controls</string>
+    <string name="switch_route">Switch Route</string>
+    <string-array name="metered_entries"><item>Auto</item><item>Metered</item><item>Unmetered</item></string-array>
+    <string-array name="metered_values"><item>auto</item><item>metered</item><item>unmetered</item></string-array>
+</resources>

@@ -15,25 +15,82 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import io.github.asutorufa.yuhaiin.compose.Main
+import io.github.asutorufa.yuhaiin.service.VpnActions
+import io.github.asutorufa.yuhaiin.service.VpnStatus
 import io.github.asutorufa.yuhaiin.service.YuhaiinVpnService
 import io.github.asutorufa.yuhaiin.service.YuhaiinVpnService.Companion.State
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class MainActivity : AppCompatActivity() {
     var vpnBinder: IYuhaiinVpnBinder? = null
     val state = MutableStateFlow(State.DISCONNECTED)
     val error = MutableStateFlow<String?>(null)
     private var serviceBound = false
+    val status = MutableStateFlow(VpnStatus())
+    val navigationAction = MutableStateFlow<String?>(null)
+    private var pendingAction: String? = null
+    private var launchAction = VpnActions.CONNECT
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        pendingAction =
+            if (savedInstanceState == null) intent?.action
+            else savedInstanceState.getString("vpnAction")
+        launchAction = savedInstanceState?.getString("launchAction") ?: VpnActions.CONNECT
         enableEdgeToEdge()
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                while (true) {
+                    val snapshot =
+                        withContext(Dispatchers.IO) {
+                            runCatching { vpnBinder?.snapshot()?.let(VpnStatus::fromBundle) }
+                                .getOrNull()
+                        }
+                    if (snapshot != null) status.value = snapshot
+                    delay(1000)
+                }
+            }
+        }
         setContent {
             Main(this)
         }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        outState.putString("vpnAction", pendingAction)
+        outState.putString("launchAction", launchAction)
+        super.onSaveInstanceState(outState)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        pendingAction = intent.action
+        handleAction()
+    }
+
+    private fun handleAction() {
+        if (vpnBinder == null) return
+        val action = pendingAction ?: return
+        pendingAction = null
+        when (action) {
+            VpnActions.CONNECT -> startService()
+            VpnActions.DISCONNECT -> vpnBinder?.stop()
+            VpnActions.DASHBOARD,
+            VpnActions.ROUTES -> navigationAction.value = action
+        }
+    }
+
+    fun reconnect() {
+        launchAction = VpnActions.RECONNECT
+        startService()
     }
 
     override fun onStart() {
@@ -91,6 +148,7 @@ class MainActivity : AppCompatActivity() {
                             State.entries.getOrNull(it.state()) ?: State.ERROR
                         it.registerCallback(vpnCallback)
                     }
+                handleAction()
             }
 
             override fun onServiceDisconnected(p1: ComponentName) {
@@ -98,12 +156,14 @@ class MainActivity : AppCompatActivity() {
                 vpnBinder = null
                 MainApplication.updateManager.setProxyBinder(null)
                 state.value = State.DISCONNECTED
+                status.value = VpnStatus()
             }
 
             override fun onBindingDied(name: ComponentName) {
                 vpnBinder = null
                 MainApplication.updateManager.setProxyBinder(null)
                 state.value = State.DISCONNECTED
+                status.value = VpnStatus()
 
                 if (serviceBound) {
                     runCatching { unbindService(this) }
@@ -155,10 +215,15 @@ class MainActivity : AppCompatActivity() {
                 MainApplication.settings.flush()
                 ContextCompat.startForegroundService(
                     this@MainActivity,
-                    Intent(this@MainActivity, YuhaiinVpnService::class.java),
+                    Intent(this@MainActivity, YuhaiinVpnService::class.java)
+                        .setAction(launchAction),
                 )
+                launchAction = VpnActions.CONNECT
             }
-                .onFailure { error.value = it.message ?: it.toString() }
+                .onFailure {
+                    launchAction = VpnActions.CONNECT
+                    error.value = it.message ?: it.toString()
+                }
         }
     }
 }

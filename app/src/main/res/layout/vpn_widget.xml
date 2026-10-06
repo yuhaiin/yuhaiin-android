@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:orientation="vertical" android:padding="16dp" android:background="#FF182830">
+    <TextView android:id="@+id/widget_status" android:layout_width="match_parent"
+        android:layout_height="wrap_content" android:text="@string/status_disconnected"
+        android:textSize="20sp" android:textColor="#FFFFFFFF" />
+    <TextView android:id="@+id/widget_speed" android:layout_width="match_parent"
+        android:layout_height="wrap_content" android:textColor="#FFFFFFFF" />
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content">
+        <Button android:id="@+id/widget_toggle" android:layout_width="0dp"
+            android:layout_weight="1" android:layout_height="wrap_content" android:text="@string/Connect" />
+        <Button android:id="@+id/widget_routes" android:layout_width="0dp"
+            android:layout_weight="1" android:layout_height="wrap_content" android:text="@string/switch_route" />
+    </LinearLayout>
+</LinearLayout>

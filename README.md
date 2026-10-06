@@ -68,3 +68,13 @@ Signed APK names end in `-release.apk`. Release alignment checks, device regress
 
 - [bndeff/socksdroid](https://github.com/bndeff/socksdroid)
 - [Navigation Componentのいい感じのアニメーションを検討する【サンプルアプリあり】](https://at-sushi.work/blog/21/)  
+
+## Android connection controls
+
+- Add the **yuhaiin** tile in Quick Settings to connect/disconnect and see the current state. First connection opens Android VPN consent when needed.
+- The running notification offers **Disconnect**, **Reconnect** and **Dashboard**. The native home card shows connection duration, core upload/download rates, physical network type, TUN MTU and addresses, and the active Route.
+- **Metered mode** supports Auto / Metered / Unmetered after reconnecting. Metered explicitly marks the VPN as metered. Android's public VPN API inherits underlying network meteredness for both Auto and Unmetered; it cannot force a cellular connection to become unmetered.
+- **Pause connection** offers 5 / 15 / 30 minutes. The TUN and core stop while a foreground notification keeps the resume timer available; use **Resume now** or **Cancel auto-resume** there or on the home card. Resume may be delayed during device sleep. Always-on VPN lockdown can block network access while paused. Force-stop and reboot interrupt the pause timer.
+- Long-press the launcher icon for Connect / Disconnect / Switch Route, or add the home-screen status widget. Switching Route while connected saves the selection and reconnects automatically. These use the existing Android Route configurations; the app has no separate native Profile model.
+
+Notification speed display remains optional. The native home page and widget receive the existing core speed callback independently of that display preference; no new core API or Web Dashboard polling is required.
