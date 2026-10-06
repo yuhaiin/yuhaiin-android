@@ -14,7 +14,7 @@
     <string name="backup_preview">Created: %1$s\nNodes: %2$d · Rules: %3$d · Android settings: %4$d</string>
     <string name="backup_restore_hint">This replaces the current configuration and disconnects the VPN. Connect again after restoring to use the imported settings.</string>
     <string name="backup_restore">Restore</string>
-    <string name="native_health_title">Current exit health</string>
+    <string name="native_health_title">Exit health</string>
     <string name="native_health_check">Check now</string>
     <string name="native_health_checking">Checking…</string>
     <string name="native_health_checked">Last checked: %1$s</string>
@@ -25,8 +25,12 @@
     <string name="native_health_failed">Check failed</string>
     <string name="native_session_title">This session</string>
     <string name="native_session_last">Last session</string>
-    <string name="native_session_bytes">Downloaded %1$s · Uploaded %2$s</string>
-    <string name="native_session_counts">Active %1$d · Opened %2$s · Failed %3$s</string>
-    <string name="native_session_last_counts">Active before disconnect %1$d · Opened %2$s · Failed %3$s</string>
     <string name="native_total_bytes">Lifetime: ↓ %1$s · ↑ %2$s</string>
+    <string name="native_health_about">About exit checks</string>
+    <string name="native_session_download">Download</string>
+    <string name="native_session_upload">Upload</string>
+    <string name="native_session_active">Active</string>
+    <string name="native_session_last_active">Before disconnect</string>
+    <string name="native_session_opened">Opened</string>
+    <string name="native_session_failed">Failed</string>
 </resources>
