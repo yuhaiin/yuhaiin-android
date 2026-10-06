@@ -139,12 +139,10 @@ class ConnectionControlsTest {
             waitFor { snapshot().connectedAt > before && activity.state.value == State.CONNECTED }
             val connectivity = activity.getSystemService(ConnectivityManager::class.java)
             waitFor {
-                connectivity.allNetworks.any { network ->
-                    connectivity.getNetworkCapabilities(network)?.let {
-                        it.hasTransport(NetworkCapabilities.TRANSPORT_VPN) &&
-                            !it.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED)
-                    } == true
-                }
+                connectivity.activeNetwork?.let(connectivity::getNetworkCapabilities)?.let {
+                    it.hasTransport(NetworkCapabilities.TRANSPORT_VPN) &&
+                        !it.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED)
+                } == true
             }
             compose.runOnUiThread {
                 activity.startActivity(
