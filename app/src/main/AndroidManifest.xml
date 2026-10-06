@@ -100,6 +100,11 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/update_filepaths" />
         </provider>
+        <provider android:name=".backup.BackupFileProvider"
+            android:authorities="${applicationId}.backup_fileprovider"
+            android:exported="false" android:grantUriPermissions="true">
+            <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/backup_filepaths" />
+        </provider>
         <provider
             android:name=".documentprovider.YuhaiinDocumentProvider"
             android:authorities="${documentsAuthority}"

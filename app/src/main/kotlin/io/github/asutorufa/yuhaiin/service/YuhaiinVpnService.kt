@@ -96,6 +96,13 @@ class YuhaiinVpnService : VpnService() {
 
     @Volatile private var state = State.DISCONNECTED
     private var startupJob: Job? = null
+    private var statusJob: Job? = null
+    private var healthJob: Job? = null
+    private var healthGeneration = 0L
+    private var lastHealthAttempt = 0L
+    private val sessionPreferences by lazy {
+        getSharedPreferences("vpn_session_summary", MODE_PRIVATE)
+    }
     private var latestStartId = 0
     private var foregroundStarted = false
     private var runtimeOwned = false
@@ -113,6 +120,7 @@ class YuhaiinVpnService : VpnService() {
 
     override fun onCreate() {
         super.onCreate()
+        status = status.copy(nativeStatus = sessionPreferences.getString("summary", "").orEmpty())
         val sameBoot = pausePreferences.getInt("bootCount", -1) == bootCount()
         status =
             status.copy(resumeAt = if (sameBoot) pausePreferences.getLong("resumeAt", 0) else 0)
@@ -183,6 +191,12 @@ class YuhaiinVpnService : VpnService() {
                 state = next,
                 connectedAt = if (next == State.CONNECTED) SystemClock.elapsedRealtime() else 0,
                 speed = "",
+                nativeStatus = if (next == State.CONNECTING) "" else status.nativeStatus,
+                nativeHealth =
+                    if (next == State.CONNECTING || next == State.DISCONNECTING) ""
+                    else status.nativeHealth,
+                healthChecking = false,
+                healthError = "",
             )
         publishStatus()
         callbacks.broadcast(next)
@@ -213,8 +227,13 @@ class YuhaiinVpnService : VpnService() {
     }
 
     private fun updateUnderlyingNetwork(network: Network?) {
+        val changed = currentUnderlyingNetwork != network
         currentUnderlyingNetwork = network
         refreshNetworkStatus()
+        if (changed && state == State.CONNECTED) {
+            status = status.copy(nativeHealth = "", healthError = "")
+            checkHealth(replace = true)
+        }
         if (mInterface == null) return
 
         val applied = this@YuhaiinVpnService.setUnderlyingNetworks(network?.let { arrayOf(it) })
@@ -274,6 +293,10 @@ class YuhaiinVpnService : VpnService() {
 
         override fun snapshot(): Bundle = status.toBundle()
 
+        override fun checkHealth() {
+            serviceScope.launch { this@YuhaiinVpnService.checkHealth() }
+        }
+
         override fun snooze(minutes: Int) = this@YuhaiinVpnService.snooze(minutes)
 
         override fun state(): Int {
@@ -297,6 +320,12 @@ class YuhaiinVpnService : VpnService() {
     private suspend fun stopInternal(reason: StopReason, keepStarted: Boolean = false) {
         if (state == State.DISCONNECTING) return
         runtimeEpoch++
+        statusJob?.cancelAndJoin()
+        statusJob = null
+        healthGeneration++
+        healthJob?.cancel()
+        healthJob = null
+        saveSessionSummary()
 
         Log.d(tag, "stopping VPN: ${reason.name}")
         transitionTo(State.DISCONNECTING)
@@ -438,6 +467,8 @@ class YuhaiinVpnService : VpnService() {
 
                 if (state == State.CONNECTING) {
                     transitionTo(State.CONNECTED)
+                    startStatusCollection()
+                    checkHealth()
                 }
             } catch (e: CancellationException) {
                 throw e
@@ -514,6 +545,71 @@ class YuhaiinVpnService : VpnService() {
         }
     }
 
+    private fun startStatusCollection() {
+        val epoch = runtimeEpoch
+        statusJob?.cancel()
+        statusJob = serviceScope.launch {
+            while (epoch == runtimeEpoch && state == State.CONNECTED) {
+                val snapshot = withContext(Dispatchers.IO) { runCatching { app.nativeStatus() } }
+                if (epoch != runtimeEpoch || state != State.CONNECTED) break
+                snapshot
+                    .onSuccess { value ->
+                        val before = decodeNativeStatus(status.nativeStatus)
+                        val after = decodeNativeStatus(value)
+                        status = status.copy(nativeStatus = value)
+                        if (
+                            before != null &&
+                                (before.tcp?.id != after?.tcp?.id ||
+                                    before.udp?.id != after?.udp?.id)
+                        ) {
+                            status = status.copy(nativeHealth = "", healthError = "")
+                            checkHealth(replace = true)
+                        }
+                    }
+                    .onFailure { Log.w(tag, "Unable to read core status", it) }
+                if (SystemClock.elapsedRealtime() - lastHealthAttempt >= 60_000) checkHealth()
+                delay(2500)
+            }
+        }
+    }
+
+    private fun checkHealth(replace: Boolean = false) {
+        if (state != State.CONNECTED) return
+        if (healthJob?.isActive == true && !replace) return
+        if (replace) healthJob?.cancel()
+        lastHealthAttempt = SystemClock.elapsedRealtime()
+        val generation = ++healthGeneration
+        val epoch = runtimeEpoch
+        status = status.copy(healthChecking = true, healthError = "")
+        healthJob = serviceScope.launch {
+            val result = withContext(Dispatchers.IO) { runCatching { app.checkHealth() } }
+            if (epoch != runtimeEpoch || generation != healthGeneration || state != State.CONNECTED)
+                return@launch
+            status =
+                result.fold(
+                    onSuccess = { status.copy(nativeHealth = it, healthChecking = false) },
+                    onFailure = {
+                        status.copy(
+                            nativeHealth = "",
+                            healthChecking = false,
+                            healthError = it.message.orEmpty(),
+                        )
+                    },
+                )
+        }
+    }
+
+    private suspend fun saveSessionSummary() {
+        if (!runtimeOwned || state != State.CONNECTED) return
+        val summary = withContext(Dispatchers.IO) { runCatching { app.nativeStatus() }.getOrNull() }
+        if (summary != null) {
+            status = status.copy(nativeStatus = summary)
+            withContext(Dispatchers.IO) {
+                sessionPreferences.edit().putString("summary", summary).commit()
+            }
+        }
+    }
+
     private fun startNotification() {
         vpnNotification.createChannel()
 
@@ -532,6 +628,8 @@ class YuhaiinVpnService : VpnService() {
 
     override fun onDestroy() {
         resumeJob?.cancel()
+        statusJob?.cancel()
+        healthJob?.cancel()
         runtimeEpoch++
         VpnWidget.update(this, VpnStatus())
         startupJob?.cancel()
@@ -543,6 +641,10 @@ class YuhaiinVpnService : VpnService() {
             .onFailure { Log.w(tag, "failed to close VPN interface during destroy", it) }
 
         if (runtimeOwned) {
+            if (state == State.CONNECTED)
+                runCatching {
+                    sessionPreferences.edit().putString("summary", app.nativeStatus()).commit()
+                }
             runtimeOwned = false
             runCatching { app.stop() }
                 .onFailure { Log.w(tag, "failed to stop VPN runtime during destroy", it) }

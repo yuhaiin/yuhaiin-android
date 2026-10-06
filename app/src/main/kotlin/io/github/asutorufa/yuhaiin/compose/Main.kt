@@ -45,6 +45,7 @@ import io.github.asutorufa.yuhaiin.service.YuhaiinVpnService.Companion.State
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -199,6 +200,8 @@ fun Main(activity: MainActivity) {
                                     onOpenRouteConfig = { navigator.push(RouteConfigRoute) },
                                     onOpenWebView = { navigator.push(WebViewRoute) },
                                     onOpenLogcat = { navigator.push(LogcatRoute) },
+                                    onOpenBackup = { navigator.push(BackupRoute) },
+                                    checkHealth = { activity.vpnBinder?.checkHealth() },
                                 )
                             }
                         }
@@ -252,6 +255,20 @@ fun Main(activity: MainActivity) {
                                     )
                                 }
                             }
+                        }
+
+                        entry<BackupRoute> {
+                            BackupScreen(
+                                onBack = { navigator.popFrom(BackupRoute) },
+                                disconnect = {
+                                    activity.vpnBinder?.stop()
+                                    kotlinx.coroutines.withTimeout(15_000) {
+                                        activity.state.first {
+                                            it == State.DISCONNECTED || it == State.ERROR
+                                        }
+                                    }
+                                },
+                            )
                         }
 
                         entry<LogcatRoute> {

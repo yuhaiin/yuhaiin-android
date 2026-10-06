@@ -12,6 +12,11 @@ import kotlinx.coroutines.withContext
 object RouteRepository {
     private val changes = MutableStateFlow(0L)
     val revision = changes.asStateFlow()
+
+    fun refresh() {
+        changes.value++
+    }
+
     val presets = setOf(Constants.ALL_ROUTE, Constants.NON_LOCAL_ROUTE, Constants.NON_CHINESE_ROUTE)
 
     suspend fun content(name: String): String =

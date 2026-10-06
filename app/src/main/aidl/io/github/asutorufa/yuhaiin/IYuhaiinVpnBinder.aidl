@@ -18,6 +18,7 @@ interface IYuhaiinVpnBinder {
             int state();
             Bundle snapshot();
             void snooze(int minutes);
+            void checkHealth();
             void registerCallback(IYuhaiinVpnCallback cb);
             void unregisterCallback(IYuhaiinVpnCallback cb);
             byte[] proxyGet(String url);

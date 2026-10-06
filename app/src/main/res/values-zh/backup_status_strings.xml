@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_title">备份与恢复</string>
+    <string name="backup_summary">一键导出、导入或分享全部配置</string>
+    <string name="backup_back">返回</string>
+    <string name="backup_cancel">取消</string>
+    <string name="backup_description">将核心设置、节点、订阅、DNS、路由规则和 Android 设置备份到一个文件。流量历史、缓存和会话摘要保留在本机。</string>
+    <string name="backup_credentials">备份包含节点密码和订阅凭据，请妥善保存，仅分享给可信任的人。</string>
+    <string name="backup_export">导出备份</string>
+    <string name="backup_share">分享备份</string>
+    <string name="backup_import">导入备份</string>
+    <string name="backup_completed">操作完成</string>
+    <string name="backup_restore_title">恢复此备份？</string>
+    <string name="backup_preview">备份时间：%1$s\n节点：%2$d · 规则：%3$d · Android 设置：%4$d</string>
+    <string name="backup_restore_hint">恢复会覆盖当前配置并断开 VPN。完成后重新连接，即可使用导入的设置。</string>
+    <string name="backup_restore">恢复</string>
+    <string name="native_health_title">出口健康</string>
+    <string name="native_health_check">立即检查</string>
+    <string name="native_health_checking">检查中…</string>
+    <string name="native_health_checked">上次检查：%1$s</string>
+    <string name="native_health_hint">TCP 检查 HTTP 可达性，UDP 检查 DNS 可达性。结果对应检查时选择的默认节点。</string>
+    <string name="native_health_unconfigured">未选择默认节点</string>
+    <string name="native_health_unknown">尚未检查</string>
+    <string name="native_health_ok">可达 · %1$d 毫秒</string>
+    <string name="native_health_failed">检查失败</string>
+    <string name="native_session_title">本次会话</string>
+    <string name="native_session_last">上次会话</string>
+    <string name="native_total_bytes">累计：↓ %1$s · ↑ %2$s</string>
+    <string name="native_health_about">关于出口检查</string>
+    <string name="native_session_download">下载</string>
+    <string name="native_session_upload">上传</string>
+    <string name="native_session_active">活跃连接</string>
+    <string name="native_session_last_active">断开前活跃</string>
+    <string name="native_session_opened">已建立</string>
+    <string name="native_session_failed">失败</string>
+</resources>

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="backup_title">Backup and restore</string>
+    <string name="backup_summary">Export, import or share all configuration</string>
+    <string name="backup_back">Back</string>
+    <string name="backup_cancel">Cancel</string>
+    <string name="backup_description">Back up core settings, nodes, subscriptions, DNS, routing rules and Android preferences in one file. Traffic history, caches and session summaries stay on this device.</string>
+    <string name="backup_credentials">The backup includes node passwords and subscription credentials. Store or share it only with people you trust.</string>
+    <string name="backup_export">Export backup</string>
+    <string name="backup_share">Share backup</string>
+    <string name="backup_import">Import backup</string>
+    <string name="backup_completed">Completed</string>
+    <string name="backup_restore_title">Restore this backup?</string>
+    <string name="backup_preview">Created: %1$s\nNodes: %2$d · Rules: %3$d · Android settings: %4$d</string>
+    <string name="backup_restore_hint">This replaces the current configuration and disconnects the VPN. Connect again after restoring to use the imported settings.</string>
+    <string name="backup_restore">Restore</string>
+    <string name="native_health_title">Exit health</string>
+    <string name="native_health_check">Check now</string>
+    <string name="native_health_checking">Checking…</string>
+    <string name="native_health_checked">Last checked: %1$s</string>
+    <string name="native_health_hint">TCP checks HTTP reachability; UDP checks DNS reachability. Results apply to the selected default nodes at the time of the check.</string>
+    <string name="native_health_unconfigured">No default node selected</string>
+    <string name="native_health_unknown">Unchecked</string>
+    <string name="native_health_ok">Reachable · %1$d ms</string>
+    <string name="native_health_failed">Check failed</string>
+    <string name="native_session_title">This session</string>
+    <string name="native_session_last">Last session</string>
+    <string name="native_total_bytes">Lifetime: ↓ %1$s · ↑ %2$s</string>
+    <string name="native_health_about">About exit checks</string>
+    <string name="native_session_download">Download</string>
+    <string name="native_session_upload">Upload</string>
+    <string name="native_session_active">Active</string>
+    <string name="native_session_last_active">Before disconnect</string>
+    <string name="native_session_opened">Opened</string>
+    <string name="native_session_failed">Failed</string>
+</resources>
