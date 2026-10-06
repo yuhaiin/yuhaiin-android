@@ -147,7 +147,7 @@ object Settings {
 
     val httpProxy = boolean(Constants.APPEND_HTTP_PROXY_KEY)
     val allowLan = boolean(Constants.ALLOW_LAN_KEY)
-    val speed = boolean(Constants.NETWORK_SPEED_KEY)
+    val speed = boolean(Constants.NOTIFICATION_SPEED_KEY)
     val perApp = boolean(Constants.PER_APP_KEY)
     val bypass = boolean(Constants.APP_BYPASS_KEY)
     val sniff = boolean(Constants.SNIFF_KEY, true)
@@ -156,6 +156,7 @@ object Settings {
     val trackNetwork = boolean(Constants.REGISTER_UNDERLYING_NETWORK_CALLBACK_KEY, true)
     val route = text(Constants.ROUTE_KEY, Constants.ALL_ROUTE)
     val processLookup = text(Constants.PROCESS_LOOKUP_MODE_KEY, "always")
+    val metered = text(Constants.METERED_MODE_KEY, "auto")
     val mtu = text(Constants.VPN_MTU_PROFILE_KEY, "auto")
     val bootPolicy = text(Constants.BOOT_CONNECT_POLICY_KEY, "always")
     val tunDriver = text(Constants.TUN_DRIVER_KEY, "fdbased")
@@ -194,6 +195,7 @@ object Settings {
             route,
             processLookup,
             mtu,
+            metered,
             bootPolicy,
             tunDriver,
             httpPort,

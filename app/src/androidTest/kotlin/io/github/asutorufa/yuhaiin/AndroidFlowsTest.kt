@@ -23,6 +23,8 @@ class AndroidFlowsTest {
     fun childPageReturnsOnApi34WithoutCrashing() {
         open(R.string.route_config_title)
         compose.onNodeWithContentDescription(label(R.string.back)).performClick()
+        // Returning preserves the home scroll position; expose the status card explicitly.
+        compose.onNode(hasScrollAction()).performScrollToIndex(0)
         compose.onNodeWithText(label(R.string.status_disconnected)).assertIsDisplayed()
     }
 

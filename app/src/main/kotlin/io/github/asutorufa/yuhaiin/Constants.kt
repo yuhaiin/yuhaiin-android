@@ -8,6 +8,8 @@ object Constants {
     const val WEB_PORT_KEY = "yuhaiin_port"
     const val ALLOW_LAN_KEY = "allow_lan"
     const val NETWORK_SPEED_KEY = "network_speed"
+    const val NOTIFICATION_SPEED_KEY = "android_notification_speed"
+    const val METERED_MODE_KEY = "vpn_metered_mode"
     const val PER_APP_KEY = "per_app"
     const val APP_BYPASS_KEY = "app_bypass"
     const val TUN_DRIVER_KEY = "Tun Driver"

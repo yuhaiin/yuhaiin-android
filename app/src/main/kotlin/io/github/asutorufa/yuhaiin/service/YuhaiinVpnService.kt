@@ -1,17 +1,22 @@
 package io.github.asutorufa.yuhaiin.service
 
+import android.app.AlarmManager
 import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.net.Network
+import android.net.NetworkCapabilities
 import android.net.VpnService
 import android.os.Build
+import android.os.Bundle
 import android.os.ParcelFileDescriptor
 import android.os.RemoteCallbackList
+import android.os.SystemClock
 import android.util.Log
 import io.github.asutorufa.yuhaiin.Constants
 import io.github.asutorufa.yuhaiin.IYuhaiinVpnBinder
 import io.github.asutorufa.yuhaiin.IYuhaiinVpnCallback
 import io.github.asutorufa.yuhaiin.MainApplication
+import io.github.asutorufa.yuhaiin.R
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -19,7 +24,10 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import yuhaiin.App
 import yuhaiin.Closer
@@ -96,11 +104,87 @@ class YuhaiinVpnService : VpnService() {
     private val vpnNotification by lazy { VpnNotification(this) }
     @Volatile private var lastError: String? = null
     private val app = App()
+    private val commands = Mutex()
+    private var resumeJob: Job? = null
+    private var runtimeEpoch = 0L
+    private val pausePreferences by lazy { getSharedPreferences("vpn_pause", MODE_PRIVATE) }
+    private val alarm by lazy { getSystemService(AlarmManager::class.java) }
+    @Volatile private var status = VpnStatus()
+
+    override fun onCreate() {
+        super.onCreate()
+        val sameBoot = pausePreferences.getInt("bootCount", -1) == bootCount()
+        status =
+            status.copy(resumeAt = if (sameBoot) pausePreferences.getLong("resumeAt", 0) else 0)
+        if (!sameBoot) pausePreferences.edit().clear().apply()
+        publishStatus()
+    }
+
+    private fun publishStatus() {
+        VpnWidget.update(this, status)
+        if (foregroundStarted) vpnNotification.update(status)
+    }
+
+    private fun bootCount() =
+        android.provider.Settings.Global.getInt(
+            contentResolver,
+            android.provider.Settings.Global.BOOT_COUNT,
+            -1,
+        )
+
+    private fun setResumeAt(deadline: Long) {
+        resumeJob?.cancel()
+        resumeJob = null
+        alarm.cancel(VpnActions.service(this, VpnActions.RESUME))
+        pausePreferences
+            .edit()
+            .putLong("resumeAt", deadline)
+            .putInt("bootCount", bootCount())
+            .apply()
+        status = status.copy(resumeAt = deadline)
+        if (deadline > 0) {
+            // The foreground notification remains while paused. An inexact alarm wakes the
+            // timer in idle without asking for Alarms & reminders access.
+            alarm.setAndAllowWhileIdle(
+                AlarmManager.RTC_WAKEUP,
+                deadline,
+                VpnActions.service(this, VpnActions.RESUME),
+            )
+            resumeJob = serviceScope.launch {
+                delay((deadline - System.currentTimeMillis()).coerceAtLeast(0))
+                commands.withLock {
+                    if (status.resumeAt == deadline) {
+                        setResumeAt(0)
+                        startConnection()
+                    }
+                }
+            }
+        }
+        publishStatus()
+    }
+
+    private fun snooze(minutes: Int) {
+        if (minutes !in listOf(5, 15, 30)) return
+        serviceScope.launch {
+            commands.withLock {
+                if (state != State.CONNECTED) return@withLock
+                setResumeAt(System.currentTimeMillis() + minutes * 60_000L)
+                stopInternal(StopReason.USER, keepStarted = true)
+            }
+        }
+    }
 
     private fun transitionTo(next: State) {
         if (state == next) return
         Log.d(tag, "state ${state.name} -> ${next.name}")
         state = next
+        status =
+            status.copy(
+                state = next,
+                connectedAt = if (next == State.CONNECTED) SystemClock.elapsedRealtime() else 0,
+                speed = "",
+            )
+        publishStatus()
         callbacks.broadcast(next)
     }
 
@@ -130,12 +214,46 @@ class YuhaiinVpnService : VpnService() {
 
     private fun updateUnderlyingNetwork(network: Network?) {
         currentUnderlyingNetwork = network
+        refreshNetworkStatus()
         if (mInterface == null) return
 
         val applied = this@YuhaiinVpnService.setUnderlyingNetworks(network?.let { arrayOf(it) })
         if (!applied) {
             Log.w(tag, "failed to update VPN underlying network")
         }
+    }
+
+    private fun refreshNetworkStatus() {
+        val connectivity = (application as MainApplication).connectivity
+        val active = connectivity.activeNetwork?.let(connectivity::getNetworkCapabilities)
+        val caps =
+            currentUnderlyingNetwork?.let(connectivity::getNetworkCapabilities)
+                ?: active?.takeIf {
+                    // VPN capabilities can include the transports of the actual underlying
+                    // network, even when the optional network monitor is disabled.
+                    it.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
+                        it.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) ||
+                        it.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)
+                }
+                ?: connectivity.allNetworks
+                    .asSequence()
+                    .mapNotNull(connectivity::getNetworkCapabilities)
+                    .firstOrNull {
+                        it.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN) &&
+                            it.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                    }
+        val network =
+            when {
+                caps == null -> ""
+                caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ->
+                    getString(R.string.network_wifi)
+                caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) ->
+                    getString(R.string.network_cellular)
+                caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) ->
+                    getString(R.string.network_ethernet)
+                else -> getString(R.string.network_other)
+            }
+        status = status.copy(network = network)
     }
 
     inner class VpnBinder : IYuhaiinVpnBinder.Stub() {
@@ -166,6 +284,10 @@ class YuhaiinVpnService : VpnService() {
 
         override fun stop() = requestStop(StopReason.USER)
 
+        override fun snapshot(): Bundle = status.toBundle()
+
+        override fun snooze(minutes: Int) = this@YuhaiinVpnService.snooze(minutes)
+
         override fun state(): Int {
             return state.ordinal
         }
@@ -174,14 +296,19 @@ class YuhaiinVpnService : VpnService() {
     override fun onBind(intent: Intent?) =
         if (intent?.action == SERVICE_INTERFACE) super.onBind(intent) else mBinder
 
-    private fun requestStop(reason: StopReason) {
+    private fun requestStop(reason: StopReason, epoch: Long? = null) {
         serviceScope.launch {
-            stopInternal(reason)
+            commands.withLock {
+                if (epoch != null && epoch != runtimeEpoch) return@withLock
+                setResumeAt(0)
+                stopInternal(reason)
+            }
         }
     }
 
-    private suspend fun stopInternal(reason: StopReason) {
-        if (state == State.DISCONNECTED || state == State.DISCONNECTING) return
+    private suspend fun stopInternal(reason: StopReason, keepStarted: Boolean = false) {
+        if (state == State.DISCONNECTING) return
+        runtimeEpoch++
 
         Log.d(tag, "stopping VPN: ${reason.name}")
         transitionTo(State.DISCONNECTING)
@@ -212,9 +339,13 @@ class YuhaiinVpnService : VpnService() {
         runtimeStop?.await()?.onFailure { Log.w(tag, "failed to stop VPN runtime", it) }
 
         cleanupResources()
-        stopForegroundIfNeeded()
+        if (!keepStarted) stopForegroundIfNeeded()
         transitionTo(if (reason == StopReason.START_FAILED) State.ERROR else State.DISCONNECTED)
 
+        if (keepStarted) {
+            publishStatus()
+            return
+        }
         if (latestStartId != 0) {
             stopSelfResult(latestStartId)
         } else {
@@ -223,6 +354,7 @@ class YuhaiinVpnService : VpnService() {
     }
 
     private suspend fun cleanupResources() {
+        currentUnderlyingNetwork = null
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             runCatching { unregisterUnderlyingNetworkCallback() }
                 .onFailure { Log.w(tag, "failed to unregister underlying network callback", it) }
@@ -243,11 +375,49 @@ class YuhaiinVpnService : VpnService() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         latestStartId = startId
-        Log.d(tag, "starting")
+        // Stop/reconnect are delivered to the same service, never a notification trampoline.
+        serviceScope.launch {
+            commands.withLock {
+                when (intent?.action) {
+                    VpnActions.DISCONNECT -> {
+                        setResumeAt(0)
+                        stopInternal(StopReason.USER)
+                    }
+                    VpnActions.RECONNECT -> {
+                        setResumeAt(0)
+                        stopInternal(StopReason.USER, keepStarted = true)
+                        startConnection()
+                    }
+                    VpnActions.RESUME -> {
+                        if (status.resumeAt > 0 && System.currentTimeMillis() >= status.resumeAt) {
+                            setResumeAt(0)
+                            startConnection()
+                        } else if (status.resumeAt == 0L && !foregroundStarted) {
+                            // An alarm already in delivery can survive cancellation. Do not
+                            // leave a sticky started service that could later reconnect.
+                            stopSelfResult(startId)
+                        }
+                    }
+                    else -> {
+                        if (intent == null && status.resumeAt > System.currentTimeMillis()) {
+                            startNotification()
+                            setResumeAt(status.resumeAt)
+                        } else {
+                            setResumeAt(0)
+                            startConnection()
+                        }
+                    }
+                }
+            }
+        }
+        return if (intent?.action == VpnActions.DISCONNECT) START_NOT_STICKY else START_STICKY
+    }
 
+    private fun startConnection() {
+        refreshNetworkStatus()
         if (state != State.DISCONNECTED && state != State.ERROR) {
             Log.d(tag, "ignoring start request while state=${state.name}")
-            return START_STICKY
+            return
         }
 
         try {
@@ -258,8 +428,8 @@ class YuhaiinVpnService : VpnService() {
             lastError = e.toString()
             callbacks.sendMsg(lastError!!)
             transitionTo(State.ERROR)
-            stopSelfResult(startId)
-            return START_NOT_STICKY
+            stopSelfResult(latestStartId)
+            return
         }
 
         lastError = null
@@ -290,12 +460,21 @@ class YuhaiinVpnService : VpnService() {
                 requestStop(StopReason.START_FAILED)
             }
         }
-
-        return START_STICKY
     }
 
     private fun establishVpnInterface(tunAddress: TunAddress) {
-        val builder = Builder().configure(this, tunAddress, vpnMtu())
+        val mtu = vpnMtu()
+        val builder = Builder().configure(this, tunAddress, mtu)
+        status =
+            status.copy(
+                mtu = mtu,
+                ipv4 = tunAddress.iPv4Address,
+                ipv6 = tunAddress.iPv6Address,
+                route =
+                    MainApplication.store.getString(Constants.ROUTE_KEY).ifBlank {
+                        Constants.ALL_ROUTE
+                    },
+            )
         if (shouldRegisterUnderlyingNetworkCallback()) {
             networkMonitor.start()
         }
@@ -304,14 +483,27 @@ class YuhaiinVpnService : VpnService() {
 
     private suspend fun startRuntime(tunAddress: TunAddress) {
         val vpnInterface = mInterface ?: error("VPN interface is not established")
+        val epoch = ++runtimeEpoch
         val opts =
             Opts().apply {
-                notifySpped = vpnNotification
+                notifySpped =
+                    object : yuhaiin.NotifySpped {
+                        override fun notifyEnable() = true
+
+                        override fun notify(speed: String) {
+                            serviceScope.launch {
+                                if (epoch == runtimeEpoch && state == State.CONNECTED) {
+                                    status = status.copy(speed = speed)
+                                    publishStatus()
+                                }
+                            }
+                        }
+                    }
 
                 tun =
                     TUN().apply {
                         fd = vpnInterface.fd
-                        mtu = vpnMtu()
+                        mtu = status.mtu
                         portal = "${tunAddress.iPv4Address}/24"
                         portalV6 = "${tunAddress.iPv6Address}/64"
                         socketProtect = SocketProtect {
@@ -319,7 +511,11 @@ class YuhaiinVpnService : VpnService() {
                         }
                     }
 
-                closeFallback = Closer { requestStop(StopReason.RUNTIME_CLOSED) }
+                closeFallback = Closer {
+                    serviceScope.launch {
+                        if (epoch == runtimeEpoch) requestStop(StopReason.RUNTIME_CLOSED, epoch)
+                    }
+                }
             }
 
         // Claim the runtime before entering native code so partial startup failures
@@ -330,22 +526,26 @@ class YuhaiinVpnService : VpnService() {
         }
     }
 
-    private fun startNotification(name: String = "Default") {
+    private fun startNotification() {
         vpnNotification.createChannel()
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             startForeground(
                 1,
-                vpnNotification.builder().build(),
+                vpnNotification.builder(status).build(),
                 ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE,
             )
         } else {
-            startForeground(1, vpnNotification.builder().build())
+            startForeground(1, vpnNotification.builder(status).build())
         }
         foregroundStarted = true
+        publishStatus()
     }
 
     override fun onDestroy() {
+        resumeJob?.cancel()
+        runtimeEpoch++
+        VpnWidget.update(this, VpnStatus())
         startupJob?.cancel()
         startupJob = null
 

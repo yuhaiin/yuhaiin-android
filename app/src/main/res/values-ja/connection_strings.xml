@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="metered_mode">従量制モード</string>
+    <string name="metered_hint">Auto は基盤ネットワークに従います。Unmetered でも Android は基盤の従量制状態を継承します。再接続で適用。</string>
+    <string name="status_paused">一時停止中</string>
+    <string name="cancel_resume">自動再開をキャンセル</string>
+    <string name="resume_now">今すぐ再開</string>
+    <string name="reconnect">再接続</string>
+    <string name="resume_time">%1$s に再開</string>
+    <string name="snooze">接続を一時停止</string>
+    <string name="snooze_minutes">%1$d 分間停止</string>
+    <string name="pause_remaining">%1$d 分後に自動再開</string>
+    <string name="snooze_hint">端末のスリープ中は再開が遅れる場合があります。常時接続 VPN のロックダウン中は停止時に通信が遮断されます。</string>
+    <string name="connection_duration">接続時間：%1$s</string>
+    <string name="speed_waiting">通信速度を取得中…</string>
+    <string name="connection_network">ネットワーク：%1$s · MTU：%2$d</string>
+    <string name="connection_route">ルート：%1$s</string>
+    <string name="network_wifi">Wi-Fi</string>
+    <string name="network_cellular">モバイル</string>
+    <string name="network_ethernet">イーサネット</string>
+    <string name="network_other">その他</string>
+    <string name="widget_description">VPN 接続状態とクイック操作</string>
+    <string name="switch_route">ルート切替</string>
+    <string-array name="metered_entries"><item>Auto</item><item>Metered</item><item>Unmetered</item></string-array>
+</resources>

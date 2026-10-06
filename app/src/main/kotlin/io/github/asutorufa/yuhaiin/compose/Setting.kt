@@ -30,6 +30,9 @@ fun SettingCompose(
     onOpenWebView: () -> Unit,
     onOpenLogcat: () -> Unit,
     error: String? = null,
+    status: io.github.asutorufa.yuhaiin.service.VpnStatus =
+        io.github.asutorufa.yuhaiin.service.VpnStatus(),
+    snooze: (Int) -> Unit = {},
 ) {
     val settings = MainApplication.settings
     val values by settings.snapshot.collectAsStateWithLifecycle()
@@ -71,6 +74,8 @@ fun SettingCompose(
                                 startService,
                                 stopService,
                                 onOpenWebView,
+                                status,
+                                snooze,
                             )
                         }
                         item {
@@ -107,6 +112,21 @@ fun SettingCompose(
                                 values,
                                 R.drawable.speed_24px,
                                 R.string.network_speed_sum,
+                            )
+                        }
+                        item {
+                            TextPreference(
+                                R.string.metered_mode,
+                                Settings.metered,
+                                values,
+                                R.array.metered_values,
+                                R.array.metered_entries,
+                                R.drawable.speed_24px,
+                            )
+                            Text(
+                                stringResource(R.string.metered_hint),
+                                Modifier.padding(horizontal = 24.dp),
+                                style = MaterialTheme.typography.bodySmall,
                             )
                         }
                         item { SectionHeading(stringResource(R.string.route_section)) }

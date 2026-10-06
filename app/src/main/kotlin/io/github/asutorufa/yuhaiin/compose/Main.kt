@@ -79,6 +79,8 @@ private fun ChangeSystemBarsTheme(activity: MainActivity, lightTheme: Boolean) {
 fun Main(activity: MainActivity) {
     val vpnState by activity.state.collectAsStateWithLifecycle()
     val error by activity.error.collectAsStateWithLifecycle()
+    val status by activity.status.collectAsStateWithLifecycle()
+    val navigationAction by activity.navigationAction.collectAsStateWithLifecycle()
     val colorScheme =
         when {
             Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
@@ -102,6 +104,14 @@ fun Main(activity: MainActivity) {
                 remember(backStack) {
                     AppNavigator(backStack, activity::finish)
                 }
+
+            LaunchedEffect(navigationAction) {
+                if (navigationAction == io.github.asutorufa.yuhaiin.service.VpnActions.DASHBOARD) {
+                    navigator.push(WebViewRoute)
+                    activity.navigationAction.value = null
+                }
+            }
+            RouteShortcutPicker(activity, navigationAction)
 
             NavDisplay(
                 backStack = backStack,
@@ -178,6 +188,8 @@ fun Main(activity: MainActivity) {
                             with(this@SharedTransitionLayout) {
                                 SettingCompose(
                                     vpnState = vpnState,
+                                    status = status,
+                                    snooze = { activity.vpnBinder?.snooze(it) },
                                     error = error,
                                     stopService = { activity.vpnBinder?.stop() },
                                     startService = { activity.startService() },
