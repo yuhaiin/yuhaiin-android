@@ -116,7 +116,7 @@ class NativeContractsTest {
         val device = UiDevice.getInstance(instrumentation)
         val dashboard =
             device.wait(
-                Until.findObject(By.text(compose.activity.getString(R.string.open_dashboard))),
+                Until.findObject(By.desc(compose.activity.getString(R.string.open_dashboard))),
                 5000,
             )
         assertNotNull("Connected home must offer the dashboard", dashboard)

@@ -12,6 +12,7 @@ object VpnActions {
     const val RECONNECT = "io.github.asutorufa.yuhaiin.RECONNECT"
     const val DASHBOARD = "io.github.asutorufa.yuhaiin.DASHBOARD"
     const val ROUTES = "io.github.asutorufa.yuhaiin.ROUTES"
+    const val REFRESH_MONITORING = "io.github.asutorufa.yuhaiin.REFRESH_MONITORING"
     const val RESUME = "io.github.asutorufa.yuhaiin.RESUME"
 
     fun activityIntent(context: Context, action: String) =

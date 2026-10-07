@@ -7,6 +7,7 @@ import android.app.NotificationManager
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
@@ -16,6 +17,7 @@ import io.github.asutorufa.yuhaiin.R
 
 class VpnNotification(private val context: Context) {
     private val manager = NotificationManagerCompat.from(context)
+    private var published: Triple<YuhaiinVpnService.Companion.State, Long, String?>? = null
 
     fun createChannel() {
         if (Build.VERSION.SDK_INT >= 26)
@@ -76,7 +78,7 @@ class VpnNotification(private val context: Context) {
         return builder
     }
 
-    fun update(status: VpnStatus) {
+    private fun canShow(): Boolean {
         if (
             Build.VERSION.SDK_INT >= 33 &&
                 ContextCompat.checkSelfPermission(
@@ -84,7 +86,37 @@ class VpnNotification(private val context: Context) {
                     Manifest.permission.POST_NOTIFICATIONS,
                 ) != PackageManager.PERMISSION_GRANTED
         )
+            return false
+        if (!manager.areNotificationsEnabled()) return false
+        return Build.VERSION.SDK_INT < 26 ||
+            context
+                .getSystemService(NotificationManager::class.java)
+                .getNotificationChannel(context.packageName)
+                ?.importance != NotificationManager.IMPORTANCE_NONE
+    }
+
+    fun needsSpeedUpdates(): Boolean =
+        MainApplication.store.getBoolean(Constants.NOTIFICATION_SPEED_KEY) && canShow()
+
+    fun update(status: VpnStatus) {
+        if (!canShow()) {
+            published = null
             return
-        if (manager.areNotificationsEnabled()) manager.notify(1, builder(status).build())
+        }
+        val display =
+            Triple(
+                status.state,
+                status.resumeAt,
+                if (MainApplication.store.getBoolean(Constants.NOTIFICATION_SPEED_KEY)) status.speed
+                else null,
+            )
+        if (display == published) return
+        try {
+            manager.notify(1, builder(status).build())
+            published = display
+        } catch (error: SecurityException) {
+            published = null
+            Log.w("VpnNotification", "Notification permission changed", error)
+        }
     }
 }

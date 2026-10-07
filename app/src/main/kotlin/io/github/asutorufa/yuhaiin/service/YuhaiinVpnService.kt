@@ -1,7 +1,11 @@
 package io.github.asutorufa.yuhaiin.service
 
 import android.app.AlarmManager
+import android.app.NotificationManager
+import android.content.BroadcastReceiver
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.ServiceInfo
 import android.net.Network
 import android.net.NetworkCapabilities
@@ -9,9 +13,11 @@ import android.net.VpnService
 import android.os.Build
 import android.os.Bundle
 import android.os.ParcelFileDescriptor
+import android.os.PowerManager
 import android.os.RemoteCallbackList
 import android.os.SystemClock
 import android.util.Log
+import androidx.core.content.ContextCompat
 import io.github.asutorufa.yuhaiin.Constants
 import io.github.asutorufa.yuhaiin.IYuhaiinVpnBinder
 import io.github.asutorufa.yuhaiin.IYuhaiinVpnCallback
@@ -50,7 +56,24 @@ class YuhaiinVpnService : VpnService() {
         private const val DEFAULT_VPN_MTU = 9000
     }
 
-    private val callbacks = RemoteCallbackList<IYuhaiinVpnCallback>()
+    private val callbacks =
+        object : RemoteCallbackList<IYuhaiinVpnCallback>() {
+            override fun onCallbackDied(callback: IYuhaiinVpnCallback) {
+                serviceScope.launch { refreshMonitoring() }
+            }
+        }
+    private val power by lazy { getSystemService(PowerManager::class.java) }
+    private var samplingInterval = 0L
+    private var publishedWidgetStatus: Triple<State, Long, String>? = null
+    private val monitoringReceiver =
+        object : BroadcastReceiver() {
+            override fun onReceive(context: Context, intent: Intent) {
+                refreshMonitoring()
+                publishStatus()
+            }
+        }
+
+    private fun hasVisibleUi() = power.isInteractive && callbacks.registeredCallbackCount > 0
 
     private fun RemoteCallbackList<IYuhaiinVpnCallback>.broadcast(state: State) {
         val n = beginBroadcast()
@@ -125,11 +148,29 @@ class YuhaiinVpnService : VpnService() {
         status =
             status.copy(resumeAt = if (sameBoot) pausePreferences.getLong("resumeAt", 0) else 0)
         if (!sameBoot) pausePreferences.edit().clear().apply()
+        ContextCompat.registerReceiver(
+            this,
+            monitoringReceiver,
+            IntentFilter().apply {
+                addAction(Intent.ACTION_SCREEN_ON)
+                addAction(Intent.ACTION_SCREEN_OFF)
+                addAction(VpnActions.REFRESH_MONITORING)
+                if (Build.VERSION.SDK_INT >= 28) {
+                    addAction(NotificationManager.ACTION_APP_BLOCK_STATE_CHANGED)
+                    addAction(NotificationManager.ACTION_NOTIFICATION_CHANNEL_BLOCK_STATE_CHANGED)
+                }
+            },
+            ContextCompat.RECEIVER_NOT_EXPORTED,
+        )
         publishStatus()
     }
 
     private fun publishStatus() {
-        VpnWidget.update(this, status)
+        val widgetStatus = Triple(status.state, status.resumeAt, status.speed)
+        if (widgetStatus != publishedWidgetStatus) {
+            VpnWidget.update(this, status)
+            publishedWidgetStatus = widgetStatus
+        }
         if (foregroundStarted) vpnNotification.update(status)
     }
 
@@ -231,8 +272,8 @@ class YuhaiinVpnService : VpnService() {
         currentUnderlyingNetwork = network
         refreshNetworkStatus()
         if (changed && state == State.CONNECTED) {
-            status = status.copy(nativeHealth = "", healthError = "")
-            checkHealth(replace = true)
+            invalidateHealth()
+            if (hasVisibleUi()) checkHealth()
         }
         if (mInterface == null) return
 
@@ -266,6 +307,7 @@ class YuhaiinVpnService : VpnService() {
     inner class VpnBinder : IYuhaiinVpnBinder.Stub() {
         override fun registerCallback(cb: IYuhaiinVpnCallback?) {
             if (cb == null || !callbacks.register(cb)) return
+            serviceScope.launch { refreshMonitoring() }
             try {
                 cb.onStateChanged(state.ordinal)
                 lastError?.let(cb::onMsg)
@@ -276,6 +318,7 @@ class YuhaiinVpnService : VpnService() {
 
         override fun unregisterCallback(cb: IYuhaiinVpnCallback?) {
             if (cb != null) callbacks.unregister(cb)
+            serviceScope.launch { refreshMonitoring() }
         }
 
         override fun proxyGet(url: String?): ByteArray {
@@ -292,6 +335,10 @@ class YuhaiinVpnService : VpnService() {
         override fun stop() = requestStop(StopReason.USER)
 
         override fun snapshot(): Bundle = status.toBundle()
+
+        override fun refreshMonitoring() {
+            serviceScope.launch { this@YuhaiinVpnService.refreshMonitoring() }
+        }
 
         override fun checkHealth() {
             serviceScope.launch { this@YuhaiinVpnService.checkHealth() }
@@ -322,9 +369,8 @@ class YuhaiinVpnService : VpnService() {
         runtimeEpoch++
         statusJob?.cancelAndJoin()
         statusJob = null
-        healthGeneration++
-        healthJob?.cancel()
-        healthJob = null
+        samplingInterval = 0
+        invalidateHealth()
         saveSessionSummary()
 
         Log.d(tag, "stopping VPN: ${reason.name}")
@@ -467,8 +513,8 @@ class YuhaiinVpnService : VpnService() {
 
                 if (state == State.CONNECTING) {
                     transitionTo(State.CONNECTED)
-                    startStatusCollection()
-                    checkHealth()
+                    lastHealthAttempt = 0
+                    refreshMonitoring()
                 }
             } catch (e: CancellationException) {
                 throw e
@@ -505,20 +551,8 @@ class YuhaiinVpnService : VpnService() {
         val epoch = ++runtimeEpoch
         val opts =
             Opts().apply {
-                notifySpped =
-                    object : yuhaiin.NotifySpped {
-                        override fun notifyEnable() = true
-
-                        override fun notify(speed: String) {
-                            serviceScope.launch {
-                                if (epoch == runtimeEpoch && state == State.CONNECTED) {
-                                    status = status.copy(speed = speed)
-                                    publishStatus()
-                                }
-                            }
-                        }
-                    }
-
+                // Android computes rates from session counters only while a display needs them.
+                // Leaving NotifySpped unset prevents the core's unconditional rate ticker.
                 tun =
                     TUN().apply {
                         fd = vpnInterface.fd
@@ -545,10 +579,26 @@ class YuhaiinVpnService : VpnService() {
         }
     }
 
-    private fun startStatusCollection() {
-        val epoch = runtimeEpoch
+    private fun refreshMonitoring() {
+        val visible = hasVisibleUi()
+        val interval =
+            when {
+                state != State.CONNECTED || !power.isInteractive -> 0L
+                visible -> 2500L
+                vpnNotification.needsSpeedUpdates() || VpnWidget.isInstalled(this) -> 10_000L
+                else -> 0L
+            }
+        if (interval == samplingInterval) return
+        samplingInterval = interval
         statusJob?.cancel()
+        statusJob = null
+        // Rebaseline after a suspension or cadence change; never show an average over hidden time.
+        status = status.copy(speed = "")
+        publishStatus()
+        if (interval == 0L) return
+        val epoch = runtimeEpoch
         statusJob = serviceScope.launch {
+            val rates = TrafficRateSampler()
             while (epoch == runtimeEpoch && state == State.CONNECTED) {
                 val snapshot = withContext(Dispatchers.IO) { runCatching { app.nativeStatus() } }
                 if (epoch != runtimeEpoch || state != State.CONNECTED) break
@@ -556,27 +606,46 @@ class YuhaiinVpnService : VpnService() {
                     .onSuccess { value ->
                         val before = decodeNativeStatus(status.nativeStatus)
                         val after = decodeNativeStatus(value)
-                        status = status.copy(nativeStatus = value)
+                        val speed = after?.let { rates.sample(it, SystemClock.elapsedRealtime()) }
+                        // Background notification/widget consumers need rates, not UI summaries.
+                        status =
+                            status.copy(
+                                nativeStatus = if (hasVisibleUi()) value else status.nativeStatus,
+                                speed = speed ?: status.speed,
+                            )
                         if (
                             before != null &&
                                 (before.tcp?.id != after?.tcp?.id ||
                                     before.udp?.id != after?.udp?.id)
                         ) {
-                            status = status.copy(nativeHealth = "", healthError = "")
-                            checkHealth(replace = true)
+                            invalidateHealth()
+                            if (hasVisibleUi()) checkHealth()
                         }
+                        publishStatus()
                     }
                     .onFailure { Log.w(tag, "Unable to read core status", it) }
-                if (SystemClock.elapsedRealtime() - lastHealthAttempt >= 60_000) checkHealth()
-                delay(2500)
+                if (
+                    hasVisibleUi() &&
+                        (status.nativeHealth.isBlank() ||
+                            SystemClock.elapsedRealtime() - lastHealthAttempt >= 60_000)
+                ) {
+                    checkHealth()
+                }
+                delay(interval)
             }
         }
     }
 
-    private fun checkHealth(replace: Boolean = false) {
-        if (state != State.CONNECTED) return
-        if (healthJob?.isActive == true && !replace) return
-        if (replace) healthJob?.cancel()
+    private fun invalidateHealth() {
+        healthGeneration++
+        healthJob?.cancel()
+        healthJob = null
+        status = status.copy(nativeHealth = "", healthError = "", healthChecking = false)
+    }
+
+    private fun checkHealth() {
+        if (state != State.CONNECTED || !hasVisibleUi()) return
+        if (healthJob?.isActive == true) return
         lastHealthAttempt = SystemClock.elapsedRealtime()
         val generation = ++healthGeneration
         val epoch = runtimeEpoch
@@ -627,6 +696,7 @@ class YuhaiinVpnService : VpnService() {
     }
 
     override fun onDestroy() {
+        unregisterReceiver(monitoringReceiver)
         resumeJob?.cancel()
         statusJob?.cancel()
         healthJob?.cancel()
