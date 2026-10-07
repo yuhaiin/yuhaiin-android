@@ -31,7 +31,9 @@ class VpnWidget : AppWidgetProvider() {
             object : ServiceConnection {
                 override fun onServiceConnected(name: ComponentName, binder: IBinder) {
                     runCatching {
-                        VpnStatus.fromBundle(IYuhaiinVpnBinder.Stub.asInterface(binder).snapshot())
+                        val service = IYuhaiinVpnBinder.Stub.asInterface(binder)
+                        service.refreshMonitoring()
+                        VpnStatus.fromBundle(service.snapshot())
                     }
                         .onSuccess { update(appContext, it) }
                     finish()
@@ -58,7 +60,16 @@ class VpnWidget : AppWidgetProvider() {
         if (!bound) finish() else handler.postDelayed({ finish() }, 8000)
     }
 
+    override fun onDisabled(context: Context) {
+        context.sendBroadcast(Intent(VpnActions.REFRESH_MONITORING).setPackage(context.packageName))
+    }
+
     companion object {
+        fun isInstalled(context: Context): Boolean =
+            AppWidgetManager.getInstance(context)
+                .getAppWidgetIds(ComponentName(context, VpnWidget::class.java))
+                .isNotEmpty()
+
         fun update(context: Context, status: VpnStatus) {
             val manager = AppWidgetManager.getInstance(context)
             val ids = manager.getAppWidgetIds(ComponentName(context, VpnWidget::class.java))

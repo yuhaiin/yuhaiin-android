@@ -5,7 +5,6 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.core.content.FileProvider
-import io.github.asutorufa.yuhaiin.Constants
 import io.github.asutorufa.yuhaiin.MainApplication
 import io.github.asutorufa.yuhaiin.R
 import java.io.File
@@ -74,7 +73,6 @@ object ConfigBackup {
             // in either process and restores every configuration table atomically.
             MainApplication.settings.commit {
                 Yuhaiin.importConfig(data)
-                it.putBoolean(Constants.NETWORK_SPEED_KEY, true)
             }
             MainApplication.settings.refresh()
             io.github.asutorufa.yuhaiin.data.RouteRepository.refresh()

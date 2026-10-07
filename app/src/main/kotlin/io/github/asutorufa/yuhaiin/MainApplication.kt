@@ -1,18 +1,23 @@
 package io.github.asutorufa.yuhaiin
 
 import android.app.Application
+import android.content.Intent
 import android.net.ConnectivityManager
 import android.os.Build
 import android.util.Log
 import androidx.core.content.getSystemService
 import go.Seq
 import io.github.asutorufa.yuhaiin.data.AppSettings
+import io.github.asutorufa.yuhaiin.service.VpnActions
 import io.github.asutorufa.yuhaiin.update.UpdateManager
 import java.net.InetSocketAddress
 import java.net.NetworkInterface
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import yuhaiin.AddressIter
 import yuhaiin.AddressPrefix
@@ -102,29 +107,39 @@ open class MainApplication : Application() {
         store = Yuhaiin.getStore()
         updateManager = UpdateManager(this)
         installedApps = io.github.asutorufa.yuhaiin.data.InstalledAppsRepository(packageManager)
+        val settingsScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
         settings =
             AppSettings(
                 store,
-                CoroutineScope(SupervisorJob() + Dispatchers.IO),
+                settingsScope,
                 java.io.File(noBackupFilesDir, "settings-init.lock"),
             ) {
                 ensureBatteryDefaults()
                 initRoutes()
             }
+        settingsScope.launch {
+            settings.snapshot
+                .map { it[Constants.NOTIFICATION_SPEED_KEY] }
+                .distinctUntilChanged()
+                .collect {
+                    // Broadcast only after the Store write is visible to the remote VPN process.
+                    settings.flush()
+                    sendBroadcast(Intent(VpnActions.REFRESH_MONITORING).setPackage(packageName))
+                }
+        }
         Yuhaiin.setInterfaces(GetInterfaces())
         Yuhaiin.setProcessDumper(UidDumper())
     }
 
     private fun ensureBatteryDefaults() {
-        // The core's callback also feeds the native status page. Preserve the old notification
-        // preference separately before enabling collection, including an explicit false.
+        // Preserve the legacy notification preference, including an explicit false.
+        // Display sampling is now managed by the VPN service's consumers.
         if (store.getString(Constants.NOTIFICATION_SPEED_KEY).isBlank()) {
             store.putBoolean(
                 Constants.NOTIFICATION_SPEED_KEY,
                 store.getBoolean(Constants.NETWORK_SPEED_KEY),
             )
         }
-        store.putBoolean(Constants.NETWORK_SPEED_KEY, true)
         if (store.getString(Constants.PROCESS_LOOKUP_MODE_KEY).isBlank()) {
             store.putString(Constants.PROCESS_LOOKUP_MODE_KEY, "always")
         }

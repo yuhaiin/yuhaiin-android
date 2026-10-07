@@ -19,6 +19,9 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
 import io.github.asutorufa.yuhaiin.R
 import io.github.asutorufa.yuhaiin.service.VpnStatus
 import io.github.asutorufa.yuhaiin.service.YuhaiinVpnService.Companion.State
@@ -36,12 +39,17 @@ fun ConnectionCard(
     snooze: (Int) -> Unit = {},
 ) {
     var now by remember { mutableLongStateOf(SystemClock.elapsedRealtime()) }
+    var wallNow by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
     var pauseMenu by remember { mutableStateOf(false) }
     var detailsExpanded by rememberSaveable { mutableStateOf(false) }
-    LaunchedEffect(status.connectedAt, status.resumeAt) {
-        while (status.connectedAt > 0 || status.resumeAt > 0) {
-            now = SystemClock.elapsedRealtime()
-            delay(1000)
+    LaunchedEffect(lifecycle, status.connectedAt, status.resumeAt) {
+        lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            while (status.connectedAt > 0 || status.resumeAt > 0) {
+                now = SystemClock.elapsedRealtime()
+                wallNow = System.currentTimeMillis()
+                delay(1000)
+            }
         }
     }
     val connected = state == State.CONNECTED
@@ -128,9 +136,7 @@ fun ConnectionCard(
                 )
             }
             if (paused) {
-                val minutes =
-                    ((status.resumeAt - System.currentTimeMillis()).coerceAtLeast(0) + 59_999) /
-                        60_000
+                val minutes = ((status.resumeAt - wallNow).coerceAtLeast(0) + 59_999) / 60_000
                 Text(stringResource(R.string.pause_remaining, minutes.toInt()))
                 Text(
                     stringResource(R.string.snooze_hint),
