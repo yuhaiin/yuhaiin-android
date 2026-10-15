@@ -162,6 +162,8 @@
     <string name="vpn_mtu_profile_title">VPN MTU</string>
     <string name="vpn_permission_cancelled">未获得 VPN 权限。点击连接可重试。</string>
     <string name="web_back">上一网页</string>
+    <string name="web_controls">控制面板操作</string>
+    <string name="web_close">返回应用</string>
     <string name="web_forward">下一网页</string>
     <string name="web_not_running">控制面板暂不可用，请检查 VPN 是否正在运行。</string>
     <string name="web_render_failed">网页渲染进程已停止。重试以重新打开控制面板。</string>

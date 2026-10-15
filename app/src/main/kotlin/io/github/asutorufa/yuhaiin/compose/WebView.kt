@@ -12,13 +12,18 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.SavedStateHandle
@@ -49,6 +54,7 @@ fun WebViewComponent(onBack: () -> Unit, getPort: () -> Int) {
     val renderError by rememberUpdatedState(stringResource(R.string.web_render_failed))
     val scope = rememberCoroutineScope()
     var view by remember { mutableStateOf<WebView?>(null) }
+    var controlsExpanded by rememberSaveable { mutableStateOf(false) }
     var loading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
     var canBack by remember { mutableStateOf(false) }
@@ -82,42 +88,9 @@ fun WebViewComponent(onBack: () -> Unit, getPort: () -> Int) {
         }
     }
     BackHandler(enabled = canBack && error == null) { view?.goBack() }
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.open_dashboard)) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
-                    }
-                },
-                actions = {
-                    IconButton(onClick = ::refresh) {
-                        Icon(Icons.Default.Refresh, stringResource(R.string.refresh))
-                    }
-                },
-            )
-        },
-        bottomBar = {
-            Surface(tonalElevation = 3.dp) {
-                Row(
-                    Modifier.fillMaxWidth().navigationBarsPadding(),
-                    horizontalArrangement = Arrangement.Center,
-                ) {
-                    IconButton(enabled = canBack, onClick = { view?.goBack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.web_back))
-                    }
-                    IconButton(enabled = canForward, onClick = { view?.goForward() }) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowForward,
-                            stringResource(R.string.web_forward),
-                        )
-                    }
-                }
-            }
-        },
-    ) { padding ->
-        Box(Modifier.fillMaxSize().padding(padding)) {
+    Scaffold { padding ->
+        // Only system insets reserve space. Native browser controls float over the page.
+        Box(Modifier.fillMaxSize().padding(padding).consumeWindowInsets(padding).imePadding()) {
             if (port > 0)
                 key(generation) {
                     AndroidView(
@@ -271,6 +244,58 @@ fun WebViewComponent(onBack: () -> Unit, getPort: () -> Int) {
                         Button(onClick = ::refresh) { Text(stringResource(R.string.retry)) }
                     }
                 }
+            Box(Modifier.align(Alignment.BottomEnd).padding(12.dp)) {
+                val controlsLabel = stringResource(R.string.web_controls)
+                SmallFloatingActionButton(
+                    onClick = { controlsExpanded = !controlsExpanded },
+                    modifier =
+                        Modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp).semantics {
+                            contentDescription = controlsLabel
+                        },
+                ) {
+                    Icon(Icons.Default.MoreVert, contentDescription = null)
+                }
+                DropdownMenu(
+                    expanded = controlsExpanded,
+                    onDismissRequest = { controlsExpanded = false },
+                ) {
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.web_back)) },
+                        leadingIcon = { Icon(Icons.AutoMirrored.Filled.ArrowBack, null) },
+                        enabled = canBack,
+                        onClick = {
+                            controlsExpanded = false
+                            view?.goBack()
+                        },
+                    )
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.web_forward)) },
+                        leadingIcon = { Icon(Icons.AutoMirrored.Filled.ArrowForward, null) },
+                        enabled = canForward,
+                        onClick = {
+                            controlsExpanded = false
+                            view?.goForward()
+                        },
+                    )
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.refresh)) },
+                        leadingIcon = { Icon(Icons.Default.Refresh, null) },
+                        onClick = {
+                            controlsExpanded = false
+                            refresh()
+                        },
+                    )
+                    HorizontalDivider()
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.web_close)) },
+                        leadingIcon = { Icon(Icons.Default.Close, null) },
+                        onClick = {
+                            controlsExpanded = false
+                            onBack()
+                        },
+                    )
+                }
+            }
         }
     }
 }
