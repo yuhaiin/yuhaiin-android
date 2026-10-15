@@ -162,6 +162,8 @@
     <string name="vpn_mtu_profile_title">VPN MTU</string>
     <string name="vpn_permission_cancelled">VPN 権限が許可されませんでした。接続をタップして再試行してください。</string>
     <string name="web_back">前のページ</string>
+    <string name="web_controls">ダッシュボードの操作</string>
+    <string name="web_close">アプリに戻る</string>
     <string name="web_forward">次のページ</string>
     <string name="web_not_running">ダッシュボードを利用できません。VPN が実行中か確認してください。</string>
     <string name="web_render_failed">描画プロセスが停止しました。再試行してダッシュボードを開いてください。</string>
