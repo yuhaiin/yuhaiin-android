@@ -127,4 +127,10 @@
     <string name="Connect">Connect</string>
     <string name="Stop">Stop</string>
     <string name="Open">Open</string>
+    <string name="tun_stack_title">TCP/IP Stack</string>
+    <string name="tun_stack_legacy">Existing (gVisor / tun2socket)</string>
+    <string name="tun_stack_lightweight">Lightweight (experimental)</string>
+    <string name="tun_congestion_title">Congestion Control</string>
+    <string name="tun_lightweight_driver_note">Channel is required for the lightweight stack. Your previous legacy driver selection is preserved.</string>
+    <string name="tun_stack_experimental_note">Experimental. Requires an updated native Android startup bridge to apply these options; older Go builds continue using the existing stack. Reconnect after updating the native runtime.</string>
 </resources>

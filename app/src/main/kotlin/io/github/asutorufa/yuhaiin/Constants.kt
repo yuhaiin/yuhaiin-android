@@ -13,6 +13,10 @@ object Constants {
     const val PER_APP_KEY = "per_app"
     const val APP_BYPASS_KEY = "app_bypass"
     const val TUN_DRIVER_KEY = "Tun Driver"
+    // These preference keys are shared with the Go Android Store. The native
+    // cmd/android startup bridge must consume both to activate lightweight TUN.
+    const val TUN_STACK_KEY = "android_tun_stack"
+    const val TUN_CONGESTION_CONTROL_KEY = "android_tun_congestion_control"
     const val ALL_ROUTE = "All (Default)"
     const val NON_LOCAL_ROUTE = "Non-Local IPs"
     const val NON_CHINESE_ROUTE = "Non-Chinese IPs"

@@ -171,4 +171,10 @@
     <string name="yuhaiin_port_title">控制面板端口</string>
     <string name="yuhaiin_running">Yuhaiin 正在运行</string>
     <string name="listener_save_hint">点击保存以应用端口设置，重新连接 VPN 后生效。</string>
+    <string name="tun_stack_title">TCP/IP 协议栈</string>
+    <string name="tun_stack_legacy">现有协议栈 (gVisor / tun2socket)</string>
+    <string name="tun_stack_lightweight">轻量协议栈（实验性）</string>
+    <string name="tun_congestion_title">拥塞控制</string>
+    <string name="tun_lightweight_driver_note">轻量协议栈必须使用 Channel 驱动。原有协议栈的驱动选择会保留。</string>
+    <string name="tun_stack_experimental_note">实验性功能。需要更新 Android 原生 Go 启动桥接代码才能使这些选项生效；旧版 Go 内核仍使用原有协议栈。更新原生运行时后需重新连接 VPN。</string>
 </resources>
