@@ -171,4 +171,10 @@
     <string name="yuhaiin_port_title">ダッシュボードのポート</string>
     <string name="yuhaiin_running">Yuhaiin 実行中</string>
     <string name="listener_save_hint">保存するとポート設定を適用します。VPN を再接続すると有効になります。</string>
+    <string name="tun_stack_title">TCP/IP スタック</string>
+    <string name="tun_stack_legacy">従来（gVisor / tun2socket）</string>
+    <string name="tun_stack_lightweight">軽量スタック（実験的）</string>
+    <string name="tun_congestion_title">輻輳制御</string>
+    <string name="tun_lightweight_driver_note">軽量スタックには Channel ドライバーが必要です。従来のドライバー設定は保持されます。</string>
+    <string name="tun_stack_experimental_note">実験的機能。設定を反映するには Android 向けの Go 起動ブリッジの更新が必要です。古い Go ランタイムは従来のスタックを使い続けます。ランタイムの更新後に VPN を再接続してください。</string>
 </resources>

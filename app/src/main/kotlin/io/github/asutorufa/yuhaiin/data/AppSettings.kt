@@ -160,6 +160,9 @@ object Settings {
     val mtu = text(Constants.VPN_MTU_PROFILE_KEY, "auto")
     val bootPolicy = text(Constants.BOOT_CONNECT_POLICY_KEY, "always")
     val tunDriver = text(Constants.TUN_DRIVER_KEY, "fdbased")
+    // Legacy stays the default; congestion control is relevant only for lightweight.
+    val tunStack = text(Constants.TUN_STACK_KEY, "")
+    val tunCongestionControl = text(Constants.TUN_CONGESTION_CONTROL_KEY, "cubic")
     val httpPort =
         SettingKey(
             Constants.HTTP_PORT_KEY,
@@ -198,6 +201,8 @@ object Settings {
             metered,
             bootPolicy,
             tunDriver,
+            tunStack,
+            tunCongestionControl,
             httpPort,
             applications,
             routes,
