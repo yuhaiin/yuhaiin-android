@@ -501,7 +501,9 @@ class YuhaiinVpnService : VpnService() {
             try {
                 val tunAddress =
                     withContext(Dispatchers.IO) {
-                        MainApplication.settings.ready.await()
+                        // UI preference writes are queued. Flush before native startup
+                        // reads the Store, or a fast reconnect can use stale TUN settings.
+                        MainApplication.settings.flush()
                         Yuhaiin.getTunAddress()
                     }
 
