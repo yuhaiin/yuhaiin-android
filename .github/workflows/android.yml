@@ -46,7 +46,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v6
 
       - name: Validate
-        run: ./gradlew :app:lintDebug :app:testDebugUnitTest
+        run: ./gradlew :app:lintDebug :app:testDebugUnitTest :app:assembleDebugAndroidTest
 
       - name: Build with Gradle
         env:
