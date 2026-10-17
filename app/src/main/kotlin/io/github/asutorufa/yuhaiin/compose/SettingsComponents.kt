@@ -71,6 +71,7 @@ fun ListPreferenceSetting(
     icon: Painter? = null,
     entries: Map<String, String>,
     selected: String,
+    summary: String? = null,
     onSelectedChange: (String) -> Unit,
 ) {
     var expanded by rememberSaveable { mutableStateOf(false) }
@@ -87,6 +88,7 @@ fun ListPreferenceSetting(
             label = { Text(title) },
             leadingIcon = icon?.let { { Icon(it, contentDescription = null) } },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
+            supportingText = summary?.let { { Text(it) } },
             modifier =
                 Modifier.menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
                     .fillMaxWidth(),

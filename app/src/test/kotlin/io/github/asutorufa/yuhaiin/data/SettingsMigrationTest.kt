@@ -1,8 +1,14 @@
 package io.github.asutorufa.yuhaiin.data
 
 import io.github.asutorufa.yuhaiin.Constants
+import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.runBlocking
 import org.junit.Test
 import yuhaiin.Store
 
@@ -73,5 +79,29 @@ class SettingsMigrationTest {
         store.putBoolean(Constants.APPEND_HTTP_PROXY_KEY, true)
         migrateHttpProxyKey(store)
         assertTrue(store.getBoolean(Constants.APPEND_HTTP_PROXY_KEY))
+    }
+}
+
+class TunSettingsFlushTest {
+    @Test
+    fun fastStackAndControllerChangesArePersistedBeforeFlushCompletes() = runBlocking {
+        val store = MemoryStore()
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+        try {
+            val settings = AppSettings(store, scope, initialize = {})
+            settings.ready.await()
+            settings.set(Settings.tunStack, "lightweight")
+            settings.set(Settings.tunCongestionControl, "reno")
+            // An immediate second update must be the value read by native startup.
+            settings.set(Settings.tunCongestionControl, "bbr")
+            settings.flush()
+            assertEquals("lightweight", store.getString(Constants.TUN_STACK_KEY))
+            assertEquals("bbr", store.getString(Constants.TUN_CONGESTION_CONTROL_KEY))
+            settings.set(Settings.tunStack, "")
+            settings.flush()
+            assertEquals("", store.getString(Constants.TUN_STACK_KEY))
+        } finally {
+            scope.cancel()
+        }
     }
 }

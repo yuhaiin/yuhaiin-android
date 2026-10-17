@@ -11,8 +11,12 @@ import android.service.quicksettings.TileService
 import androidx.core.content.ContextCompat
 import io.github.asutorufa.yuhaiin.IYuhaiinVpnBinder
 import io.github.asutorufa.yuhaiin.IYuhaiinVpnCallback
+import io.github.asutorufa.yuhaiin.MainApplication
 import io.github.asutorufa.yuhaiin.R
 import io.github.asutorufa.yuhaiin.service.YuhaiinVpnService.Companion.State
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class VpnTileService : TileService() {
     private var bound = false
@@ -95,13 +99,20 @@ class VpnTileService : TileService() {
                 runCatching { binder?.stop() }.onFailure { openConsent() }
             } else if (VpnService.prepare(this) != null) openConsent()
             else
-                runCatching {
-                    ContextCompat.startForegroundService(
-                        this,
-                        Intent(this, YuhaiinVpnService::class.java).setAction(VpnActions.CONNECT),
-                    )
+                // This entry bypasses MainActivity.launchVpn(), which already
+                // flushes the UI process settings queue before starting the :bg
+                // service. Do the same here; a :bg flush cannot wait on this
+                // process's pending preference writes.
+                CoroutineScope(Dispatchers.Main.immediate).launch {
+                    runCatching {
+                        MainApplication.settings.flush()
+                        ContextCompat.startForegroundService(
+                            this@VpnTileService,
+                            Intent(this@VpnTileService, YuhaiinVpnService::class.java)
+                                .setAction(VpnActions.CONNECT),
+                        )
+                    }.onFailure { openConsent() }
                 }
-                    .onFailure { openConsent() }
         }
     }
 

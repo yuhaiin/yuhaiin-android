@@ -11,7 +11,7 @@ class TunStackPreferencesTest {
     fun legacyStackRemainsDefault() {
         assertEquals("", Settings.tunStack.default)
         assertEquals("cubic", Settings.tunCongestionControl.default)
-        assertEquals("fdbased", Settings.tunDriver.default)
+        assertEquals("system_gvisor", Settings.tunDriver.default)
     }
 
     @Test
