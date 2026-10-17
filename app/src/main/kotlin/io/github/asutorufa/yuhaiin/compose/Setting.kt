@@ -229,59 +229,7 @@ fun SettingCompose(
                             )
                         }
                         item { SectionHeading(stringResource(R.string.advanced)) }
-                        item {
-                            ListPreferenceSetting(
-                                stringResource(R.string.tun_stack_title),
-                                painterResource(R.drawable.delivery_truck_bolt_24px),
-                                linkedMapOf(
-                                    "" to stringResource(R.string.tun_stack_legacy),
-                                    "lightweight" to stringResource(R.string.tun_stack_lightweight),
-                                ),
-                                values.setting(Settings.tunStack),
-                            ) { settings.set(Settings.tunStack, it) }
-                        }
-                        if (values.setting(Settings.tunStack) == "lightweight") {
-                            item {
-                                Text(
-                                    stringResource(R.string.tun_stack_experimental_note),
-                                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    style = MaterialTheme.typography.bodySmall,
-                                )
-                            }
-                            item {
-                                ListPreferenceSetting(
-                                    stringResource(R.string.tun_congestion_title),
-                                    painterResource(R.drawable.speed_24px),
-                                    linkedMapOf(
-                                        "reno" to "Reno",
-                                        "cubic" to "CUBIC",
-                                        "bbr" to "BBR",
-                                    ),
-                                    values.setting(Settings.tunCongestionControl),
-                                ) { settings.set(Settings.tunCongestionControl, it) }
-                            }
-                            item {
-                                ListItem(
-                                    headlineContent = { Text(stringResource(R.string.adv_tun_driver_title)) },
-                                    supportingContent = { Text(stringResource(R.string.tun_lightweight_driver_note)) },
-                                    leadingContent = {
-                                        Icon(painterResource(R.drawable.delivery_truck_bolt_24px), null)
-                                    },
-                                )
-                            }
-                        } else {
-                            item {
-                                TextPreference(
-                                    R.string.adv_tun_driver_title,
-                                    Settings.tunDriver,
-                                    values,
-                                    R.array.tun_drivers_value,
-                                    R.array.tun_drivers,
-                                    R.drawable.delivery_truck_bolt_24px,
-                                )
-                            }
-                        }
+                        item { TunStackSettings(values) }
                         item {
                             BooleanPreference(
                                 R.string.sniff_title,
