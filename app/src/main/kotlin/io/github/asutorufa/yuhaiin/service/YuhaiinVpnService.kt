@@ -551,33 +551,41 @@ class YuhaiinVpnService : VpnService() {
     private suspend fun startRuntime(tunAddress: TunAddress) {
         val vpnInterface = mInterface ?: error("VPN interface is not established")
         val epoch = ++runtimeEpoch
-        val opts =
-            Opts().apply {
-                // Android computes rates from session counters only while a display needs them.
-                // Leaving NotifySpped unset prevents the core's unconditional rate ticker.
-                tun =
-                    TUN().apply {
-                        fd = vpnInterface.fd
-                        mtu = status.mtu
-                        portal = "${tunAddress.iPv4Address}/24"
-                        portalV6 = "${tunAddress.iPv6Address}/64"
-                        socketProtect = SocketProtect {
-                            return@SocketProtect protect(it)
+        // Go duplicates the borrowed FD into the selected native TUN driver.
+        // Keep this temporary Android-owned duplicate alive until App.Start
+        // finishes: stopInternal may close mInterface during startup.
+        val startupFd = ParcelFileDescriptor.dup(vpnInterface.fileDescriptor)
+        try {
+            val opts =
+                Opts().apply {
+                    // Android computes rates from session counters only while a display needs them.
+                    // Leaving NotifySpped unset prevents the core's unconditional rate ticker.
+                    tun =
+                        TUN().apply {
+                            fd = startupFd.fd
+                            mtu = status.mtu
+                            portal = "${tunAddress.iPv4Address}/24"
+                            portalV6 = "${tunAddress.iPv6Address}/64"
+                            socketProtect = SocketProtect {
+                                return@SocketProtect protect(it)
+                            }
+                        }
+
+                    closeFallback = Closer {
+                        serviceScope.launch {
+                            if (epoch == runtimeEpoch) requestStop(StopReason.RUNTIME_CLOSED, epoch)
                         }
                     }
-
-                closeFallback = Closer {
-                    serviceScope.launch {
-                        if (epoch == runtimeEpoch) requestStop(StopReason.RUNTIME_CLOSED, epoch)
-                    }
                 }
-            }
 
-        // Claim the runtime before entering native code so partial startup failures
-        // are also handled by the common cleanup path.
-        runtimeOwned = true
-        withContext(Dispatchers.IO) {
-            app.start(opts)
+            // Claim the runtime before entering native code so partial startup failures
+            // are also handled by the common cleanup path.
+            runtimeOwned = true
+            withContext(Dispatchers.IO) {
+                app.start(opts)
+            }
+        } finally {
+            startupFd.close()
         }
     }
 
