@@ -34,6 +34,13 @@ internal fun TunStackSettings(values: Map<String, Any>) {
             linkedMapOf("reno" to "Reno", "cubic" to "CUBIC", "bbr" to "BBR"),
             values.setting(Settings.tunCongestionControl),
         ) { settings.set(Settings.tunCongestionControl, it) }
+        ListPreferenceSetting(
+            stringResource(R.string.tun_output_scheduler_title),
+            painterResource(R.drawable.speed_24px),
+            linkedMapOf("fifo" to "FIFO", "fq_codel" to "FQ-CoDel"),
+            values.setting(Settings.tunOutputScheduler),
+            summary = stringResource(R.string.tun_output_scheduler_note),
+        ) { settings.set(Settings.tunOutputScheduler, it) }
         ListItem(
             headlineContent = { Text(stringResource(R.string.adv_tun_driver_title)) },
             supportingContent = { Text(stringResource(R.string.tun_lightweight_driver_note)) },
