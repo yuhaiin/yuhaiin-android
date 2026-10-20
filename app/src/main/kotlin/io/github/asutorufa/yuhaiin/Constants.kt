@@ -17,6 +17,7 @@ object Constants {
     // cmd/android startup bridge must consume both to activate lightweight TUN.
     const val TUN_STACK_KEY = "android_tun_stack"
     const val TUN_CONGESTION_CONTROL_KEY = "android_tun_congestion_control"
+    const val TUN_OUTPUT_SCHEDULER_KEY = "android_tun_output_scheduler"
     const val ALL_ROUTE = "All (Default)"
     const val NON_LOCAL_ROUTE = "Non-Local IPs"
     const val NON_CHINESE_ROUTE = "Non-Chinese IPs"
