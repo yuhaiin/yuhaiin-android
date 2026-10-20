@@ -130,7 +130,7 @@ dependencies {
     testImplementation(kotlin("test"))
     testImplementation("junit:junit:4.13.2")
     implementation("androidx.appcompat:appcompat:1.8.0")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.12.0")
     implementation("com.google.android.material:material:1.14.0")
     implementation("fastutil:fastutil:5.0.9")
     implementation("androidx.core:core-ktx:1.19.1")
