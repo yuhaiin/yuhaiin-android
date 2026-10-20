@@ -163,6 +163,7 @@ object Settings {
     // Legacy stays the default; congestion control is relevant only for lightweight.
     val tunStack = text(Constants.TUN_STACK_KEY, "")
     val tunCongestionControl = text(Constants.TUN_CONGESTION_CONTROL_KEY, "cubic")
+    val tunOutputScheduler = text(Constants.TUN_OUTPUT_SCHEDULER_KEY, "fifo")
     val httpPort =
         SettingKey(
             Constants.HTTP_PORT_KEY,
@@ -203,6 +204,7 @@ object Settings {
             tunDriver,
             tunStack,
             tunCongestionControl,
+            tunOutputScheduler,
             httpPort,
             applications,
             routes,

@@ -30,11 +30,12 @@ import org.junit.Test
 class TunStackDeviceTest {
     @get:Rule val compose = createAndroidComposeRule<MainActivity>()
 
-    private fun writeSelection(stack: String, cc: String) =
+    private fun writeSelection(stack: String, cc: String, scheduler: String) =
         runBlocking(Dispatchers.IO) {
             MainApplication.settings.commit {
                 it.putString(Constants.TUN_STACK_KEY, stack)
                 it.putString(Constants.TUN_CONGESTION_CONTROL_KEY, cc)
+                it.putString(Constants.TUN_OUTPUT_SCHEDULER_KEY, scheduler)
                 it.putString(Constants.TUN_DRIVER_KEY, "system_gvisor")
             }
         }
@@ -126,7 +127,7 @@ class TunStackDeviceTest {
     }
 
     @Test
-    fun legacyAndLightweightControllersStartAndAcceptTCPUDP() {
+    fun legacyAndLightweightSchedulersStartAndAcceptTCPUDP() {
         val device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
         if (Build.VERSION.SDK_INT >= 33)
             device.executeShellCommand(
@@ -135,20 +136,22 @@ class TunStackDeviceTest {
         val store = MainApplication.store
         val previousStack = store.getString(Constants.TUN_STACK_KEY)
         val previousCC = store.getString(Constants.TUN_CONGESTION_CONTROL_KEY)
+        val previousScheduler = store.getString(Constants.TUN_OUTPUT_SCHEDULER_KEY)
         val previousDriver = store.getString(Constants.TUN_DRIVER_KEY)
         try {
-            for ((stack, cc) in listOf(
-                "" to "cubic",
-                "lightweight" to "reno",
-                "lightweight" to "cubic",
-                "lightweight" to "bbr",
-                "" to "bbr",
+            for ((stack, cc, scheduler) in listOf(
+                Triple("", "cubic", "fq_codel"),
+                Triple("lightweight", "reno", "fifo"),
+                Triple("lightweight", "cubic", "fq_codel"),
+                Triple("lightweight", "bbr", "fifo"),
+                Triple("", "bbr", "fq_codel"),
             )) {
-                writeSelection(stack, cc)
+                writeSelection(stack, cc, scheduler)
                 startVpn(device)
                 val (id, cfg) = tunConfig()
                 assertEquals(stack, cfg.optString("stack"))
                 assertEquals(if (stack.isEmpty()) "" else cc, cfg.optString("congestionControl"))
+                assertEquals(if (stack.isEmpty()) "" else scheduler, cfg.optString("outputScheduler"))
                 assertEquals(
                     if (stack.isEmpty()) "system_gvisor" else "channel",
                     cfg.getString("driver"),
@@ -166,6 +169,7 @@ class TunStackDeviceTest {
                 MainApplication.settings.commit {
                     it.putString(Constants.TUN_STACK_KEY, previousStack)
                     it.putString(Constants.TUN_CONGESTION_CONTROL_KEY, previousCC)
+                    it.putString(Constants.TUN_OUTPUT_SCHEDULER_KEY, previousScheduler)
                     it.putString(Constants.TUN_DRIVER_KEY, previousDriver)
                 }
             }

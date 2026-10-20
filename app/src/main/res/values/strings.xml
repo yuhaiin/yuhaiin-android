@@ -130,6 +130,8 @@
     <string name="tun_stack_title">TCP/IP Stack</string>
     <string name="tun_stack_legacy">Existing (gVisor / tun2socket)</string>
     <string name="tun_stack_lightweight">Lightweight (experimental)</string>
+    <string name="tun_output_scheduler_title">Output Scheduler</string>
+    <string name="tun_output_scheduler_note">Controls the lightweight stack’s outbound packet queue only, not Android’s physical network. FIFO is the default. Reconnect VPN to apply.</string>
     <string name="tun_congestion_title">Congestion Control</string>
     <string name="tun_lightweight_driver_note">Channel is required for the lightweight stack. Your previous legacy driver selection is preserved.</string>
     <string name="tun_stack_experimental_note">Experimental TCP/IP implementation. Reconnect the VPN after changing this setting.</string>

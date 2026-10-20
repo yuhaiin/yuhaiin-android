@@ -84,7 +84,7 @@ class SettingsMigrationTest {
 
 class TunSettingsFlushTest {
     @Test
-    fun fastStackAndControllerChangesArePersistedBeforeFlushCompletes() = runBlocking {
+    fun fastStackControllerAndSchedulerChangesArePersistedBeforeFlushCompletes() = runBlocking {
         val store = MemoryStore()
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
         try {
@@ -92,14 +92,19 @@ class TunSettingsFlushTest {
             settings.ready.await()
             settings.set(Settings.tunStack, "lightweight")
             settings.set(Settings.tunCongestionControl, "reno")
+            settings.set(Settings.tunOutputScheduler, "fifo")
             // An immediate second update must be the value read by native startup.
             settings.set(Settings.tunCongestionControl, "bbr")
+            settings.set(Settings.tunOutputScheduler, "fq_codel")
             settings.flush()
             assertEquals("lightweight", store.getString(Constants.TUN_STACK_KEY))
             assertEquals("bbr", store.getString(Constants.TUN_CONGESTION_CONTROL_KEY))
+            assertEquals("fq_codel", store.getString(Constants.TUN_OUTPUT_SCHEDULER_KEY))
             settings.set(Settings.tunStack, "")
             settings.flush()
             assertEquals("", store.getString(Constants.TUN_STACK_KEY))
+            // Retain the saved preference while legacy is selected. Core ignores it.
+            assertEquals("fq_codel", store.getString(Constants.TUN_OUTPUT_SCHEDULER_KEY))
         } finally {
             scope.cancel()
         }

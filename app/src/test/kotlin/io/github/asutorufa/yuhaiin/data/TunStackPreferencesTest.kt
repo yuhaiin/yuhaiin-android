@@ -11,6 +11,7 @@ class TunStackPreferencesTest {
     fun legacyStackRemainsDefault() {
         assertEquals("", Settings.tunStack.default)
         assertEquals("cubic", Settings.tunCongestionControl.default)
+        assertEquals("fifo", Settings.tunOutputScheduler.default)
         assertEquals("system_gvisor", Settings.tunDriver.default)
     }
 
@@ -18,9 +19,12 @@ class TunStackPreferencesTest {
     fun stackAndCongestionPreferencesAreIndependentOfLegacyDriver() {
         assertEquals("android_tun_stack", Constants.TUN_STACK_KEY)
         assertEquals("android_tun_congestion_control", Constants.TUN_CONGESTION_CONTROL_KEY)
+        assertEquals("android_tun_output_scheduler", Constants.TUN_OUTPUT_SCHEDULER_KEY)
         assertFalse(Settings.tunStack.name == Settings.tunDriver.name)
         assertFalse(Settings.tunCongestionControl.name == Settings.tunDriver.name)
+        assertFalse(Settings.tunOutputScheduler.name == Settings.tunDriver.name)
         assertEquals(1, Settings.all.count { it.name == Constants.TUN_STACK_KEY })
         assertEquals(1, Settings.all.count { it.name == Constants.TUN_CONGESTION_CONTROL_KEY })
+        assertEquals(1, Settings.all.count { it.name == Constants.TUN_OUTPUT_SCHEDULER_KEY })
     }
 }

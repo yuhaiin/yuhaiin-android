@@ -174,6 +174,8 @@
     <string name="tun_stack_title">TCP/IP 协议栈</string>
     <string name="tun_stack_legacy">现有协议栈 (gVisor / tun2socket)</string>
     <string name="tun_stack_lightweight">轻量协议栈（实验性）</string>
+    <string name="tun_output_scheduler_title">输出队列调度</string>
+    <string name="tun_output_scheduler_note">仅作用于轻量协议栈的输出包队列，不修改 Android 物理网络。默认 FIFO，重新连接 VPN 后生效。</string>
     <string name="tun_congestion_title">拥塞控制</string>
     <string name="tun_lightweight_driver_note">轻量协议栈必须使用 Channel 驱动。原有协议栈的驱动选择会保留。</string>
     <string name="tun_stack_experimental_note">实验性 TCP/IP 实现。修改此选项后需重新连接 VPN。</string>
