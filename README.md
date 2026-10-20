@@ -71,6 +71,8 @@ Signed APK names end in `-release.apk`. Release alignment checks, device regress
 
 ## Android connection controls
 
+In **Advanced → TCP/IP Stack**, select **Lightweight (experimental)** to configure **Congestion Control** and **Output Scheduler** independently. Scheduler choices are **FIFO** (default) and **FQ-CoDel** (`fq_codel`). This setting controls only the lightweight stack's outbound packet queue, not Android's system network queue or the legacy gVisor/tun2socket stack. Choices persist across stack switches; changing them requires reconnecting the VPN. The app must be built with a Go core containing the corresponding `cmd/android` startup bridge support.
+
 - Add the **yuhaiin** tile in Quick Settings to connect/disconnect and see the current state. First connection opens Android VPN consent when needed.
 - The running notification offers **Disconnect**, **Reconnect** and **Dashboard**. The native home card shows connection duration, core upload/download rates, physical network type, TUN MTU and addresses, and the active Route.
 - **Metered mode** supports Auto / Metered / Unmetered after reconnecting. Metered explicitly marks the VPN as metered. Android's public VPN API inherits underlying network meteredness for both Auto and Unmetered; it cannot force a cellular connection to become unmetered.
