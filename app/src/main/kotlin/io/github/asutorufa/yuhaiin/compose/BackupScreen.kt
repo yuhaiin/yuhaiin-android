@@ -46,10 +46,12 @@ fun BackupScreen(onBack: () -> Unit, disconnect: suspend () -> Unit) {
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     Scaffold(
         Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        contentWindowInsets = appContentInsets,
         topBar = {
             TopAppBar(
+                windowInsets = appBarInsets,
                 scrollBehavior = scrollBehavior,
-                title = { Text(stringResource(R.string.backup_title)) },
+                title = { ScreenTitle(stringResource(R.string.backup_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))

@@ -24,6 +24,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import io.github.asutorufa.yuhaiin.BuildConfig
 import io.github.asutorufa.yuhaiin.R
@@ -40,11 +42,13 @@ fun AboutScreen(
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     Scaffold(
         Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        contentWindowInsets = appContentInsets,
         topBar = {
             TopAppBar(
+                windowInsets = appBarInsets,
                 scrollBehavior = scrollBehavior,
                 title = {
-                    Text(text = stringResource(R.string.about))
+                    ScreenTitle(stringResource(R.string.about))
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
@@ -77,7 +81,11 @@ fun AboutScreen(
                                 contentDescription = null,
                                 modifier = Modifier.size(64.dp),
                             )
-                            Text("Yuhaiin", style = MaterialTheme.typography.headlineSmall)
+                            Text(
+                                "Yuhaiin",
+                                Modifier.semantics { heading() },
+                                style = MaterialTheme.typography.headlineSmall,
+                            )
                             Text(
                                 stringResource(R.string.about_description),
                                 style = MaterialTheme.typography.bodyMedium,
@@ -96,7 +104,9 @@ fun AboutScreen(
                             Text(
                                 stringResource(R.string.about_version_information),
                                 style = MaterialTheme.typography.titleMedium,
-                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                                modifier =
+                                    Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                                        .semantics { heading() },
                             )
                             VersionRow(
                                 stringResource(R.string.about_version),

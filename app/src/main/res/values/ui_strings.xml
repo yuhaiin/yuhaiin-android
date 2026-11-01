@@ -22,8 +22,9 @@
     <string name="settings_reconnect_hint">Settings are saved automatically. Reconnect the VPN to apply network changes.</string>
     <string name="settings_saved">Saved. Reconnect the VPN to apply this change.</string>
     <string name="listener_title">Listeners</string>
-    <string name="listener_summary">HTTP &amp; SOCKS5 · %1$d</string>
-    <string name="listener_port_hint">HTTP and SOCKS5 share a port. Use 0 to choose an available port automatically.</string>
+    <string name="listener_summary">HTTP &amp; SOCKS5 · Port %1$d</string>
+    <string name="listener_summary_unset">HTTP &amp; SOCKS5 · Port not set</string>
+    <string name="listener_port_hint">HTTP and SOCKS5 share a port. Use 0 to leave it unset; Append HTTP Proxy to VPN then has no effect.</string>
     <string name="listener_proxy_port">HTTP &amp; SOCKS5 port</string>
     <string name="port_invalid">Enter a port from 0 to 65535.</string>
     <string name="listener_web_port">Dashboard port (assigned by the core): %1$d</string>

@@ -17,6 +17,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -27,6 +29,8 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import io.github.asutorufa.yuhaiin.R
 import io.github.asutorufa.yuhaiin.compose.AppMotion
 import io.github.asutorufa.yuhaiin.compose.MaterialLinearProgressIndicator
+import io.github.asutorufa.yuhaiin.compose.appBarInsets
+import io.github.asutorufa.yuhaiin.compose.appContentInsets
 import io.github.asutorufa.yuhaiin.compose.copyText
 import io.github.asutorufa.yuhaiin.compose.routeLabel
 import kotlinx.coroutines.Dispatchers
@@ -83,21 +87,22 @@ fun SharedTransitionScope.RouteEditScreen(
     Scaffold(
         snackbarHost = { SnackbarHost(snackbar, Modifier.imePadding()) },
         contentWindowInsets =
-            if (embedded) WindowInsets(0, 0, 0, 0) else ScaffoldDefaults.contentWindowInsets,
+            if (embedded) WindowInsets(0, 0, 0, 0) else appContentInsets,
         topBar = {
             TopAppBar(
                 windowInsets =
-                    if (embedded) WindowInsets(0, 0, 0, 0) else TopAppBarDefaults.windowInsets,
+                    if (embedded) WindowInsets(0, 0, 0, 0) else appBarInsets,
                 title = {
                     Text(
                         routeLabel(routeName),
                         modifier =
-                            if (animatedContentScope != null)
-                                Modifier.sharedBounds(
-                                    rememberSharedContentState("ROUTE_NAME_$routeName"),
-                                    animatedContentScope,
-                                )
-                            else Modifier,
+                            (if (animatedContentScope != null)
+                                    Modifier.sharedBounds(
+                                        rememberSharedContentState("ROUTE_NAME_$routeName"),
+                                        animatedContentScope,
+                                    )
+                                else Modifier)
+                                .semantics { heading() },
                     )
                 },
                 navigationIcon = {

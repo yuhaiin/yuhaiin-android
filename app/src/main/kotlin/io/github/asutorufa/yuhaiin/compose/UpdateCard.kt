@@ -25,6 +25,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.asutorufa.yuhaiin.R
@@ -57,6 +59,7 @@ fun UpdateCard(
         ) {
             Text(
                 stringResource(R.string.software_update),
+                Modifier.semantics { heading() },
                 style = MaterialTheme.typography.titleMedium,
             )
             Text(
@@ -124,6 +127,7 @@ fun UpdateCard(
             state.release?.let { release ->
                 Text(
                     stringResource(R.string.update_available, release.version),
+                    Modifier.semantics { heading() },
                     style = MaterialTheme.typography.titleSmall,
                 )
                 Text(

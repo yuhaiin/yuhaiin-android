@@ -78,9 +78,11 @@ fun AppListComponent(connected: Boolean = false, onBack: () -> Unit) {
     val dividerAlpha by
         animateFloatAsState(if (content == "list" && list.canScrollBackward) 1f else 0f)
     Scaffold(
+        contentWindowInsets = appContentInsets,
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.adv_app_list_title)) },
+                windowInsets = appBarInsets,
+                title = { ScreenTitle(stringResource(R.string.adv_app_list_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))

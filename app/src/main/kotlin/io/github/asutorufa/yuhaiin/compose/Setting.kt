@@ -45,9 +45,11 @@ fun SettingCompose(
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     Scaffold(
         Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        contentWindowInsets = appContentInsets,
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.yuhaiin)) },
+                windowInsets = appBarInsets,
+                title = { ScreenTitle(stringResource(R.string.yuhaiin)) },
                 scrollBehavior = scrollBehavior,
             )
         },
