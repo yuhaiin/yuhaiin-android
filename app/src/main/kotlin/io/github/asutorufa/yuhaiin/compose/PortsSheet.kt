@@ -3,6 +3,8 @@ package io.github.asutorufa.yuhaiin.compose
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.os.Build
+import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
@@ -30,6 +32,9 @@ fun copyText(context: Context, text: String) {
     context
         .getSystemService(ClipboardManager::class.java)
         .setPrimaryClip(ClipData.newPlainText("yuhaiin", text))
+    // Android 13 and later confirm clipboard writes in their own overlay.
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU)
+        Toast.makeText(context, R.string.copied, Toast.LENGTH_SHORT).show()
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -57,9 +62,10 @@ fun PortsInputForm(store: Store?, addresses: List<String>) {
         val context = LocalContext.current
         val failure by MainApplication.settings.failure.collectAsStateWithLifecycle()
         var saveError by remember { mutableStateOf<String?>(null) }
+        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
         ModalBottomSheet(
             onDismissRequest = { open = false },
-            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+            sheetState = sheetState,
         ) {
             Column(Modifier.fillMaxWidth().heightIn(max = 620.dp).imePadding()) {
                 Column(
@@ -144,7 +150,13 @@ fun PortsInputForm(store: Store?, addresses: List<String>) {
                     ) {
                         Text(stringResource(R.string.save))
                     }
-                    TextButton(onClick = { open = false }) {
+                    TextButton(
+                        onClick = {
+                            scope
+                                .launch { sheetState.hide() }
+                                .invokeOnCompletion { open = false }
+                        }
+                    ) {
                         Text(stringResource(if (saved) R.string.close else R.string.cancel))
                     }
                 }

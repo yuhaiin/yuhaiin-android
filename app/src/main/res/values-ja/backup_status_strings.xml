@@ -2,7 +2,6 @@
 <resources>
     <string name="backup_title">バックアップと復元</string>
     <string name="backup_summary">すべての設定をエクスポート、インポート、共有</string>
-    <string name="backup_back">戻る</string>
     <string name="backup_cancel">キャンセル</string>
     <string name="backup_description">コア設定、ノード、サブスクリプション、DNS、ルーティングルール、Android 設定を一つのファイルに保存します。通信履歴、キャッシュ、セッション概要は端末に残ります。</string>
     <string name="backup_credentials">バックアップにはノードのパスワードと認証情報が含まれます。安全な場所に保存し、信頼できる相手とのみ共有してください。</string>
@@ -33,4 +32,8 @@
     <string name="native_session_last_active">切断前の接続</string>
     <string name="native_session_opened">確立</string>
     <string name="native_session_failed">失敗</string>
+    <string name="native_health_preparing">準備中…</string>
+    <string name="native_health_partial">一部到達不可</string>
+    <string name="native_health_show">出口の確認を表示</string>
+    <string name="native_health_hide">出口の確認を隠す</string>
 </resources>

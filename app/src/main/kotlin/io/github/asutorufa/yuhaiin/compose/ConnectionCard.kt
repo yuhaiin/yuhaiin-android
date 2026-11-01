@@ -1,18 +1,27 @@
 package io.github.asutorufa.yuhaiin.compose
 
 import android.os.SystemClock
-import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -59,21 +68,27 @@ fun ConnectionCard(
         stringResource(
             if (connected) R.string.Stop else if (paused) R.string.resume_now else R.string.Connect
         )
-    val accent =
-        when {
-            state == State.ERROR -> MaterialTheme.colorScheme.error
-            connected -> MaterialTheme.colorScheme.primary
-            else -> MaterialTheme.colorScheme.onSurfaceVariant
-        }
+    val accent by
+        animateColorAsState(
+            when {
+                state == State.ERROR -> MaterialTheme.colorScheme.error
+                connected -> MaterialTheme.colorScheme.primary
+                else -> MaterialTheme.colorScheme.onSurfaceVariant
+            },
+            AppMotion.effects(),
+        )
+    val haptics = LocalHapticFeedback.current
+    val chevronRotation by
+        animateFloatAsState(if (detailsExpanded) 180f else 0f, AppMotion.effects())
+    // An exiting section still draws its content, so it needs the error that just cleared.
+    val lastError = remember { mutableStateOf("") }
+    if (!error.isNullOrBlank()) lastError.value = error
     Card(
         Modifier.fillMaxWidth().padding(16.dp),
         colors =
             CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
     ) {
-        Column(
-            Modifier.animateContentSize().padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
+        Column(Modifier.padding(20.dp)) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -89,13 +104,22 @@ fun ConnectionCard(
                     }
                 }
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(
-                        stringResource(
-                            if (paused) R.string.status_paused else state.labelResource()
-                        ),
-                        style = MaterialTheme.typography.titleLarge,
-                    )
-                    if (connected) {
+                    AnimatedContent(
+                        if (paused) R.string.status_paused else state.labelResource(),
+                        transitionSpec = {
+                            fadeIn(AppMotion.effects()) togetherWith
+                                fadeOut(AppMotion.effects()) using SizeTransform(clip = false)
+                        },
+                        contentAlignment = Alignment.CenterStart,
+                        label = "connection status",
+                    ) { label ->
+                        Text(stringResource(label), style = MaterialTheme.typography.titleLarge)
+                    }
+                    AnimatedVisibility(
+                        connected,
+                        enter = AppMotion.reveal,
+                        exit = AppMotion.conceal,
+                    ) {
                         val seconds =
                             if (status.connectedAt > 0)
                                 ((now - status.connectedAt) / 1000).coerceAtLeast(0)
@@ -112,14 +136,20 @@ fun ConnectionCard(
                     }
                 }
                 Switch(
-                    checked = connected,
+                    // Show the requested state while connecting; the tap must look accepted.
+                    checked = connected || state == State.CONNECTING,
                     enabled = !busy,
-                    onCheckedChange = { if (it) start() else stop() },
+                    onCheckedChange = {
+                        haptics.performHapticFeedback(
+                            if (it) HapticFeedbackType.ToggleOn else HapticFeedbackType.ToggleOff
+                        )
+                        if (it) start() else stop()
+                    },
                     modifier = Modifier.semantics { contentDescription = action },
                 )
             }
-            if (busy) MaterialLinearProgressIndicator()
-            if (connected) {
+            CardSection(busy) { MaterialLinearProgressIndicator() }
+            CardSection(connected) {
                 FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -128,14 +158,15 @@ fun ConnectionCard(
                     ConnectionBadge(routeLabel(status.route))
                 }
                 ConnectionRates(status.speed)
-            } else if (!paused && !busy) {
+            }
+            CardSection(!connected && !paused && !busy) {
                 Text(
                     stringResource(R.string.connection_hint),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            if (paused) {
+            CardSection(paused) {
                 val minutes = ((status.resumeAt - wallNow).coerceAtLeast(0) + 59_999) / 60_000
                 Text(stringResource(R.string.pause_remaining, minutes.toInt()))
                 Text(
@@ -147,19 +178,20 @@ fun ConnectionCard(
                     Text(stringResource(R.string.cancel_resume))
                 }
             }
-            if (!error.isNullOrBlank())
+            CardSection(!error.isNullOrBlank()) {
                 Surface(
                     color = MaterialTheme.colorScheme.errorContainer,
                     shape = MaterialTheme.shapes.medium,
                 ) {
                     Text(
-                        error,
+                        lastError.value,
                         Modifier.fillMaxWidth().padding(12.dp),
                         color = MaterialTheme.colorScheme.onErrorContainer,
                         style = MaterialTheme.typography.bodyMedium,
                     )
                 }
-            if (connected) {
+            }
+            CardSection(connected) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     TextButton(
                         onClick = { detailsExpanded = !detailsExpanded },
@@ -175,14 +207,13 @@ fun ConnectionCard(
                                 Modifier.weight(1f, fill = false),
                             )
                             Icon(
-                                if (detailsExpanded) Icons.Default.KeyboardArrowUp
-                                else Icons.Default.KeyboardArrowDown,
+                                Icons.Default.KeyboardArrowDown,
                                 contentDescription =
                                     stringResource(
                                         if (detailsExpanded) R.string.connection_details_hide
                                         else R.string.connection_details_show
                                     ),
-                                modifier = Modifier.size(20.dp),
+                                modifier = Modifier.size(20.dp).rotate(chevronRotation),
                             )
                         }
                     }
@@ -214,18 +245,30 @@ fun ConnectionCard(
                         }
                     }
                 }
-                if (detailsExpanded) {
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                    SelectionContainer {
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            ConnectionDetail("MTU", status.mtu.toString())
-                            ConnectionDetail("IPv4", status.ipv4.ifBlank { "—" })
-                            ConnectionDetail("IPv6", status.ipv6.ifBlank { "—" })
-                        }
+            }
+            CardSection(connected && detailsExpanded) {
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                SelectionContainer {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        ConnectionDetail("MTU", status.mtu.toString())
+                        ConnectionDetail("IPv4", status.ipv4.ifBlank { "—" })
+                        ConnectionDetail("IPv6", status.ipv6.ifBlank { "—" })
                     }
                 }
             }
         }
+    }
+}
+
+/** Spacing lives inside the section so it grows with the content instead of jumping. */
+@Composable
+private fun ColumnScope.CardSection(visible: Boolean, content: @Composable ColumnScope.() -> Unit) {
+    AnimatedVisibility(visible, enter = AppMotion.reveal, exit = AppMotion.conceal) {
+        Column(
+            Modifier.padding(top = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            content = content,
+        )
     }
 }
 

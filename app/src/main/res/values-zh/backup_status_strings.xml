@@ -2,7 +2,6 @@
 <resources>
     <string name="backup_title">备份与恢复</string>
     <string name="backup_summary">一键导出、导入或分享全部配置</string>
-    <string name="backup_back">返回</string>
     <string name="backup_cancel">取消</string>
     <string name="backup_description">将核心设置、节点、订阅、DNS、路由规则和 Android 设置备份到一个文件。流量历史、缓存和会话摘要保留在本机。</string>
     <string name="backup_credentials">备份包含节点密码和订阅凭据，请妥善保存，仅分享给可信任的人。</string>
@@ -33,4 +32,8 @@
     <string name="native_session_last_active">断开前活跃</string>
     <string name="native_session_opened">已建立</string>
     <string name="native_session_failed">失败</string>
+    <string name="native_health_preparing">准备中…</string>
+    <string name="native_health_partial">部分不可达</string>
+    <string name="native_health_show">显示出口检查</string>
+    <string name="native_health_hide">隐藏出口检查</string>
 </resources>

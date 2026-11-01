@@ -3,31 +3,16 @@ package io.github.asutorufa.yuhaiin.compose
 import android.net.ConnectivityManager
 import android.net.LinkProperties
 import android.net.Network
-import android.os.Build
-import androidx.activity.SystemBarStyle
-import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
@@ -39,6 +24,8 @@ import androidx.navigation3.ui.LocalNavAnimatedContentScope
 import androidx.navigation3.ui.NavDisplay
 import io.github.asutorufa.yuhaiin.MainActivity
 import io.github.asutorufa.yuhaiin.MainApplication
+import io.github.asutorufa.yuhaiin.compose.AppMotion.navigateBack
+import io.github.asutorufa.yuhaiin.compose.AppMotion.navigateForward
 import io.github.asutorufa.yuhaiin.compose.route.RouteConfigScreen
 import io.github.asutorufa.yuhaiin.compose.route.RouteEditScreen
 import io.github.asutorufa.yuhaiin.service.YuhaiinVpnService.Companion.State
@@ -49,32 +36,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-@Composable
-private fun ChangeSystemBarsTheme(activity: MainActivity, lightTheme: Boolean) {
-    val barColor = MaterialTheme.colorScheme.background.toArgb()
-    LaunchedEffect(lightTheme) {
-        if (lightTheme) {
-            activity.enableEdgeToEdge(
-                statusBarStyle =
-                    SystemBarStyle.light(
-                        barColor,
-                        barColor,
-                    ),
-                navigationBarStyle =
-                    SystemBarStyle.light(
-                        barColor,
-                        barColor,
-                    ),
-            )
-        } else {
-            activity.enableEdgeToEdge(
-                statusBarStyle = SystemBarStyle.dark(barColor),
-                navigationBarStyle = SystemBarStyle.dark(barColor),
-            )
-        }
-    }
-}
-
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun Main(activity: MainActivity) {
@@ -82,24 +43,12 @@ fun Main(activity: MainActivity) {
     val error by activity.error.collectAsStateWithLifecycle()
     val status by activity.status.collectAsStateWithLifecycle()
     val navigationAction by activity.navigationAction.collectAsStateWithLifecycle()
-    val colorScheme =
-        when {
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-                val context = LocalContext.current
-                if (isSystemInDarkTheme()) dynamicDarkColorScheme(context)
-                else dynamicLightColorScheme(context)
-            }
-
-            isSystemInDarkTheme() -> darkColorScheme()
-            else -> lightColorScheme()
-        }
 
     androidx.activity.compose.ReportDrawnAfter {
         runCatching { MainApplication.settings.ready.await() }
     }
-    MaterialTheme(colorScheme = colorScheme) {
-        ChangeSystemBarsTheme(activity, !isSystemInDarkTheme())
-        SharedTransitionLayout(modifier = Modifier.background(colorScheme.surface)) {
+    AppTheme {
+        SharedTransitionLayout(modifier = Modifier.background(MaterialTheme.colorScheme.surface)) {
             val backStack = rememberNavBackStack(HomeRoute)
             val navigator =
                 remember(backStack) {
@@ -122,18 +71,9 @@ fun Main(activity: MainActivity) {
                         rememberSaveableStateHolderNavEntryDecorator(),
                         rememberViewModelStoreNavEntryDecorator(),
                     ),
-                transitionSpec = {
-                    fadeIn(tween(240)) + slideInVertically(tween(240)) { it / 24 } togetherWith
-                        fadeOut(tween(120))
-                },
-                popTransitionSpec = {
-                    fadeIn(tween(180)) togetherWith
-                        fadeOut(tween(180)) + slideOutVertically(tween(180)) { it / 24 }
-                },
-                predictivePopTransitionSpec = { _ ->
-                    fadeIn(tween(180)) togetherWith
-                        fadeOut(tween(180)) + slideOutVertically(tween(180)) { it / 24 }
-                },
+                transitionSpec = { navigateForward() },
+                popTransitionSpec = { navigateBack() },
+                predictivePopTransitionSpec = { swipeEdge -> AppMotion.predictiveBack(swipeEdge) },
                 entryProvider =
                     entryProvider<NavKey> {
                         entry<HomeRoute> {
@@ -219,7 +159,10 @@ fun Main(activity: MainActivity) {
 
                         entry<AppListRoute> {
                             with(this@SharedTransitionLayout) {
-                                AppListComponent(onBack = { navigator.popFrom(AppListRoute) })
+                                AppListComponent(
+                                    connected = vpnState == State.CONNECTED,
+                                    onBack = { navigator.popFrom(AppListRoute) },
+                                )
                             }
                         }
 

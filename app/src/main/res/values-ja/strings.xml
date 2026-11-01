@@ -179,4 +179,7 @@
     <string name="tun_congestion_title">輻輳制御</string>
     <string name="tun_lightweight_driver_note">軽量スタックには Channel ドライバーが必要です。従来のドライバー設定は保持されます。</string>
     <string name="tun_stack_experimental_note">実験的な TCP/IP 実装です。設定変更後は VPN を再接続してください。</string>
+    <string name="copied">コピーしました</string>
+    <string name="route_cleared">ルートの内容をクリアしました</string>
+    <string name="undo">元に戻す</string>
 </resources>

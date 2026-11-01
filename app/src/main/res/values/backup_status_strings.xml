@@ -2,7 +2,6 @@
 <resources>
     <string name="backup_title">Backup and restore</string>
     <string name="backup_summary">Export, import or share all configuration</string>
-    <string name="backup_back">Back</string>
     <string name="backup_cancel">Cancel</string>
     <string name="backup_description">Back up core settings, nodes, subscriptions, DNS, routing rules and Android preferences in one file. Traffic history, caches and session summaries stay on this device.</string>
     <string name="backup_credentials">The backup includes node passwords and subscription credentials. Store or share it only with people you trust.</string>
@@ -33,4 +32,8 @@
     <string name="native_session_last_active">Before disconnect</string>
     <string name="native_session_opened">Opened</string>
     <string name="native_session_failed">Failed</string>
+    <string name="native_health_preparing">Preparing…</string>
+    <string name="native_health_partial">Partly unreachable</string>
+    <string name="native_health_show">Show exit checks</string>
+    <string name="native_health_hide">Hide exit checks</string>
 </resources>

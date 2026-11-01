@@ -11,9 +11,11 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import io.github.asutorufa.yuhaiin.data.SettingKey
 
@@ -75,27 +77,25 @@ fun ListPreferenceSetting(
     onSelectedChange: (String) -> Unit,
 ) {
     var expanded by rememberSaveable { mutableStateOf(false) }
-    ExposedDropdownMenuBox(
-        expanded = expanded,
-        onExpandedChange = { expanded = it },
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-    ) {
-        OutlinedTextField(
-            value = entries[selected] ?: selected,
-            onValueChange = {},
-            readOnly = true,
-            singleLine = true,
-            label = { Text(title) },
-            leadingIcon = icon?.let { { Icon(it, contentDescription = null) } },
-            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
-            supportingText = summary?.let { { Text(it) } },
+    Box {
+        ListItem(
             modifier =
-                Modifier.menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
-                    .fillMaxWidth(),
+                Modifier.clickable(role = Role.DropdownList, onClick = { expanded = true }),
+            headlineContent = { Text(title) },
+            supportingContent = {
+                Column {
+                    Text(entries[selected] ?: selected, color = MaterialTheme.colorScheme.primary)
+                    if (summary != null) Text(summary)
+                }
+            },
+            leadingContent = { IconSlot(icon) },
+            trailingContent = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
         )
-        ExposedDropdownMenu(
+        DropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false },
+            // Line the menu up with the row's text instead of its leading icon.
+            offset = DpOffset(56.dp, 0.dp),
         ) {
             entries.forEach { (key, label) ->
                 val isSelected = selected == key
@@ -123,6 +123,20 @@ fun SectionHeading(title: String) {
         Modifier.padding(start = 24.dp, top = 24.dp, bottom = 8.dp),
         style = MaterialTheme.typography.titleSmall,
         color = MaterialTheme.colorScheme.primary,
+    )
+}
+
+/**
+ * Applies Scaffold padding except the bottom, which scrolling content adds as contentPadding so
+ * its rows can pass behind the transparent navigation bar.
+ */
+@Composable
+fun Modifier.scaffoldBody(padding: PaddingValues): Modifier {
+    val direction = LocalLayoutDirection.current
+    return padding(
+        start = padding.calculateStartPadding(direction),
+        top = padding.calculateTopPadding(),
+        end = padding.calculateEndPadding(direction),
     )
 }
 
