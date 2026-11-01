@@ -83,6 +83,7 @@ class MainActivity : AppCompatActivity() {
         when (action) {
             VpnActions.CONNECT -> startService()
             VpnActions.DISCONNECT -> vpnBinder?.stop()
+            VpnActions.HOME,
             VpnActions.DASHBOARD,
             VpnActions.ROUTES -> navigationAction.value = action
         }

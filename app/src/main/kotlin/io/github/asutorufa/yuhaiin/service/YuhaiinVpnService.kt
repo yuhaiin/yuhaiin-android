@@ -64,7 +64,7 @@ class YuhaiinVpnService : VpnService() {
         }
     private val power by lazy { getSystemService(PowerManager::class.java) }
     private var samplingInterval = 0L
-    private var publishedWidgetStatus: Triple<State, Long, String>? = null
+    private var publishedWidgetStatus: VpnWidget.Companion.Display? = null
     private val monitoringReceiver =
         object : BroadcastReceiver() {
             override fun onReceive(context: Context, intent: Intent) {
@@ -166,7 +166,7 @@ class YuhaiinVpnService : VpnService() {
     }
 
     private fun publishStatus() {
-        val widgetStatus = Triple(status.state, status.resumeAt, status.speed)
+        val widgetStatus = VpnWidget.display(this, status)
         if (widgetStatus != publishedWidgetStatus) {
             VpnWidget.update(this, status)
             publishedWidgetStatus = widgetStatus
@@ -271,6 +271,7 @@ class YuhaiinVpnService : VpnService() {
         val changed = currentUnderlyingNetwork != network
         currentUnderlyingNetwork = network
         refreshNetworkStatus()
+        publishStatus()
         if (changed && state == State.CONNECTED) {
             invalidateHealth()
             if (hasVisibleUi()) checkHealth()

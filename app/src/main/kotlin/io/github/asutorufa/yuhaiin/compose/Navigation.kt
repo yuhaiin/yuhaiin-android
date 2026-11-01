@@ -37,6 +37,10 @@ class AppNavigator(
         }
     }
 
+    fun popToRoot() {
+        while (backStack.size > 1) backStack.removeAt(backStack.lastIndex)
+    }
+
     /** An outgoing toolbar can still receive a tap during a Nav3 transition. */
     fun popFrom(route: AppRoute) {
         if (backStack.lastOrNull() == route) pop()

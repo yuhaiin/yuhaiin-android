@@ -60,6 +60,10 @@ fun Main(activity: MainActivity) {
                     navigator.push(WebViewRoute)
                     activity.navigationAction.value = null
                 }
+                if (navigationAction == io.github.asutorufa.yuhaiin.service.VpnActions.HOME) {
+                    navigator.popToRoot()
+                    activity.navigationAction.value = null
+                }
             }
             RouteShortcutPicker(activity, navigationAction)
 

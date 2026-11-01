@@ -341,9 +341,4 @@ private fun TextPreference(
 
 @Composable
 fun routeLabel(id: String): String =
-    when (id) {
-        Constants.ALL_ROUTE -> stringResource(R.string.route_all_label)
-        Constants.NON_LOCAL_ROUTE -> stringResource(R.string.route_non_local_label)
-        Constants.NON_CHINESE_ROUTE -> stringResource(R.string.route_non_chinese_label)
-        else -> id
-    }
+    io.github.asutorufa.yuhaiin.service.routeLabelResource(id)?.let { stringResource(it) } ?: id

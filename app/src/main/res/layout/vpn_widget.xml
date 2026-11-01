@@ -1,16 +1,50 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@android:id/background"
     android:layout_width="match_parent" android:layout_height="match_parent"
-    android:orientation="vertical" android:padding="16dp" android:background="#FF182830">
-    <TextView android:id="@+id/widget_status" android:layout_width="match_parent"
-        android:layout_height="wrap_content" android:text="@string/status_disconnected"
-        android:textSize="20sp" android:textColor="#FFFFFFFF" />
-    <TextView android:id="@+id/widget_speed" android:layout_width="match_parent"
-        android:layout_height="wrap_content" android:textColor="#FFFFFFFF" />
-    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content">
+    android:background="@drawable/widget_background" android:clipToOutline="true"
+    android:orientation="vertical" android:padding="12dp">
+    <!-- Takes the spare height, so a short widget clips the text rather than the buttons. -->
+    <LinearLayout android:id="@+id/widget_summary" android:layout_width="match_parent"
+        android:layout_height="0dp" android:layout_weight="1" android:gravity="center_vertical"
+        android:orientation="horizontal">
+        <!-- RemoteViews inflate without AppCompat in the host, so app:tint would be ignored. -->
+        <ImageView android:id="@+id/widget_icon" android:layout_width="24dp"
+            android:layout_height="24dp" android:layout_marginEnd="12dp"
+            android:importantForAccessibility="no" android:src="@drawable/ic_vpn"
+            android:tint="@color/widget_primary" tools:ignore="UseAppTint" />
+        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1" android:orientation="vertical">
+            <TextView android:id="@+id/widget_status" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:ellipsize="end"
+                android:fontFamily="sans-serif-medium" android:includeFontPadding="false"
+                android:singleLine="true" android:text="@string/status_disconnected"
+                android:textColor="@color/widget_on_surface" android:textSize="16sp" />
+            <TextView android:id="@+id/widget_speed" android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:layout_marginTop="2dp"
+                android:ellipsize="end" android:includeFontPadding="false"
+                android:singleLine="true" android:textColor="@color/widget_on_surface_variant"
+                android:textSize="13sp" android:visibility="gone" />
+        </LinearLayout>
+    </LinearLayout>
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:layout_marginTop="4dp" android:orientation="horizontal">
         <Button android:id="@+id/widget_toggle" android:layout_width="0dp"
-            android:layout_weight="1" android:layout_height="wrap_content" android:text="@string/Connect" />
+            android:layout_height="40dp" android:layout_weight="1"
+            android:background="@drawable/widget_button_primary" android:ellipsize="end"
+            android:fontFamily="sans-serif-medium" android:minWidth="0dp" android:minHeight="0dp"
+            android:paddingStart="8dp" android:paddingEnd="8dp" android:singleLine="true"
+            android:stateListAnimator="@null" android:text="@string/Connect"
+            android:textAllCaps="false" android:textColor="@color/widget_button_primary_text"
+            android:textSize="14sp" />
         <Button android:id="@+id/widget_routes" android:layout_width="0dp"
-            android:layout_weight="1" android:layout_height="wrap_content" android:text="@string/switch_route" />
+            android:layout_height="40dp" android:layout_marginStart="8dp"
+            android:layout_weight="1" android:background="@drawable/widget_button_secondary"
+            android:ellipsize="end" android:fontFamily="sans-serif-medium" android:minWidth="0dp"
+            android:minHeight="0dp" android:paddingStart="8dp" android:paddingEnd="8dp"
+            android:singleLine="true" android:stateListAnimator="@null"
+            android:text="@string/switch_route" android:textAllCaps="false"
+            android:textColor="@color/widget_on_secondary_container" android:textSize="14sp" />
     </LinearLayout>
 </LinearLayout>

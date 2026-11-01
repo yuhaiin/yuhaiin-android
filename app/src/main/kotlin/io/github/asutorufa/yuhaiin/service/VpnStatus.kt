@@ -1,8 +1,12 @@
 package io.github.asutorufa.yuhaiin.service
 
+import android.content.Context
 import android.os.Bundle
+import io.github.asutorufa.yuhaiin.Constants
 import io.github.asutorufa.yuhaiin.R
 import io.github.asutorufa.yuhaiin.service.YuhaiinVpnService.Companion.State
+import java.text.DateFormat
+import java.util.Date
 
 /** Immutable service-owned snapshot transported across the :bg Binder boundary. */
 data class VpnStatus(
@@ -65,4 +69,47 @@ fun State.labelResource(): Int =
         State.DISCONNECTING -> R.string.status_disconnecting
         State.DISCONNECTED -> R.string.status_disconnected
         State.ERROR -> R.string.status_error
+    }
+
+fun routeLabelResource(route: String): Int? =
+    when (route) {
+        Constants.ALL_ROUTE -> R.string.route_all_label
+        Constants.NON_LOCAL_ROUTE -> R.string.route_non_local_label
+        Constants.NON_CHINESE_ROUTE -> R.string.route_non_chinese_label
+        else -> null
+    }
+
+/** The primary control a status offers on a surface that has room for only one. */
+enum class VpnToggle {
+    CONNECT,
+    STOP,
+    RESUME,
+    STOPPING,
+}
+
+fun VpnStatus.toggle(): VpnToggle =
+    when {
+        resumeAt > 0 -> VpnToggle.RESUME
+        state == State.CONNECTED || state == State.CONNECTING -> VpnToggle.STOP
+        state == State.DISCONNECTING -> VpnToggle.STOPPING
+        else -> VpnToggle.CONNECT
+    }
+
+fun VpnStatus.titleResource(): Int =
+    if (resumeAt > 0) R.string.status_paused else state.labelResource()
+
+fun VpnStatus.connectedSummary(routeLabel: String): String =
+    listOf(network, routeLabel).filter { it.isNotBlank() }.joinToString(" · ")
+
+/** Second line under the title; empty when the title already says everything. */
+fun VpnStatus.detail(context: Context, showSpeed: Boolean): String =
+    when {
+        resumeAt > 0 ->
+            context.getString(
+                R.string.resume_time,
+                DateFormat.getTimeInstance(DateFormat.SHORT).format(Date(resumeAt)),
+            )
+        state != State.CONNECTED -> ""
+        showSpeed && speed.isNotBlank() -> speed
+        else -> connectedSummary(routeLabelResource(route)?.let(context::getString) ?: route)
     }
