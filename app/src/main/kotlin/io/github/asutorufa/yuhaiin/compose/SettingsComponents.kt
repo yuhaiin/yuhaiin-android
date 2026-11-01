@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.DpOffset
@@ -120,11 +121,30 @@ fun ListPreferenceSetting(
 fun SectionHeading(title: String) {
     Text(
         title,
-        Modifier.padding(start = 24.dp, top = 24.dp, bottom = 8.dp),
+        Modifier.padding(start = 24.dp, top = 24.dp, bottom = 8.dp).semantics { heading() },
         style = MaterialTheme.typography.titleSmall,
         color = MaterialTheme.colorScheme.primary,
     )
 }
+
+/** TopAppBar titles aren't exposed as headings by Material, so TalkBack can't jump to them. */
+@Composable
+fun ScreenTitle(title: String) {
+    Text(title, Modifier.semantics { heading() })
+}
+
+/** Scaffold content insets; the defaults leave a landscape notch over the content. */
+val appContentInsets: WindowInsets
+    @Composable get() = ScaffoldDefaults.contentWindowInsets.union(WindowInsets.displayCutout)
+
+/** App bar insets that also keep the title and actions clear of a landscape notch. */
+@OptIn(ExperimentalMaterial3Api::class)
+val appBarInsets: WindowInsets
+    @Composable
+    get() =
+        TopAppBarDefaults.windowInsets.union(
+            WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Top)
+        )
 
 /**
  * Applies Scaffold padding except the bottom, which scrolling content adds as contentPadding so

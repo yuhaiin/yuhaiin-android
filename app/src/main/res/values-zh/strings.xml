@@ -56,9 +56,10 @@
     <string name="keep_editing">继续编辑</string>
     <string name="latest_logs">最新日志</string>
     <string name="listener_addresses">网络地址 · 点击复制</string>
-    <string name="listener_port_hint">HTTP 与 SOCKS5 共用端口。设为 0 时自动选择可用端口。</string>
+    <string name="listener_port_hint">HTTP 与 SOCKS5 共用端口。设为 0 表示不设置，“将 HTTP 代理添加到 VPN”将不起作用。</string>
     <string name="listener_proxy_port">HTTP 与 SOCKS5 端口</string>
-    <string name="listener_summary">HTTP 与 SOCKS5 · %1$d</string>
+    <string name="listener_summary">HTTP 与 SOCKS5 · 端口 %1$d</string>
+    <string name="listener_summary_unset">HTTP 与 SOCKS5 · 未设置端口</string>
     <string name="listener_title">监听设置</string>
     <string name="listener_web_port">控制面板端口（由核心分配）：%1$d</string>
     <string name="log_count">显示 %1$d 条 · 缓存 %2$d 条（上限 2000）</string>

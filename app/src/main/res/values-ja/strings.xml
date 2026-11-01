@@ -56,9 +56,10 @@
     <string name="keep_editing">編集を続ける</string>
     <string name="latest_logs">最新のログ</string>
     <string name="listener_addresses">ネットワークアドレス · タップでコピー</string>
-    <string name="listener_port_hint">HTTP と SOCKS5 は同じポートを使用します。0 は空きポートの自動選択です。</string>
+    <string name="listener_port_hint">HTTP と SOCKS5 は同じポートを使用します。0 は未設定で、「VPN に HTTP プロキシを追加」は機能しません。</string>
     <string name="listener_proxy_port">HTTP と SOCKS5 のポート</string>
-    <string name="listener_summary">HTTP と SOCKS5 · %1$d</string>
+    <string name="listener_summary">HTTP と SOCKS5 · ポート %1$d</string>
+    <string name="listener_summary_unset">HTTP と SOCKS5 · ポート未設定</string>
     <string name="listener_title">リスナー設定</string>
     <string name="listener_web_port">ダッシュボードのポート（コアが割り当て）：%1$d</string>
     <string name="log_count">%1$d 件表示 · %2$d 件保持（上限 2000）</string>

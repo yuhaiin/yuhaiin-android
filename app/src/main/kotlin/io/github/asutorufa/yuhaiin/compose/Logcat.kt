@@ -76,9 +76,11 @@ fun LogcatCompose(excludeList: ArrayList<String>? = null, onBack: () -> Unit) {
         }
     }
     Scaffold(
+        contentWindowInsets = appContentInsets,
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.logcat)) },
+                windowInsets = appBarInsets,
+                title = { ScreenTitle(stringResource(R.string.logcat)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))

@@ -25,11 +25,11 @@ class TrafficRateSamplerTest {
             val sampler = TrafficRateSampler()
             assertNull(sampler.sample(status("0"), 1000))
             assertEquals(
-                "↓(5.00 KiB): 1.00 KiB/S ↑(2.50 KiB): 512.00 B/S",
+                "↓(5.00 KiB): 1.00 KiB/s ↑(2.50 KiB): 512.00 B/s",
                 sampler.sample(status("5120", "2560"), 6000),
             )
             assertEquals(
-                "↓(5.00 KiB): 0.00 B/S ↑(2.50 KiB): 0.00 B/S",
+                "↓(5.00 KiB): 0.00 B/s ↑(2.50 KiB): 0.00 B/s",
                 sampler.sample(status("5120", "2560"), 16000),
             )
         } finally {
@@ -42,7 +42,7 @@ class TrafficRateSamplerTest {
         val sampler = TrafficRateSampler()
         assertNull(sampler.sample(status("18446744073709550000"), 1000))
         val rate = sampler.sample(status("18446744073709551024"), 2000)!!
-        assertTrue(rate.contains("${formatBytes("1024")}/S"), rate)
+        assertTrue(rate.contains("${formatBytes("1024")}/s"), rate)
     }
 
     @Test
@@ -61,7 +61,7 @@ class TrafficRateSamplerTest {
         assertNull(sampler.sample(status("0"), 1000))
         assertNull(sampler.sample(status("invalid"), 2000))
         assertNull(sampler.sample(status("1000"), 1000))
-        assertTrue(sampler.sample(status("1024"), 2000)!!.contains("${formatBytes("1024")}/S"))
+        assertTrue(sampler.sample(status("1024"), 2000)!!.contains("${formatBytes("1024")}/s"))
         // A newly visible display must wait for a fresh interval, not average hidden traffic.
         assertNull(TrafficRateSampler().sample(status("1024"), 100000))
     }

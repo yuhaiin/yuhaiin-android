@@ -28,7 +28,7 @@ internal class TrafficRateSampler {
         val seconds = (elapsedMillis - last.at) / 1000.0
         val downloadRate = (download - last.download).toDouble() / seconds
         val uploadRate = (upload - last.upload).toDouble() / seconds
-        return "↓(${formatBytes(status.session.totalDownload)}): ${formatBytes(downloadRate.toString())}/S " +
-            "↑(${formatBytes(status.session.totalUpload)}): ${formatBytes(uploadRate.toString())}/S"
+        return "↓(${formatBytes(status.session.totalDownload)}): ${formatBytes(downloadRate.toString())}/s " +
+            "↑(${formatBytes(status.session.totalUpload)}): ${formatBytes(uploadRate.toString())}/s"
     }
 }

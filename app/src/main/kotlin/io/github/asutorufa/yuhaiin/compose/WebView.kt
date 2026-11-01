@@ -92,7 +92,7 @@ fun WebViewComponent(onBack: () -> Unit, getPort: () -> Int) {
         }
     }
     BackHandler(enabled = canBack && error == null) { view?.goBack() }
-    Scaffold { padding ->
+    Scaffold(contentWindowInsets = appContentInsets) { padding ->
         // Only system insets reserve space. Native browser controls float over the page.
         Box(Modifier.fillMaxSize().padding(padding).consumeWindowInsets(padding).imePadding()) {
             if (port > 0)
