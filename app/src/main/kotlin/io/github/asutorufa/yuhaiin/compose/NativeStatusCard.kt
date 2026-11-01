@@ -19,6 +19,7 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -126,7 +127,7 @@ fun NativeStatusCard(status: VpnStatus, connected: Boolean, checkHealth: () -> U
                     ) {
                         Text(
                             stringResource(R.string.native_health_title),
-                            Modifier.weight(1f),
+                            Modifier.weight(1f).semantics { heading() },
                             style = MaterialTheme.typography.titleMedium,
                         )
                         HealthSummaryBadge(
@@ -365,6 +366,7 @@ private fun SessionSummary(snapshot: NativeStatus, connected: Boolean) {
             stringResource(
                 if (connected) R.string.native_session_title else R.string.native_session_last
             ),
+            Modifier.semantics { heading() },
             style = MaterialTheme.typography.titleMedium,
         )
         if (!connected) {

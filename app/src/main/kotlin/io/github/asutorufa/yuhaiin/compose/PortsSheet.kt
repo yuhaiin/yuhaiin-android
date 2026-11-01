@@ -16,6 +16,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -45,7 +47,9 @@ fun PortsInputForm(store: Store?, addresses: List<String>) {
     val port = values.setting(Settings.httpPort)
     SettingsItem(
         stringResource(R.string.listener_title),
-        stringResource(R.string.listener_summary, port),
+        // Nothing listens on or proxies through port 0; only VpnConfiguration reads this value.
+        if (port > 0) stringResource(R.string.listener_summary, port)
+        else stringResource(R.string.listener_summary_unset),
         painterResource(R.drawable.vpn_lock),
     ) {
         open = true
@@ -77,6 +81,7 @@ fun PortsInputForm(store: Store?, addresses: List<String>) {
                 ) {
                     Text(
                         stringResource(R.string.listener_title),
+                        Modifier.semantics { heading() },
                         style = MaterialTheme.typography.headlineSmall,
                     )
                     Text(
@@ -112,6 +117,7 @@ fun PortsInputForm(store: Store?, addresses: List<String>) {
                     if (addresses.isNotEmpty()) {
                         Text(
                             stringResource(R.string.listener_addresses),
+                            Modifier.semantics { heading() },
                             style = MaterialTheme.typography.titleSmall,
                         )
                         addresses.forEach { address ->

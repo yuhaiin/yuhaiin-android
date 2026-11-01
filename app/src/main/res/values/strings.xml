@@ -11,12 +11,12 @@
     <string name="ports_title">Ports</string>
     <string name="http_server_port_title">HTTP Port</string>
     <string name="append_http_proxy_to_vpn_title">Append HTTP Proxy to VPN</string>
-    <string name="append_http_proxy_to_vpn_sum">HTTP proxy will be used directly from without going through the virtual NIC device(Android 10+)</string>
+    <string name="append_http_proxy_to_vpn_sum">Android uses the HTTP proxy directly, without going through the virtual network interface (Android 10+).</string>
     <string name="socks5_server_port_title">Socks5 Port</string>
 
     <string name="network_speed_title">Network Speed</string>
     <string name="network_speed_sum">Show network speed in notification.</string>
-    <string name="allow_lan_title">Allow Lan Connect</string>
+    <string name="allow_lan_title">Allow LAN connections</string>
 
     <string name="advanced">Advanced</string>
     <string name="adv_route_title">Route</string>

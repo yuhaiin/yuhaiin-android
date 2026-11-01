@@ -24,8 +24,13 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.text
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
@@ -64,6 +69,8 @@ fun ConnectionCard(
     val connected = state == State.CONNECTED
     val busy = state == State.CONNECTING || state == State.DISCONNECTING
     val paused = status.resumeAt > 0
+    val statusResource = if (paused) R.string.status_paused else state.labelResource()
+    val statusLabel = stringResource(statusResource)
     val action =
         stringResource(
             if (connected) R.string.Stop else if (paused) R.string.resume_now else R.string.Connect
@@ -105,7 +112,16 @@ fun ConnectionCard(
                 }
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     AnimatedContent(
-                        if (paused) R.string.status_paused else state.labelResource(),
+                        statusResource,
+                        // The transition swaps nodes, which TalkBack would not announce, so one
+                        // stable node speaks for it. The error section is a new node too.
+                        modifier =
+                            Modifier.clearAndSetSemantics {
+                                text = AnnotatedString(statusLabel)
+                                if (!error.isNullOrBlank())
+                                    contentDescription = "$statusLabel. $error"
+                                liveRegion = LiveRegionMode.Polite
+                            },
                         transitionSpec = {
                             fadeIn(AppMotion.effects()) togetherWith
                                 fadeOut(AppMotion.effects()) using SizeTransform(clip = false)
@@ -196,6 +212,8 @@ fun ConnectionCard(
                     TextButton(
                         onClick = { detailsExpanded = !detailsExpanded },
                         modifier = Modifier.weight(1f),
+                        // The default pill clips the first letters once large text wraps.
+                        shape = MaterialTheme.shapes.small,
                         contentPadding = PaddingValues(end = 8.dp),
                     ) {
                         Row(
@@ -292,7 +310,7 @@ private fun ConnectionDetail(label: String, value: String) {
     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(
             label,
-            Modifier.width(44.dp),
+            Modifier.widthIn(min = 44.dp),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -335,7 +353,10 @@ private fun ConnectionRates(speed: String) {
 
 @Composable
 private fun ConnectionRate(label: String, rate: String, modifier: Modifier) {
-    Column(modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    Column(
+        modifier.semantics(mergeDescendants = true) {},
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
         Text(rate, style = MaterialTheme.typography.titleMedium)
         Text(
             label,

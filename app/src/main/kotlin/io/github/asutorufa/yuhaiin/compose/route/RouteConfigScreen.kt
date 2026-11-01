@@ -26,6 +26,8 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.asutorufa.yuhaiin.MainApplication
@@ -63,10 +65,12 @@ fun SharedTransitionScope.RouteConfigScreen(
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     Scaffold(
         Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        contentWindowInsets = appContentInsets,
         topBar = {
             TopAppBar(
+                windowInsets = appBarInsets,
                 scrollBehavior = scrollBehavior,
-                title = { Text(stringResource(R.string.route_config_title)) },
+                title = { ScreenTitle(stringResource(R.string.route_config_title)) },
                 navigationIcon = {
                     IconButton(
                         onClick = { if (dirtyDetail.dirty) leaveDetail = true else onBack() }
@@ -100,6 +104,7 @@ fun SharedTransitionScope.RouteConfigScreen(
                     item {
                         Text(
                             stringResource(R.string.route_current, routeLabel(active)),
+                            Modifier.semantics { heading() },
                             style = MaterialTheme.typography.titleSmall,
                         )
                     }
