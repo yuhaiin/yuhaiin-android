@@ -1,8 +1,11 @@
 package io.github.asutorufa.yuhaiin.compose.route
 
 import androidx.compose.animation.AnimatedContentScope
+import androidx.compose.animation.Crossfade
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -19,6 +22,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -55,9 +60,12 @@ fun SharedTransitionScope.RouteConfigScreen(
     var error by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
     LaunchedEffect(Unit) { MainApplication.settings.refresh() }
+    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     Scaffold(
+        Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             TopAppBar(
+                scrollBehavior = scrollBehavior,
                 title = { Text(stringResource(R.string.route_config_title)) },
                 navigationIcon = {
                     IconButton(
@@ -74,12 +82,19 @@ fun SharedTransitionScope.RouteConfigScreen(
             )
         }
     ) { padding ->
-        BoxWithConstraints(Modifier.fillMaxSize().padding(padding)) {
+        val bottom = padding.calculateBottomPadding()
+        BoxWithConstraints(Modifier.fillMaxSize().scaffoldBody(padding)) {
             val wide = maxWidth >= 840.dp
             Row {
                 LazyColumn(
                     Modifier.weight(1f),
-                    contentPadding = PaddingValues(16.dp),
+                    contentPadding =
+                        PaddingValues(
+                            start = 16.dp,
+                            top = 16.dp,
+                            end = 16.dp,
+                            bottom = bottom + 16.dp,
+                        ),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     item {
@@ -105,9 +120,17 @@ fun SharedTransitionScope.RouteConfigScreen(
                                 dismiss.reset()
                             }
                         }
+                        val countAlpha by animateFloatAsState(if (count == null) 0f else 1f)
+                        val container by
+                            animateColorAsState(
+                                if (wide && name == detail)
+                                    MaterialTheme.colorScheme.secondaryContainer
+                                else MaterialTheme.colorScheme.surfaceContainer,
+                                AppMotion.effects(),
+                            )
                         SwipeToDismissBox(
                             state = dismiss,
-                            modifier = Modifier.clip(MaterialTheme.shapes.large),
+                            modifier = Modifier.animateItem().clip(MaterialTheme.shapes.large),
                             enableDismissFromStartToEnd = false,
                             enableDismissFromEndToStart =
                                 name !in RouteRepository.presets && delete == null,
@@ -131,10 +154,7 @@ fun SharedTransitionScope.RouteConfigScreen(
                                             else detail = name
                                         } else onOpenRouteEdit(name)
                                     },
-                                colors =
-                                    ListItemDefaults.colors(
-                                        containerColor = MaterialTheme.colorScheme.surfaceContainer
-                                    ),
+                                colors = ListItemDefaults.colors(containerColor = container),
                                 headlineContent = {
                                     Text(
                                         routeLabel(name),
@@ -154,39 +174,63 @@ fun SharedTransitionScope.RouteConfigScreen(
                                                 R.string.route_preset_count
                                             else R.string.route_custom_count,
                                             count ?: 0,
-                                        )
+                                        ),
+                                        // Hidden, not absent, so loading does not resize the row.
+                                        Modifier.graphicsLayer { alpha = countAlpha },
                                     )
                                 },
                                 leadingContent = { Icon(painterResource(R.drawable.router), null) },
                                 trailingContent = {
-                                    if (active == name)
-                                        Icon(
-                                            Icons.Default.Check,
-                                            stringResource(R.string.route_selected),
-                                        )
-                                    else
-                                        TextButton(
-                                            onClick = {
-                                                MainApplication.settings.set(Settings.route, name)
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        if (active == name)
+                                            Icon(
+                                                Icons.Default.Check,
+                                                stringResource(R.string.route_selected),
+                                            )
+                                        else
+                                            TextButton(
+                                                onClick = {
+                                                    MainApplication.settings.set(
+                                                        Settings.route,
+                                                        name,
+                                                    )
+                                                }
+                                            ) {
+                                                Text(stringResource(R.string.use_route))
                                             }
-                                        ) {
-                                            Text(stringResource(R.string.use_route))
-                                        }
+                                        // Swiping alone is hard to find and unusable with TalkBack.
+                                        if (name !in RouteRepository.presets)
+                                            IconButton(onClick = { delete = name }) {
+                                                Icon(
+                                                    Icons.Default.Delete,
+                                                    stringResource(R.string.delete),
+                                                )
+                                            }
+                                    }
                                 },
                             )
                         }
                     }
                 }
-                if (wide)
-                    Box(Modifier.weight(1.3f).fillMaxHeight()) {
-                        detail?.let { name ->
-                            RouteEditScreen(name, null, onBack = { detail = null }, embedded = true)
+                if (wide) {
+                    VerticalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    Crossfade(
+                        detail,
+                        Modifier.weight(1.3f).fillMaxHeight().padding(bottom = bottom),
+                        label = "route detail",
+                    ) { name ->
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            if (name != null)
+                                RouteEditScreen(
+                                    name,
+                                    null,
+                                    onBack = { detail = null },
+                                    embedded = true,
+                                )
+                            else Text(stringResource(R.string.route_choose_detail))
                         }
-                            ?: Text(
-                                stringResource(R.string.route_choose_detail),
-                                Modifier.align(Alignment.Center),
-                            )
                     }
+                }
             }
         }
     }

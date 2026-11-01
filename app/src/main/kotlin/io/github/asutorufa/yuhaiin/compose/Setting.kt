@@ -1,10 +1,12 @@
 package io.github.asutorufa.yuhaiin.compose
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
@@ -40,13 +42,21 @@ fun SettingCompose(
     val values by settings.snapshot.collectAsStateWithLifecycle()
     val settingsError by settings.failure.collectAsStateWithLifecycle()
     LaunchedEffect(Unit) { settings.refresh() }
-    Scaffold(topBar = { TopAppBar(title = { Text(stringResource(R.string.yuhaiin)) }) }) { padding
-        ->
-        BoxWithConstraints(Modifier.fillMaxSize().padding(padding)) {
+    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
+    Scaffold(
+        Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        topBar = {
+            TopAppBar(
+                title = { Text(stringResource(R.string.yuhaiin)) },
+                scrollBehavior = scrollBehavior,
+            )
+        },
+    ) { padding ->
+        BoxWithConstraints(Modifier.fillMaxSize().scaffoldBody(padding)) {
             val wide = maxWidth >= 840.dp
             Row {
                 if (wide)
-                    NavigationRail {
+                    NavigationRail(windowInsets = WindowInsets(0, 0, 0, 0)) {
                         val destinations =
                             listOf(
                                 Triple(R.drawable.apps, R.string.adv_app_list_title, onOpenAppList),
@@ -68,7 +78,10 @@ fun SettingCompose(
                         }
                     }
                 ReadingPane {
-                    LazyColumn(contentPadding = PaddingValues(bottom = 24.dp)) {
+                    LazyColumn(
+                        contentPadding =
+                            PaddingValues(bottom = padding.calculateBottomPadding() + 24.dp)
+                    ) {
                         item {
                             ConnectionCard(
                                 vpnState,
@@ -81,16 +94,28 @@ fun SettingCompose(
                             )
                         }
                         item {
-                            if (vpnState == State.CONNECTED || status.nativeStatus.isNotBlank())
+                            AnimatedVisibility(
+                                vpnState == State.CONNECTED || status.nativeStatus.isNotBlank(),
+                                enter = AppMotion.reveal,
+                                exit = AppMotion.conceal,
+                            ) {
                                 NativeStatusCard(status, vpnState == State.CONNECTED, checkHealth)
+                            }
                         }
                         item {
-                            Text(
-                                stringResource(R.string.settings_reconnect_hint),
-                                Modifier.padding(horizontal = 24.dp),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
+                            // Only a running VPN has changes that wait for a reconnect.
+                            AnimatedVisibility(
+                                vpnState == State.CONNECTED,
+                                enter = AppMotion.reveal,
+                                exit = AppMotion.conceal,
+                            ) {
+                                Text(
+                                    stringResource(R.string.settings_reconnect_hint),
+                                    Modifier.padding(horizontal = 24.dp),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
                         }
                         item { SectionHeading(stringResource(R.string.connection)) }
                         item { PortsInputForm(MainApplication.store, addresses) }
@@ -128,11 +153,7 @@ fun SettingCompose(
                                 R.array.metered_values,
                                 R.array.metered_entries,
                                 R.drawable.speed_24px,
-                            )
-                            Text(
-                                stringResource(R.string.metered_hint),
-                                Modifier.padding(horizontal = 24.dp),
-                                style = MaterialTheme.typography.bodySmall,
+                                R.string.metered_hint,
                             )
                         }
                         item { SectionHeading(stringResource(R.string.route_section)) }
@@ -304,6 +325,7 @@ private fun TextPreference(
     entryKeys: Int,
     entryLabels: Int,
     icon: Int,
+    summary: Int? = null,
 ) {
     val entries = stringArrayResource(entryKeys).zip(stringArrayResource(entryLabels)).toMap()
     ListPreferenceSetting(
@@ -311,6 +333,7 @@ private fun TextPreference(
         painterResource(icon),
         entries,
         values.setting(key),
+        summary?.let { stringResource(it) },
     ) {
         MainApplication.settings.set(key, it)
     }

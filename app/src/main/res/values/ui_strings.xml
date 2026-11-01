@@ -71,4 +71,7 @@
     <string name="update_notes">Release notes</string>
     <string name="update_download_interrupted">The previous update was interrupted. Retry to reuse any verified download.</string>
     <string name="listener_save_hint">Tap Save to apply the port. Reconnect the VPN to use the change.</string>
+    <string name="copied">Copied</string>
+    <string name="route_cleared">Route content cleared</string>
+    <string name="undo">Undo</string>
 </resources>

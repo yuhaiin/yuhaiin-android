@@ -6,6 +6,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContentScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -23,6 +25,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import io.github.asutorufa.yuhaiin.R
+import io.github.asutorufa.yuhaiin.compose.AppMotion
 import io.github.asutorufa.yuhaiin.compose.MaterialLinearProgressIndicator
 import io.github.asutorufa.yuhaiin.compose.copyText
 import io.github.asutorufa.yuhaiin.compose.routeLabel
@@ -70,7 +73,15 @@ fun SharedTransitionScope.RouteEditScreen(
                         .onFailure { importingError = it.message }
                 }
         }
+    val snackbar = remember { SnackbarHostState() }
+    val clearedMessage = stringResource(R.string.route_cleared)
+    val undoLabel = stringResource(R.string.undo)
+    // Undo restores a snapshot, so it must not outlive the text it would overwrite.
+    LaunchedEffect(draft.text) {
+        if (draft.text.isNotEmpty()) snackbar.currentSnackbarData?.dismiss()
+    }
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbar, Modifier.imePadding()) },
         contentWindowInsets =
             if (embedded) WindowInsets(0, 0, 0, 0) else ScaffoldDefaults.contentWindowInsets,
         topBar = {
@@ -90,9 +101,11 @@ fun SharedTransitionScope.RouteEditScreen(
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = requestBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
-                    }
+                    // In two panes the list's toolbar already leaves the screen.
+                    if (!embedded)
+                        IconButton(onClick = requestBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
+                        }
                 },
                 actions = {
                     TextButton(
@@ -121,7 +134,22 @@ fun SharedTransitionScope.RouteEditScreen(
                 ) {
                     Text(stringResource(R.string.copy))
                 }
-                TextButton(enabled = draft.loaded && !draft.saving, onClick = { model.edit("") }) {
+                TextButton(
+                    enabled = draft.loaded && !draft.saving && draft.text.isNotEmpty(),
+                    onClick = {
+                        val previous = draft.text
+                        model.edit("")
+                        scope.launch {
+                            val result =
+                                snackbar.showSnackbar(
+                                    clearedMessage,
+                                    undoLabel,
+                                    duration = SnackbarDuration.Long,
+                                )
+                            if (result == SnackbarResult.ActionPerformed) model.edit(previous)
+                        }
+                    },
+                ) {
                     Text(stringResource(R.string.clear))
                 }
             }
@@ -131,7 +159,16 @@ fun SharedTransitionScope.RouteEditScreen(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(bottom = 8.dp),
             )
-            if (draft.validating) MaterialLinearProgressIndicator()
+            // Validation runs while typing; a fixed slot keeps the field still under the caret.
+            Box(Modifier.fillMaxWidth().height(8.dp)) {
+                androidx.compose.animation.AnimatedVisibility(
+                    draft.validating,
+                    enter = fadeIn(AppMotion.effects()),
+                    exit = fadeOut(AppMotion.effects()),
+                ) {
+                    MaterialLinearProgressIndicator()
+                }
+            }
             val error = draft.failure ?: importingError
             if (error != null) Text(error, color = MaterialTheme.colorScheme.error)
             draft.invalidLine?.let {

@@ -1,18 +1,26 @@
 package io.github.asutorufa.yuhaiin.compose
 
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -23,10 +31,11 @@ import io.github.asutorufa.yuhaiin.MainApplication
 import io.github.asutorufa.yuhaiin.R
 import io.github.asutorufa.yuhaiin.data.InstalledApp
 import io.github.asutorufa.yuhaiin.data.Settings
+import kotlinx.coroutines.flow.drop
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AppListComponent(onBack: () -> Unit) {
+fun AppListComponent(connected: Boolean = false, onBack: () -> Unit) {
     val repository = MainApplication.installedApps
     val settings by MainApplication.settings.snapshot.collectAsStateWithLifecycle()
     val selected = settings.setting(Settings.applications)
@@ -41,8 +50,10 @@ fun AppListComponent(onBack: () -> Unit) {
             .onSuccess { apps = it }
             .onFailure { error = it.message }
     }
+    // Rank with the selection from when the list last changed, not the live one, so a row stays
+    // under the finger when it is toggled.
     val visible =
-        remember(apps, query, filter, selected) {
+        remember(apps, query, filter) {
             apps
                 .orEmpty()
                 .filter { app ->
@@ -53,6 +64,19 @@ fun AppListComponent(onBack: () -> Unit) {
                 }
                 .sortedBy { it.packageName !in selected }
         }
+    val list = rememberLazyListState()
+    LaunchedEffect(list) {
+        snapshotFlow { query to filter }.drop(1).collect { list.scrollToItem(0) }
+    }
+    val content =
+        when {
+            error != null -> "error"
+            apps == null -> "loading"
+            visible.isEmpty() -> "empty"
+            else -> "list"
+        }
+    val dividerAlpha by
+        animateFloatAsState(if (content == "list" && list.canScrollBackward) 1f else 0f)
     Scaffold(
         topBar = {
             TopAppBar(
@@ -73,7 +97,8 @@ fun AppListComponent(onBack: () -> Unit) {
             )
         }
     ) { padding ->
-        ReadingPane(Modifier.padding(padding)) {
+        val bottom = padding.calculateBottomPadding()
+        ReadingPane(Modifier.scaffoldBody(padding)) {
             Column {
                 OutlinedTextField(
                     query,
@@ -81,10 +106,11 @@ fun AppListComponent(onBack: () -> Unit) {
                     singleLine = true,
                     placeholder = { Text(stringResource(R.string.search_apps)) },
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                     trailingIcon = {
                         if (query.isNotEmpty())
-                            TextButton(onClick = { query = "" }) {
-                                Text(stringResource(R.string.clear))
+                            IconButton(onClick = { query = "" }) {
+                                Icon(Icons.Default.Close, stringResource(R.string.clear))
                             }
                     },
                 )
@@ -112,97 +138,109 @@ fun AppListComponent(onBack: () -> Unit) {
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                Text(
-                    stringResource(R.string.settings_reconnect_hint),
-                    Modifier.padding(horizontal = 24.dp, vertical = 4.dp),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                HorizontalDivider(
+                    Modifier.graphicsLayer { alpha = dividerAlpha },
+                    color = MaterialTheme.colorScheme.outlineVariant,
                 )
-                when {
-                    error != null ->
-                        Column(Modifier.padding(24.dp)) {
-                            Text(error!!, color = MaterialTheme.colorScheme.error)
-                            Button(onClick = { reload++ }) { Text(stringResource(R.string.retry)) }
-                        }
-                    apps == null ->
-                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            MaterialLoadingIndicator()
-                        }
-                    visible.isEmpty() ->
-                        Column(Modifier.padding(24.dp)) {
-                            Text(
-                                stringResource(R.string.apps_no_results),
-                                style = MaterialTheme.typography.titleMedium,
-                            )
-                            TextButton(
-                                onClick = {
-                                    query = ""
-                                    filter = "all"
+                Crossfade(content, Modifier.weight(1f), label = "app list content") { current ->
+                    when (current) {
+                        "error" ->
+                            Column(Modifier.padding(24.dp)) {
+                                Text(error.orEmpty(), color = MaterialTheme.colorScheme.error)
+                                Button(onClick = { reload++ }) {
+                                    Text(stringResource(R.string.retry))
                                 }
-                            ) {
-                                Text(stringResource(R.string.reset_filters))
                             }
-                        }
-                    else ->
-                        LazyColumn(contentPadding = PaddingValues(bottom = 24.dp)) {
-                            items(visible, key = { it.packageName }) { app ->
-                                val checked = app.packageName in selected
-                                val icon by
-                                    produceState<android.graphics.Bitmap?>(null, app.packageName) {
-                                        value = repository.icon(app.packageName)
-                                    }
-                                ListItem(
-                                    modifier =
-                                        Modifier.toggleable(checked, role = Role.Checkbox) { enabled
-                                            ->
-                                            val next =
-                                                selected.toMutableSet().apply {
-                                                    if (enabled) add(app.packageName)
-                                                    else remove(app.packageName)
-                                                }
-                                            MainApplication.settings.set(
-                                                Settings.applications,
-                                                next,
-                                            )
-                                        },
-                                    colors =
-                                        ListItemDefaults.colors(
-                                            containerColor =
-                                                if (checked)
-                                                    MaterialTheme.colorScheme.secondaryContainer
-                                                else MaterialTheme.colorScheme.surface
-                                        ),
-                                    headlineContent = {
-                                        Text(
-                                            app.name,
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis,
-                                        )
-                                    },
-                                    supportingContent = {
-                                        Text(
-                                            app.packageName,
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis,
-                                        )
-                                    },
-                                    leadingContent = {
-                                        Box(Modifier.size(40.dp)) {
-                                            icon?.let {
-                                                Image(
-                                                    it.asImageBitmap(),
-                                                    null,
-                                                    Modifier.fillMaxSize(),
-                                                )
-                                            }
-                                        }
-                                    },
-                                    trailingContent = { Checkbox(checked, onCheckedChange = null) },
+                        "loading" ->
+                            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                MaterialLoadingIndicator()
+                            }
+                        "empty" ->
+                            Column(Modifier.padding(24.dp)) {
+                                Text(
+                                    stringResource(R.string.apps_no_results),
+                                    style = MaterialTheme.typography.titleMedium,
                                 )
+                                TextButton(
+                                    onClick = {
+                                        query = ""
+                                        filter = "all"
+                                    }
+                                ) {
+                                    Text(stringResource(R.string.reset_filters))
+                                }
                             }
-                        }
+                        else ->
+                            LazyColumn(
+                                // The keyboard covers the navigation bar inset already added.
+                                Modifier.fillMaxSize()
+                                    .consumeWindowInsets(PaddingValues(bottom = bottom))
+                                    .imePadding(),
+                                state = list,
+                                contentPadding = PaddingValues(bottom = bottom + 24.dp),
+                            ) {
+                                if (connected)
+                                    item(key = "reconnect hint") {
+                                        Text(
+                                            stringResource(R.string.settings_reconnect_hint),
+                                            Modifier.animateItem()
+                                                .padding(horizontal = 24.dp, vertical = 8.dp),
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                    }
+                                items(visible, key = { it.packageName }) { app ->
+                                    AppRow(
+                                        app,
+                                        app.packageName in selected,
+                                        Modifier.animateItem(),
+                                    ) { enabled ->
+                                        val next =
+                                            selected.toMutableSet().apply {
+                                                if (enabled) add(app.packageName)
+                                                else remove(app.packageName)
+                                            }
+                                        MainApplication.settings.set(Settings.applications, next)
+                                    }
+                                }
+                            }
+                    }
                 }
             }
         }
     }
+}
+
+@Composable
+private fun AppRow(
+    app: InstalledApp,
+    checked: Boolean,
+    modifier: Modifier,
+    onToggle: (Boolean) -> Unit,
+) {
+    val icon by
+        produceState<android.graphics.Bitmap?>(null, app.packageName) {
+            value = MainApplication.installedApps.icon(app.packageName)
+        }
+    val container by
+        animateColorAsState(
+            if (checked) MaterialTheme.colorScheme.secondaryContainer
+            else MaterialTheme.colorScheme.surface,
+            AppMotion.effects(),
+        )
+    ListItem(
+        modifier = modifier.toggleable(checked, role = Role.Checkbox, onValueChange = onToggle),
+        colors = ListItemDefaults.colors(containerColor = container),
+        headlineContent = { Text(app.name, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+        supportingContent = {
+            Text(app.packageName, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        },
+        leadingContent = {
+            Crossfade(icon, Modifier.size(40.dp), tween(150), label = "app icon") { bitmap ->
+                if (bitmap != null)
+                    Image(bitmap.asImageBitmap(), null, Modifier.fillMaxSize())
+            }
+        },
+        trailingContent = { Checkbox(checked, onCheckedChange = null) },
+    )
 }

@@ -1,5 +1,6 @@
 package io.github.asutorufa.yuhaiin.compose
 
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
@@ -51,7 +52,7 @@ fun UpdateCard(
 
     Card(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
         Column(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.animateContentSize().padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Text(

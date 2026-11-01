@@ -1,6 +1,7 @@
 package io.github.asutorufa.yuhaiin.compose
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.DragInteraction
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -68,6 +69,12 @@ fun LogcatCompose(excludeList: ArrayList<String>? = null, onBack: () -> Unit) {
     LaunchedEffect(visible.lastOrNull()?.id, follow, paused) {
         if (follow && !paused && visible.isNotEmpty()) list.scrollToItem(visible.lastIndex)
     }
+    // Reading older lines must win over following; only a drag reports this, not scrollToItem.
+    LaunchedEffect(list) {
+        list.interactionSource.interactions.collect {
+            if (it is DragInteraction.Start) follow = false
+        }
+    }
     Scaffold(
         topBar = {
             TopAppBar(
@@ -128,6 +135,7 @@ fun LogcatCompose(excludeList: ArrayList<String>? = null, onBack: () -> Unit) {
                             scope.launch {
                                 if (visible.isNotEmpty())
                                     list.animateScrollToItem(visible.lastIndex)
+                                follow = true
                             }
                         }
                     ) {
@@ -137,7 +145,7 @@ fun LogcatCompose(excludeList: ArrayList<String>? = null, onBack: () -> Unit) {
             }
         },
     ) { padding ->
-        ReadingPane(Modifier.padding(padding)) {
+        ReadingPane(Modifier.padding(padding).consumeWindowInsets(padding).imePadding()) {
             Column {
                 OutlinedTextField(
                     query,
@@ -160,7 +168,7 @@ fun LogcatCompose(excludeList: ArrayList<String>? = null, onBack: () -> Unit) {
                 }
                 Text(
                     stringResource(R.string.log_count, visible.size, logs.size),
-                    Modifier.padding(horizontal = 24.dp),
+                    Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
                     style = MaterialTheme.typography.bodySmall,
                 )
                 if (error != null)

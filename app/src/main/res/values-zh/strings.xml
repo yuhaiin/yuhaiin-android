@@ -179,4 +179,7 @@
     <string name="tun_congestion_title">拥塞控制</string>
     <string name="tun_lightweight_driver_note">轻量协议栈必须使用 Channel 驱动。原有协议栈的驱动选择会保留。</string>
     <string name="tun_stack_experimental_note">实验性 TCP/IP 实现。修改此选项后需重新连接 VPN。</string>
+    <string name="copied">已复制</string>
+    <string name="route_cleared">已清空路由内容</string>
+    <string name="undo">撤销</string>
 </resources>

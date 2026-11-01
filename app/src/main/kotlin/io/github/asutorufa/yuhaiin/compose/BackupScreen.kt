@@ -2,12 +2,16 @@ package io.github.asutorufa.yuhaiin.compose
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -39,19 +43,31 @@ fun BackupScreen(onBack: () -> Unit, disconnect: suspend () -> Unit) {
                     model.preview(data, preview)
                 }
         }
+    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     Scaffold(
+        Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             TopAppBar(
+                scrollBehavior = scrollBehavior,
                 title = { Text(stringResource(R.string.backup_title)) },
                 navigationIcon = {
-                    TextButton(onClick = onBack) { Text(stringResource(R.string.backup_back)) }
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
+                    }
                 },
             )
-        }
+        },
     ) { padding ->
-        ReadingPane {
+        ReadingPane(Modifier.scaffoldBody(padding)) {
             Column(
-                Modifier.padding(padding).verticalScroll(rememberScrollState()).padding(24.dp),
+                Modifier.verticalScroll(rememberScrollState())
+                    .animateContentSize()
+                    .padding(
+                        start = 24.dp,
+                        top = 24.dp,
+                        end = 24.dp,
+                        bottom = padding.calculateBottomPadding() + 24.dp,
+                    ),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 Text(stringResource(R.string.backup_description))
@@ -60,6 +76,7 @@ fun BackupScreen(onBack: () -> Unit, disconnect: suspend () -> Unit) {
                     style = MaterialTheme.typography.bodySmall,
                 )
                 Button(
+                    modifier = Modifier.fillMaxWidth(),
                     enabled = !state.busy,
                     onClick = {
                         val date = SimpleDateFormat("yyyyMMdd-HHmmss", Locale.ROOT).format(Date())
@@ -69,12 +86,14 @@ fun BackupScreen(onBack: () -> Unit, disconnect: suspend () -> Unit) {
                     Text(stringResource(R.string.backup_export))
                 }
                 OutlinedButton(
+                    modifier = Modifier.fillMaxWidth(),
                     enabled = !state.busy,
                     onClick = { model.run { ConfigBackup.share(context) } },
                 ) {
                     Text(stringResource(R.string.backup_share))
                 }
                 OutlinedButton(
+                    modifier = Modifier.fillMaxWidth(),
                     enabled = !state.busy,
                     onClick = {
                         import.launch(

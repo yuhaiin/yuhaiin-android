@@ -8,6 +8,8 @@ import android.os.Bundle
 import android.view.ViewGroup
 import android.webkit.*
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -20,6 +22,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -53,6 +56,7 @@ fun WebViewComponent(onBack: () -> Unit, getPort: () -> Int) {
     val context = LocalContext.current
     val renderError by rememberUpdatedState(stringResource(R.string.web_render_failed))
     val scope = rememberCoroutineScope()
+    val pageBackground = MaterialTheme.colorScheme.surface.toArgb()
     var view by remember { mutableStateOf<WebView?>(null) }
     var controlsExpanded by rememberSaveable { mutableStateOf(false) }
     var loading by remember { mutableStateOf(true) }
@@ -104,6 +108,8 @@ fun WebViewComponent(onBack: () -> Unit, getPort: () -> Int) {
                                         ViewGroup.LayoutParams.MATCH_PARENT,
                                         ViewGroup.LayoutParams.MATCH_PARENT,
                                     )
+                                // Avoid a white flash before the dashboard paints in dark theme.
+                                setBackgroundColor(pageBackground)
                                 settings.javaScriptEnabled = true
                                 settings.domStorageEnabled = true
                                 settings.allowFileAccess = false
@@ -229,11 +235,17 @@ fun WebViewComponent(onBack: () -> Unit, getPort: () -> Int) {
                         modifier = Modifier.fillMaxSize(),
                     )
                 }
-            if (loading && error == null) MaterialLinearProgressIndicator()
+            androidx.compose.animation.AnimatedVisibility(
+                loading && error == null,
+                enter = fadeIn(AppMotion.effects()),
+                exit = fadeOut(AppMotion.effects()),
+            ) {
+                MaterialLinearProgressIndicator()
+            }
             if (error != null || port == 0)
                 Surface(Modifier.fillMaxSize()) {
                     Column(
-                        Modifier.padding(24.dp),
+                        Modifier.fillMaxSize().padding(24.dp),
                         verticalArrangement = Arrangement.Center,
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
