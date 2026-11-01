@@ -7,6 +7,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
 import android.os.IBinder
+import android.view.View
 import android.widget.RemoteViews
 import io.github.asutorufa.yuhaiin.IYuhaiinVpnBinder
 import io.github.asutorufa.yuhaiin.R
@@ -70,35 +71,67 @@ class VpnWidget : AppWidgetProvider() {
                 .getAppWidgetIds(ComponentName(context, VpnWidget::class.java))
                 .isNotEmpty()
 
+        /** Everything [update] renders from a status; the service republishes when it changes. */
+        data class Display(
+            val title: Int,
+            val detail: String,
+            val toggle: VpnToggle,
+            val active: Boolean,
+        )
+
+        fun display(context: Context, status: VpnStatus) =
+            Display(
+                status.titleResource(),
+                status.detail(context, showSpeed = true),
+                status.toggle(),
+                status.state == State.CONNECTED && status.resumeAt == 0L,
+            )
+
         fun update(context: Context, status: VpnStatus) {
             val manager = AppWidgetManager.getInstance(context)
             val ids = manager.getAppWidgetIds(ComponentName(context, VpnWidget::class.java))
             if (ids.isEmpty()) return
-            val connected = status.state == State.CONNECTED
+            val display = display(context, status)
+            // Hosts reapply an update onto the existing views, so every state has to set every
+            // property it changes rather than rely on the layout's defaults.
             val views =
                 RemoteViews(context.packageName, R.layout.vpn_widget).apply {
+                    setTextViewText(R.id.widget_status, context.getString(display.title))
+                    setTextViewText(R.id.widget_speed, display.detail)
+                    setViewVisibility(
+                        R.id.widget_speed,
+                        if (display.detail.isEmpty()) View.GONE else View.VISIBLE,
+                    )
+                    setInt(R.id.widget_icon, "setImageAlpha", if (display.active) 255 else 97)
                     setTextViewText(
-                        R.id.widget_status,
+                        R.id.widget_toggle,
                         context.getString(
-                            if (status.resumeAt > 0) R.string.status_paused
-                            else status.state.labelResource()
+                            when (display.toggle) {
+                                VpnToggle.CONNECT -> R.string.Connect
+                                VpnToggle.RESUME -> R.string.resume_now
+                                VpnToggle.STOP,
+                                VpnToggle.STOPPING -> R.string.Stop
+                            }
                         ),
                     )
-                    setTextViewText(R.id.widget_speed, status.speed)
-                    setTextViewText(
+                    setBoolean(
                         R.id.widget_toggle,
-                        context.getString(if (connected) R.string.Stop else R.string.Connect),
+                        "setEnabled",
+                        display.toggle != VpnToggle.STOPPING,
                     )
                     setOnClickPendingIntent(
                         R.id.widget_toggle,
-                        VpnActions.activity(
-                            context,
-                            if (connected) VpnActions.DISCONNECT else VpnActions.CONNECT,
-                        ),
+                        when (display.toggle) {
+                            // Only connecting can need the VPN consent dialog.
+                            VpnToggle.CONNECT -> VpnActions.activity(context, VpnActions.CONNECT)
+                            VpnToggle.RESUME -> VpnActions.service(context, VpnActions.RECONNECT)
+                            VpnToggle.STOP -> VpnActions.service(context, VpnActions.DISCONNECT)
+                            VpnToggle.STOPPING -> null
+                        },
                     )
                     setOnClickPendingIntent(
-                        R.id.widget_status,
-                        VpnActions.activity(context, VpnActions.DASHBOARD),
+                        R.id.widget_summary,
+                        VpnActions.activity(context, VpnActions.HOME),
                     )
                     setOnClickPendingIntent(
                         R.id.widget_routes,

@@ -10,6 +10,7 @@ object VpnActions {
     const val CONNECT = "io.github.asutorufa.yuhaiin.CONNECT"
     const val DISCONNECT = "io.github.asutorufa.yuhaiin.DISCONNECT"
     const val RECONNECT = "io.github.asutorufa.yuhaiin.RECONNECT"
+    const val HOME = "io.github.asutorufa.yuhaiin.HOME"
     const val DASHBOARD = "io.github.asutorufa.yuhaiin.DASHBOARD"
     const val ROUTES = "io.github.asutorufa.yuhaiin.ROUTES"
     const val REFRESH_MONITORING = "io.github.asutorufa.yuhaiin.REFRESH_MONITORING"
