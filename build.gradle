@@ -6,8 +6,13 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 buildscript {
     ext.kotlin_version = '2.4.21'
     repositories {
-        mavenCentral()
         google()
+        // GitHub-hosted runners may receive HTTP 403 from Maven Central.
+        // Use Google's Maven Central mirror in CI; keep Central as fallback.
+        if (System.getenv('CI') == 'true') {
+            maven { url 'https://maven-central.storage-download.googleapis.com/maven2/' }
+        }
+        mavenCentral()
     }
     dependencies {
         classpath 'com.android.tools.build:gradle:9.5.1'
@@ -22,8 +27,13 @@ buildscript {
 
 allprojects {
     repositories {
-        mavenCentral()
         google()
+        // GitHub-hosted runners may receive HTTP 403 from Maven Central.
+        // Use Google's Maven Central mirror in CI; keep Central as fallback.
+        if (System.getenv('CI') == 'true') {
+            maven { url 'https://maven-central.storage-download.googleapis.com/maven2/' }
+        }
+        mavenCentral()
     }
 
     tasks.withType(KotlinCompile).configureEach {
