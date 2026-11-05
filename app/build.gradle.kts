@@ -135,7 +135,7 @@ dependencies {
     implementation("fastutil:fastutil:5.0.9")
     implementation("androidx.core:core-ktx:1.19.1")
 
-    val nav3Version = "1.2.0"
+    val nav3Version = "1.2.1"
     implementation("androidx.navigation3:navigation3-runtime:${nav3Version}")
     implementation("androidx.navigation3:navigation3-ui:${nav3Version}")
 
@@ -158,7 +158,7 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.11.0")
     implementation("androidx.lifecycle:lifecycle-viewmodel-navigation3:2.11.0")
     androidTestImplementation("androidx.test.ext:junit:1.3.0")
-    androidTestImplementation("androidx.test.uiautomator:uiautomator:2.4.0")
+    androidTestImplementation("androidx.test.uiautomator:uiautomator:2.4.1")
     implementation("androidx.fragment:fragment-compose:1.9.1")
     implementation("androidx.compose.material:material-navigation")
     implementation("androidx.compose.material:material-icons-core")
