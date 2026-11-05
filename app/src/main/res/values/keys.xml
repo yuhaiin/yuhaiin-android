@@ -20,15 +20,6 @@
 
 
     <string translatable="false" name="sniff_key">Sniff</string>
-    <string translatable="false" name="adv_tun_driver_key">Tun Driver</string>
-    <string translatable="false" name="tun_driver_fdbased_value">fdbased</string>
-    <string translatable="false" name="tun_driver_channel_value">channel</string>
-    <string translatable="false" name="tun_driver_system_gvisor_value">system_gvisor</string>
-    <string-array translatable="false" name="tun_drivers_value">
-        <item>@string/tun_driver_fdbased_value</item>
-        <item>@string/tun_driver_channel_value</item>
-        <item>@string/tun_driver_system_gvisor_value</item>
-    </string-array>
     <string translatable="false" name="adv_auto_connect_key">auto_connect</string>
     <string translatable="false" name="process_lookup_mode_key">process_lookup_mode</string>
     <string translatable="false" name="vpn_mtu_profile_key">vpn_mtu_profile</string>
