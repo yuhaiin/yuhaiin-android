@@ -84,27 +84,28 @@ class SettingsMigrationTest {
 
 class TunSettingsFlushTest {
     @Test
-    fun fastStackControllerAndSchedulerChangesArePersistedBeforeFlushCompletes() = runBlocking {
+    fun fastLightweightOptionsPersistWithoutChangingLegacyPreferences() = runBlocking {
         val store = MemoryStore()
+        // A pre-upgrade selection must not override the only supported native stack.
+        store.putString(Constants.TUN_STACK_KEY, "")
+        store.putString(Constants.TUN_DRIVER_KEY, "system_gvisor")
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
         try {
             val settings = AppSettings(store, scope, initialize = {})
             settings.ready.await()
-            settings.set(Settings.tunStack, "lightweight")
             settings.set(Settings.tunCongestionControl, "reno")
             settings.set(Settings.tunOutputScheduler, "fifo")
-            // An immediate second update must be the value read by native startup.
+            settings.set(Settings.tunLossRecovery, "classic")
+            // Immediate updates must be visible to native startup after flush.
             settings.set(Settings.tunCongestionControl, "bbr")
             settings.set(Settings.tunOutputScheduler, "fq_codel")
+            settings.set(Settings.tunLossRecovery, "rack-tlp")
             settings.flush()
-            assertEquals("lightweight", store.getString(Constants.TUN_STACK_KEY))
             assertEquals("bbr", store.getString(Constants.TUN_CONGESTION_CONTROL_KEY))
             assertEquals("fq_codel", store.getString(Constants.TUN_OUTPUT_SCHEDULER_KEY))
-            settings.set(Settings.tunStack, "")
-            settings.flush()
+            assertEquals("rack-tlp", store.getString(Constants.TUN_LOSS_RECOVERY_KEY))
             assertEquals("", store.getString(Constants.TUN_STACK_KEY))
-            // Retain the saved preference while legacy is selected. Core ignores it.
-            assertEquals("fq_codel", store.getString(Constants.TUN_OUTPUT_SCHEDULER_KEY))
+            assertEquals("system_gvisor", store.getString(Constants.TUN_DRIVER_KEY))
         } finally {
             scope.cancel()
         }
