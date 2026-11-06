@@ -296,26 +296,47 @@ class YuhaiinVpnService : VpnService() {
                 fun physical(network: Network): Boolean =
                     connectivity.getNetworkCapabilities(network)
                         ?.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN) == true
-                val network =
-                    if (iface.isNotBlank()) {
-                        @Suppress("DEPRECATION")
-                        connectivity.allNetworks.firstOrNull {
-                            physical(it) && connectivity.getLinkProperties(it)?.interfaceName == iface
-                        } ?: return -1L
-                    } else {
-                        currentUnderlyingNetwork
-                            ?: connectivity.activeNetwork?.takeIf(::physical)
-                            ?: return 0L // Unknown selection on older APIs: retain OS behavior.
-                    }
-                ParcelFileDescriptor.fromFd(socket).use { descriptor ->
-                    network.bindSocket(descriptor.fileDescriptor)
+                if (iface.isNotBlank()) {
+                    // An explicit interface must never silently fall back to
+                    // another network, so failures here fail the socket.
+                    val network =
+                        networkMonitor.networkForInterface(iface)
+                            ?: @Suppress("DEPRECATION")
+                            connectivity.allNetworks.firstOrNull {
+                                physical(it) &&
+                                    connectivity.getLinkProperties(it)?.interfaceName == iface
+                            }
+                            ?: return -1L
+                    bind(socket, network)
+                    return network.networkHandle
                 }
-                network.networkHandle
+                val network =
+                    currentUnderlyingNetwork
+                        ?: connectivity.activeNetwork?.takeIf(::physical)
+                        ?: return 0L // Unknown selection on older APIs: retain OS behavior.
+                // The selection hint can lag a handover and name a Network
+                // that is already gone. Leave such a socket with Android's
+                // default (unknown identity) rather than failing the dial.
+                runCatching { bind(socket, network) }
+                    .fold(
+                        onSuccess = { network.networkHandle },
+                        onFailure = {
+                            Log.d(tag, "selected Network binding failed, using default", it)
+                            0L
+                        },
+                    )
             }
             .getOrElse {
                 Log.d(tag, "outbound Network binding failed", it)
                 -1L
             }
+    }
+
+    private fun bind(socket: Int, network: Network) {
+        // fromFd duplicates the descriptor; the binding applies to the shared socket.
+        ParcelFileDescriptor.fromFd(socket).use { descriptor ->
+            network.bindSocket(descriptor.fileDescriptor)
+        }
     }
 
     private fun refreshNetworkStatus() {

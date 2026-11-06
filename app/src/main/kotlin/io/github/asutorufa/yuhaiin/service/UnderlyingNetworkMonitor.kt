@@ -27,6 +27,19 @@ class UnderlyingNetworkMonitor(
     private var bestCallback: ConnectivityManager.NetworkCallback? = null
     private var networks = linkedMapOf<Network, UnderlyingNetwork>()
     private var haveSnapshot = false
+    // Read from native socket-binding threads; replaced, never mutated.
+    @Volatile private var interfaces: Map<String, List<Network>> = emptyMap()
+    @Volatile private var selection: Network? = null
+
+    /**
+     * Physical Network last published for [name], without binder calls. Null when unobserved, so
+     * callers can fall back to a live query. The selected Network wins an ambiguous name.
+     */
+    fun networkForInterface(name: String): Network? {
+        val candidates = interfaces[name] ?: return null
+        val selected = selection
+        return if (selected != null && selected in candidates) selected else candidates.first()
+    }
 
     private fun dispatch(session: Long, action: () -> Unit) {
         handler.post { if (registered && epoch == session) action() }
@@ -43,6 +56,8 @@ class UnderlyingNetworkMonitor(
         // Before API 31, leave selection with Android when its default is our
         // own VPN. Source/interface affinity still distinguishes physical paths.
         val selected = best ?: connectivity.activeNetwork?.takeIf { networks.containsKey(it) }
+        interfaces = networks.entries.groupBy({ it.value.interfaceName }, { it.key })
+        selection = selected
         runCatching { Yuhaiin.reportUnderlyingNetworks(snapshot, selected?.networkHandle ?: 0L) }
             .onFailure { Log.w("UnderlyingNetworkMonitor", "Cannot publish underlying networks", it) }
     }
@@ -157,6 +172,8 @@ class UnderlyingNetworkMonitor(
         availableCallback = null
         bestCallback = null
         best = null
+        interfaces = emptyMap()
+        selection = null
         // Stopping observation is unknown state, not an offline transition.
     }
 }
