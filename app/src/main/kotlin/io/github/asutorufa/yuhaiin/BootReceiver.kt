@@ -9,6 +9,8 @@ import android.os.BatteryManager
 import android.os.PowerManager
 import android.util.Log
 import androidx.core.content.ContextCompat
+import io.github.asutorufa.yuhaiin.privacy.PrivacyConsent
+import io.github.asutorufa.yuhaiin.privacy.PrivacyConsent.Purpose
 import io.github.asutorufa.yuhaiin.service.YuhaiinVpnService
 
 class BootReceiver : BroadcastReceiver() {
@@ -49,6 +51,8 @@ class BootReceiver : BroadcastReceiver() {
         if (!MainApplication.store.getBoolean(Constants.AUTO_CONNECT_KEY)) {
             return
         }
+
+        if (!PrivacyConsent.forContext(context).has(Purpose.VPN)) return
 
         if (!shouldAutoConnect(context)) {
             Log.d(tag, "skipping VPN auto-connect for $action due to connect policy")

@@ -23,6 +23,8 @@ import io.github.asutorufa.yuhaiin.IYuhaiinVpnBinder
 import io.github.asutorufa.yuhaiin.IYuhaiinVpnCallback
 import io.github.asutorufa.yuhaiin.MainApplication
 import io.github.asutorufa.yuhaiin.R
+import io.github.asutorufa.yuhaiin.privacy.PrivacyConsent
+import io.github.asutorufa.yuhaiin.privacy.PrivacyConsent.Purpose
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -439,6 +441,21 @@ class YuhaiinVpnService : VpnService() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         latestStartId = startId
+        // Always-on VPN, notifications, boot and pause alarms also enter here.
+        if (
+            intent?.action != VpnActions.DISCONNECT &&
+                !PrivacyConsent.forContext(this).has(Purpose.VPN)
+        ) {
+            serviceScope.launch {
+                commands.withLock {
+                    setResumeAt(0)
+                    stopInternal(StopReason.USER)
+                    lastError = getString(R.string.vpn_disclosure_required)
+                    callbacks.sendMsg(lastError!!)
+                }
+            }
+            return START_NOT_STICKY
+        }
         // Stop/reconnect are delivered to the same service, never a notification trampoline.
         serviceScope.launch {
             commands.withLock {
@@ -478,6 +495,13 @@ class YuhaiinVpnService : VpnService() {
     }
 
     private fun startConnection() {
+        if (!PrivacyConsent.forContext(this).has(Purpose.VPN)) {
+            lastError = getString(R.string.vpn_disclosure_required)
+            callbacks.sendMsg(lastError!!)
+            stopForegroundIfNeeded()
+            stopSelfResult(latestStartId)
+            return
+        }
         refreshNetworkStatus()
         if (state != State.DISCONNECTED && state != State.ERROR) {
             Log.d(tag, "ignoring start request while state=${state.name}")

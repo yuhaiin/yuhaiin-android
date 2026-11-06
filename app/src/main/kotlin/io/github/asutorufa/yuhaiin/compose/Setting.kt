@@ -12,7 +12,6 @@ import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import io.github.asutorufa.yuhaiin.Constants
 import io.github.asutorufa.yuhaiin.MainApplication
 import io.github.asutorufa.yuhaiin.R
 import io.github.asutorufa.yuhaiin.data.SettingKey
@@ -136,6 +135,7 @@ fun SettingCompose(
                                 Settings.allowLan,
                                 values,
                                 R.drawable.lan,
+                                R.string.allow_lan_privacy_summary,
                             )
                         }
                         item {

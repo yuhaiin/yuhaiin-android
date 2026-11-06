@@ -9,6 +9,8 @@ import kotlinx.serialization.Serializable
 
 @Serializable data object AboutRoute : AppRoute
 
+@Serializable data object PrivacyRoute : AppRoute
+
 @Serializable data object AppListRoute : AppRoute
 
 @Serializable data object RouteConfigRoute : AppRoute

@@ -50,7 +50,10 @@ class TunStackDeviceTest {
         }
 
     private fun startVpn(device: UiDevice) {
-        compose.runOnUiThread { compose.activity.startService() }
+        compose.runOnUiThread {
+            grantVpnConsentForLifecycleTest(compose.activity)
+            compose.activity.startService()
+        }
         val deadline = SystemClock.uptimeMillis() + 25_000
         while (SystemClock.uptimeMillis() < deadline) {
             if (compose.activity.state.value == State.CONNECTED) return

@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="privacy_policy_title">プライバシーポリシー</string>
+    <string name="privacy_policy_summary">データの用途、権限と選択</string>
+    <string name="privacy_effective_date">更新日：2026 年 11 月 6 日</string>
+    <string name="privacy_agree">同意して続行</string>
+    <string name="privacy_not_now">今はしない</string>
+    <string name="privacy_choice_failed">プライバシー設定を保存できません。再試行してください。</string>
+    <string name="vpn_disclosure_title">Yuhaiin による VPN の使用</string>
+    <string name="vpn_disclosure_body">Yuhaiin は VPN を通る通信の DNS リクエスト、接続先アドレスとポート、通信量、およびアプリ識別が有効な場合の送信元 UID・パッケージ名を処理します。これらは経路選択、接続情報の表示、診断に使用されます。\n\n通信と必要な認証情報は、設定で使用するプロキシ、DNS、メッシュサービスに送信され、その運営者が処理できます。暗号化は選択したプロトコルと設定に依存します。信頼できる暗号化された接続先を使用してください。\n\nVPN は切断するまでバックグラウンドで動作し、自動接続を有効にした場合は起動時にも再接続します。いつでも切断できます。ここでの同意に、インストール済みアプリ一覧へのアクセスは含まれません。</string>
+    <string name="vpn_disclosure_required">接続する前に Yuhaiin を開き、VPN データの説明を確認して同意してください。</string>
+    <string name="apps_disclosure_title">インストール済みアプリへのアクセス</string>
+    <string name="apps_disclosure_body">Yuhaiin はアプリ名、パッケージ名、アイコン、システムアプリかどうかを読み取り、VPN を使用または迂回するアプリを選択できるようにします。ランチャーに表示されないアプリも含みます。\n\n一覧はこの端末のメモリ内にキャッシュされ、プロジェクトの保守担当者に自動送信されず、広告にも使用されません。選択したパッケージ名は設定に保存され、設定のエクスポートやバックアップにも含まれます。\n\n「同意して続行」を選ぶと一覧を読み込みます。この画面を開かずに VPN を使用することもできます。「このアプリについて → プライバシーポリシー」で同意を撤回できます。</string>
+    <string name="privacy_developer_title">このポリシーについて</string>
+    <string name="privacy_developer_body">このポリシーは、yuhaiin プロジェクトの貢献者が保守するオープンソースの VPN・ネットワーク経路制御アプリ Yuhaiin Android に適用されます。プライバシーの質問は下の連絡ボタンから問題追跡システムに投稿できます。投稿は公開されます。パスワード、サブスクリプション URL、未編集のログを添付しないでください。</string>
+    <string name="privacy_storage_title">設定、診断と共有</string>
+    <string name="privacy_storage_body">設定はアプリ専用ストレージに保存され、プロキシのパスワード、サブスクリプションの認証情報、経路の選択、選択したパッケージ名が含まれる場合があります。ローカルのログ、接続情報、セッション統計には接続先、IP アドレス、アプリ識別子、通信量が含まれる場合があります。\n\nログのエクスポート機能は、操作した場合のみファイルを共有します。設定バックアップには認証情報が含まれる場合があり、Yuhaiin はエクスポートしたファイルを暗号化しません。Android のバックアップや端末移行では、システム設定に従って設定がコピーされる場合があります。同意の記録はこの端末のみに保存され、バックアップには含まれません。\n\nLAN 接続を有効にすると、同じネットワークの他の端末がダッシュボード、設定、接続情報にアクセスできる場合があります。信頼できるネットワークでのみ有効にしてください。</string>
+    <string name="privacy_network_title">外部サービス</string>
+    <string name="privacy_network_body">プロキシ、DNS、サブスクリプション、ルール一覧、任意のメッシュ・制御サービスには、その機能に必要なリクエストと接続情報が送信されます。接続確認は設定済みまたは組み込みのテスト先にアクセスします。これらの独立したサービスには、それぞれのデータ取り扱い方針があります。\n\n更新確認では GitHub にリリース情報を要求します。更新のダウンロードでは APK とチェックサムを取得し、操作後に Android のインストーラーを使用します。GitHub や配信サービスは IP アドレスと通常の HTTP リクエスト情報を受信できます。\n\nYuhaiin はアプリ一覧を販売せず、広告にも使用しません。完全なアプリ一覧やエクスポートした診断ファイルを保守担当者に自動送信しません。</string>
+    <string name="privacy_retention_title">保存期間と削除</string>
+    <string name="privacy_retention_body">設定と保存済みの通信量は、置き換えや削除、アプリのストレージ消去、アンインストールまで保存されます。メモリ内のアプリ情報は同意の撤回やプロセス終了で消去されます。ログとキャッシュはローテーション、消去、アプリのデータ削除まで残ります。\n\nローカルデータをすべて削除するには、Android の「設定 → アプリ → Yuhaiin → ストレージ」でストレージを消去してください。エクスポートしたファイルとシステムバックアップは別途削除してください。外部サービスが受信したデータの削除は、その運営者にお問い合わせください。Yuhaiin Android にプロジェクトのアカウント登録は不要です。\n\n同意を撤回すると VPN を切断し、以後のアプリ一覧へのアクセスを停止します。設定は確認用に保持され、再使用時には改めて明示的な同意を求めます。</string>
+    <string name="privacy_contact">プライバシーについて連絡</string>
+    <string name="privacy_contact_failed">問題追跡システムを開けません。github.com/yuhaiin/yuhaiin-android/issues を参照してください。</string>
+    <string name="privacy_withdraw">同意を撤回</string>
+    <string name="privacy_withdraw_body">VPN を切断し、VPN とアプリ一覧へのアクセスの同意を撤回しますか？アプリ一覧のキャッシュを消去します。設定とアプリ別の選択は保持されます。次回使用する前に再度確認します。</string>
+    <string name="privacy_withdrawn">同意を撤回しました。VPN を停止中です。次回使用時に再度確認します。</string>
+    <string name="allow_lan_privacy_summary">同じネットワークの他の端末がダッシュボード、設定、認証情報、接続情報にアクセスできる場合があります。信頼できるネットワークでのみ有効にしてください。</string>
+    <string name="log_share_disclosure">ログには接続先ドメイン、IP アドレス、アプリ識別子、認証情報が含まれる場合があります。送信前に内容を確認し、機密情報を削除してください。Android の共有画面を開きますか？</string>
+    <string name="log_share_continue">共有に進む</string>
+    <string name="update_apk_invalid">ダウンロードしたファイルは有効な署名付き APK ではありません。</string>
+    <string name="update_apk_wrong_package">この APK は別のアプリ用です。インストールを中止しました。</string>
+    <string name="update_apk_older_version">この APK のバージョンコードはインストール済みのアプリより古いものです。</string>
+    <string name="update_apk_wrong_signature">この APK は、このアプリが信頼する更新キーで署名されていません。</string>
+</resources>

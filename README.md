@@ -10,7 +10,7 @@ Android Client for [yuhaiin](https://github.com/Asutorufa/yuhaiin).
 
 ## Support Version
 
-Android 5.0+ (API level 21)
+Android 7.0+ (API level 24)
 
 ## Download
 
@@ -68,6 +68,17 @@ Signed APK names end in `-release.apk`. Release alignment checks, device regress
 
 - [bndeff/socksdroid](https://github.com/bndeff/socksdroid)
 - [Navigation Componentのいい感じのアニメーションを検討する【サンプルアプリあり】](https://at-sushi.work/blog/21/)  
+
+## Privacy and permissions
+
+VPN data use is explained before the first connection and before system permission
+prompts. The installed-app chooser requires its own consent. Read the offline
+policy or withdraw consent in **About → Privacy policy**. Withdrawal disconnects
+the VPN and clears the app-list cache while preserving configuration. Logs require
+confirmation before export; backups can contain credentials.
+
+See the [privacy policy](docs/privacy-policy.md) and
+[permission review and Google Play preparation](docs/android-privacy.md).
 
 ## Android connection controls
 

@@ -13,6 +13,8 @@ import io.github.asutorufa.yuhaiin.IYuhaiinVpnBinder
 import io.github.asutorufa.yuhaiin.IYuhaiinVpnCallback
 import io.github.asutorufa.yuhaiin.MainApplication
 import io.github.asutorufa.yuhaiin.R
+import io.github.asutorufa.yuhaiin.privacy.PrivacyConsent
+import io.github.asutorufa.yuhaiin.privacy.PrivacyConsent.Purpose
 import io.github.asutorufa.yuhaiin.service.YuhaiinVpnService.Companion.State
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -97,7 +99,10 @@ class VpnTileService : TileService() {
             if (state == State.CONNECTING || state == State.DISCONNECTING) return@unlockAndRun
             if (state == State.CONNECTED) {
                 runCatching { binder?.stop() }.onFailure { openConsent() }
-            } else if (VpnService.prepare(this) != null) openConsent()
+            } else if (
+                !PrivacyConsent.forContext(this).has(Purpose.VPN) ||
+                    VpnService.prepare(this) != null
+            ) openConsent()
             else
                 // This entry bypasses MainActivity.launchVpn(), which already
                 // flushes the UI process settings queue before starting the :bg

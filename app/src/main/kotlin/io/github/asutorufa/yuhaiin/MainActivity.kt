@@ -19,6 +19,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import io.github.asutorufa.yuhaiin.compose.Main
+import io.github.asutorufa.yuhaiin.privacy.PrivacyConsent
+import io.github.asutorufa.yuhaiin.privacy.PrivacyConsent.Purpose
 import io.github.asutorufa.yuhaiin.service.VpnActions
 import io.github.asutorufa.yuhaiin.service.VpnStatus
 import io.github.asutorufa.yuhaiin.service.YuhaiinVpnService
@@ -36,6 +38,7 @@ class MainActivity : AppCompatActivity() {
     private var serviceBound = false
     val status = MutableStateFlow(VpnStatus())
     val navigationAction = MutableStateFlow<String?>(null)
+    val vpnDisclosure = MutableStateFlow(false)
     private var pendingAction: String? = null
     private var launchAction = VpnActions.CONNECT
 
@@ -45,6 +48,8 @@ class MainActivity : AppCompatActivity() {
             if (savedInstanceState == null) intent?.action
             else savedInstanceState.getString("vpnAction")
         launchAction = savedInstanceState?.getString("launchAction") ?: VpnActions.CONNECT
+        vpnDisclosure.value = savedInstanceState?.getBoolean("vpnDisclosure") ?: false
+        preparingVpn = vpnDisclosure.value
         enableEdgeToEdge()
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -67,6 +72,7 @@ class MainActivity : AppCompatActivity() {
     override fun onSaveInstanceState(outState: Bundle) {
         outState.putString("vpnAction", pendingAction)
         outState.putString("launchAction", launchAction)
+        outState.putBoolean("vpnDisclosure", vpnDisclosure.value)
         super.onSaveInstanceState(outState)
     }
 
@@ -208,6 +214,29 @@ class MainActivity : AppCompatActivity() {
         if (preparingVpn) return
         preparingVpn = true
         error.value = null
+        if (!PrivacyConsent.forContext(this).has(Purpose.VPN)) {
+            vpnDisclosure.value = true
+            return
+        }
+        requestNotificationPermission()
+    }
+
+    fun acceptVpnDisclosure() {
+        runCatching { PrivacyConsent.forContext(this).grant(Purpose.VPN) }
+            .onSuccess {
+                vpnDisclosure.value = false
+                requestNotificationPermission()
+            }
+            .onFailure { error.value = getString(R.string.privacy_choice_failed) }
+    }
+
+    fun dismissVpnDisclosure() {
+        vpnDisclosure.value = false
+        preparingVpn = false
+        launchAction = VpnActions.CONNECT
+    }
+
+    private fun requestNotificationPermission() {
         if (
             Build.VERSION.SDK_INT >= 33 &&
                 ContextCompat.checkSelfPermission(

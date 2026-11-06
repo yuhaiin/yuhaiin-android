@@ -21,6 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -31,11 +32,31 @@ import io.github.asutorufa.yuhaiin.MainApplication
 import io.github.asutorufa.yuhaiin.R
 import io.github.asutorufa.yuhaiin.data.InstalledApp
 import io.github.asutorufa.yuhaiin.data.Settings
+import io.github.asutorufa.yuhaiin.privacy.PrivacyConsent
+import io.github.asutorufa.yuhaiin.privacy.PrivacyConsent.Purpose
 import kotlinx.coroutines.flow.drop
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppListComponent(connected: Boolean = false, onBack: () -> Unit) {
+    val context = LocalContext.current
+    val consent = remember(context) { PrivacyConsent.forContext(context) }
+    var accepted by remember { mutableStateOf(consent.has(Purpose.INSTALLED_APPS)) }
+    var consentError by remember { mutableStateOf<String?>(null) }
+    val choiceFailed = stringResource(R.string.privacy_choice_failed)
+    if (!accepted) {
+        DataDisclosureDialog(
+            purpose = Purpose.INSTALLED_APPS,
+            error = consentError,
+            onAccept = {
+                runCatching { consent.grant(Purpose.INSTALLED_APPS) }
+                    .onSuccess { accepted = true }
+                    .onFailure { consentError = choiceFailed }
+            },
+            onDismiss = onBack,
+        )
+        return
+    }
     val repository = MainApplication.installedApps
     val settings by MainApplication.settings.snapshot.collectAsStateWithLifecycle()
     val selected = settings.setting(Settings.applications)
@@ -97,7 +118,7 @@ fun AppListComponent(connected: Boolean = false, onBack: () -> Unit) {
                     }
                 },
             )
-        }
+        },
     ) { padding ->
         val bottom = padding.calculateBottomPadding()
         ReadingPane(Modifier.scaffoldBody(padding)) {

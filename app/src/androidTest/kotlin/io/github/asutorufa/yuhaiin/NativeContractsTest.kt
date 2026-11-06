@@ -66,7 +66,10 @@ class NativeContractsTest {
                     store.putString(routeKey, "INVALID_CIDR")
                 }
             }
-            compose.runOnUiThread { compose.activity.startService() }
+            compose.runOnUiThread {
+                grantVpnConsentForLifecycleTest(compose.activity)
+                compose.activity.startService()
+            }
             // The system VPN consent is a separate Activity. A test never taps app coordinates.
             val deadline = android.os.SystemClock.uptimeMillis() + 15_000
             while (
@@ -85,7 +88,10 @@ class NativeContractsTest {
             runBlocking(Dispatchers.IO) {
                 MainApplication.settings.commit { it.putString(routeKey, original) }
             }
-            compose.runOnUiThread { compose.activity.startService() }
+            compose.runOnUiThread {
+                grantVpnConsentForLifecycleTest(compose.activity)
+                compose.activity.startService()
+            }
             // The previous ERROR remains until asynchronous service startup begins.
             compose.waitUntil(20_000) {
                 compose.activity.state.value == State.CONNECTED
