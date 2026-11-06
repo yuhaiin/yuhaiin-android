@@ -41,6 +41,7 @@ import yuhaiin.App
 import yuhaiin.Closer
 import yuhaiin.Opts
 import yuhaiin.SocketProtect
+import yuhaiin.SocketBind
 import yuhaiin.TUN
 import yuhaiin.TunAddress
 import yuhaiin.Yuhaiin
@@ -132,7 +133,7 @@ class YuhaiinVpnService : VpnService() {
     private var foregroundStarted = false
     private var runtimeOwned = false
     private var mInterface: ParcelFileDescriptor? = null
-    private var currentUnderlyingNetwork: Network? = null
+    @Volatile private var currentUnderlyingNetwork: Network? = null
     private val vpnNotification by lazy { VpnNotification(this) }
     @Volatile private var lastError: String? = null
     private val app = App()
@@ -284,6 +285,37 @@ class YuhaiinVpnService : VpnService() {
         if (!applied) {
             Log.w(tag, "failed to update VPN underlying network")
         }
+    }
+
+    // Called only for outbound sockets, after protect(). VpnService's
+    // setUnderlyingNetworks is a hint; it does not bind an individual socket.
+    private fun bindOutboundSocket(socket: Int, iface: String): Long {
+        if (!protect(socket)) return -1L
+        val connectivity = (application as MainApplication).connectivity
+        return runCatching {
+                fun physical(network: Network): Boolean =
+                    connectivity.getNetworkCapabilities(network)
+                        ?.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN) == true
+                val network =
+                    if (iface.isNotBlank()) {
+                        @Suppress("DEPRECATION")
+                        connectivity.allNetworks.firstOrNull {
+                            physical(it) && connectivity.getLinkProperties(it)?.interfaceName == iface
+                        } ?: return -1L
+                    } else {
+                        currentUnderlyingNetwork
+                            ?: connectivity.activeNetwork?.takeIf(::physical)
+                            ?: return 0L // Unknown selection on older APIs: retain OS behavior.
+                    }
+                ParcelFileDescriptor.fromFd(socket).use { descriptor ->
+                    network.bindSocket(descriptor.fileDescriptor)
+                }
+                network.networkHandle
+            }
+            .getOrElse {
+                Log.d(tag, "outbound Network binding failed", it)
+                -1L
+            }
     }
 
     private fun refreshNetworkStatus() {
@@ -594,6 +626,7 @@ class YuhaiinVpnService : VpnService() {
                             socketProtect = SocketProtect {
                                 return@SocketProtect protect(it)
                             }
+                            socketBind = SocketBind { socket, iface -> bindOutboundSocket(socket, iface) }
                         }
 
                     closeFallback = Closer {
