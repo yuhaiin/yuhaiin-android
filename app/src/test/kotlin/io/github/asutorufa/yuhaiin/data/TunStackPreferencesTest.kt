@@ -5,26 +5,27 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Test
 
-/** Preferences for a future native cmd/android TUN startup bridge. */
+/** UI preferences for the lightweight TUN implementation used by Android. */
 class TunStackPreferencesTest {
     @Test
-    fun legacyStackRemainsDefault() {
-        assertEquals("", Settings.tunStack.default)
+    fun lightweightOptionsMatchNativeDefaults() {
         assertEquals("cubic", Settings.tunCongestionControl.default)
+        assertEquals("classic", Settings.tunLossRecovery.default)
         assertEquals("fifo", Settings.tunOutputScheduler.default)
-        assertEquals("system_gvisor", Settings.tunDriver.default)
     }
 
     @Test
-    fun stackAndCongestionPreferencesAreIndependentOfLegacyDriver() {
-        assertEquals("android_tun_stack", Constants.TUN_STACK_KEY)
-        assertEquals("android_tun_congestion_control", Constants.TUN_CONGESTION_CONTROL_KEY)
-        assertEquals("android_tun_output_scheduler", Constants.TUN_OUTPUT_SCHEDULER_KEY)
-        assertFalse(Settings.tunStack.name == Settings.tunDriver.name)
-        assertFalse(Settings.tunCongestionControl.name == Settings.tunDriver.name)
-        assertFalse(Settings.tunOutputScheduler.name == Settings.tunDriver.name)
-        assertEquals(1, Settings.all.count { it.name == Constants.TUN_STACK_KEY })
-        assertEquals(1, Settings.all.count { it.name == Constants.TUN_CONGESTION_CONTROL_KEY })
-        assertEquals(1, Settings.all.count { it.name == Constants.TUN_OUTPUT_SCHEDULER_KEY })
+    fun onlySupportedRuntimeOptionsAppearInSettingsSnapshot() {
+        val keys =
+            listOf(
+                Constants.TUN_CONGESTION_CONTROL_KEY,
+                Constants.TUN_LOSS_RECOVERY_KEY,
+                Constants.TUN_OUTPUT_SCHEDULER_KEY,
+            )
+        keys.forEach { key ->
+            assertEquals(1, Settings.all.count { it.name == key })
+        }
+        assertFalse(Settings.all.any { it.name == Constants.TUN_DRIVER_KEY })
+        assertFalse(Settings.all.any { it.name == Constants.TUN_STACK_KEY })
     }
 }

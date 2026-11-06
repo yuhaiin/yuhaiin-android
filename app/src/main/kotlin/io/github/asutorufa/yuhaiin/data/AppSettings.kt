@@ -159,10 +159,9 @@ object Settings {
     val metered = text(Constants.METERED_MODE_KEY, "auto")
     val mtu = text(Constants.VPN_MTU_PROFILE_KEY, "auto")
     val bootPolicy = text(Constants.BOOT_CONNECT_POLICY_KEY, "always")
-    val tunDriver = text(Constants.TUN_DRIVER_KEY, "system_gvisor")
-    // Legacy stays the default; congestion control is relevant only for lightweight.
-    val tunStack = text(Constants.TUN_STACK_KEY, "")
+    // The native Android bridge always uses lightweight TUN, regardless of legacy keys.
     val tunCongestionControl = text(Constants.TUN_CONGESTION_CONTROL_KEY, "cubic")
+    val tunLossRecovery = text(Constants.TUN_LOSS_RECOVERY_KEY, "classic")
     val tunOutputScheduler = text(Constants.TUN_OUTPUT_SCHEDULER_KEY, "fifo")
     val httpPort =
         SettingKey(
@@ -201,9 +200,8 @@ object Settings {
             mtu,
             metered,
             bootPolicy,
-            tunDriver,
-            tunStack,
             tunCongestionControl,
+            tunLossRecovery,
             tunOutputScheduler,
             httpPort,
             applications,

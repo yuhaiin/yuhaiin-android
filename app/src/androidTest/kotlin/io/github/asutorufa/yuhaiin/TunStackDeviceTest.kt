@@ -30,12 +30,21 @@ import org.junit.Test
 class TunStackDeviceTest {
     @get:Rule val compose = createAndroidComposeRule<MainActivity>()
 
-    private fun writeSelection(stack: String, cc: String, scheduler: String) =
+    private data class TunSelection(
+        val stack: String,
+        val congestionControl: String,
+        val scheduler: String,
+        val lossRecovery: String,
+    )
+
+    private fun writeSelection(stack: String, cc: String, scheduler: String, lossRecovery: String) =
         runBlocking(Dispatchers.IO) {
             MainApplication.settings.commit {
                 it.putString(Constants.TUN_STACK_KEY, stack)
                 it.putString(Constants.TUN_CONGESTION_CONTROL_KEY, cc)
                 it.putString(Constants.TUN_OUTPUT_SCHEDULER_KEY, scheduler)
+                it.putString(Constants.TUN_LOSS_RECOVERY_KEY, lossRecovery)
+                // Old persisted selections must be ignored by current native builds.
                 it.putString(Constants.TUN_DRIVER_KEY, "system_gvisor")
             }
         }
@@ -127,7 +136,7 @@ class TunStackDeviceTest {
     }
 
     @Test
-    fun legacyAndLightweightSchedulersStartAndAcceptTCPUDP() {
+    fun lightweightRecoveryModesStartAndAcceptTCPUDP() {
         val device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
         if (Build.VERSION.SDK_INT >= 33)
             device.executeShellCommand(
@@ -137,25 +146,29 @@ class TunStackDeviceTest {
         val previousStack = store.getString(Constants.TUN_STACK_KEY)
         val previousCC = store.getString(Constants.TUN_CONGESTION_CONTROL_KEY)
         val previousScheduler = store.getString(Constants.TUN_OUTPUT_SCHEDULER_KEY)
+        val previousRecovery = store.getString(Constants.TUN_LOSS_RECOVERY_KEY)
         val previousDriver = store.getString(Constants.TUN_DRIVER_KEY)
         try {
-            for ((stack, cc, scheduler) in listOf(
-                Triple("", "cubic", "fq_codel"),
-                Triple("lightweight", "reno", "fifo"),
-                Triple("lightweight", "cubic", "fq_codel"),
-                Triple("lightweight", "bbr", "fifo"),
-                Triple("", "bbr", "fq_codel"),
+            for (selection in listOf(
+                TunSelection("", "cubic", "fq_codel", "classic"),
+                TunSelection("lightweight", "reno", "fifo", "rack-tlp"),
+                TunSelection("lightweight", "cubic", "fq_codel", "rack-tlp"),
+                TunSelection("lightweight", "bbr", "fifo", "classic"),
+                TunSelection("", "bbr", "fq_codel", "rack-tlp"),
             )) {
-                writeSelection(stack, cc, scheduler)
+                writeSelection(
+                    selection.stack,
+                    selection.congestionControl,
+                    selection.scheduler,
+                    selection.lossRecovery,
+                )
                 startVpn(device)
                 val (id, cfg) = tunConfig()
-                assertEquals(stack, cfg.optString("stack"))
-                assertEquals(if (stack.isEmpty()) "" else cc, cfg.optString("congestionControl"))
-                assertEquals(if (stack.isEmpty()) "" else scheduler, cfg.optString("outputScheduler"))
-                assertEquals(
-                    if (stack.isEmpty()) "system_gvisor" else "channel",
-                    cfg.getString("driver"),
-                )
+                assertEquals("lightweight", cfg.getString("stack"))
+                assertEquals(selection.congestionControl, cfg.getString("congestionControl"))
+                assertEquals(selection.scheduler, cfg.getString("outputScheduler"))
+                assertEquals(selection.lossRecovery, cfg.getString("lossRecovery"))
+                assertEquals("channel", cfg.getString("driver"))
                 val before = ingress(id)
                 generateIngress()
                 compose.waitUntil(5000) {
@@ -170,6 +183,7 @@ class TunStackDeviceTest {
                     it.putString(Constants.TUN_STACK_KEY, previousStack)
                     it.putString(Constants.TUN_CONGESTION_CONTROL_KEY, previousCC)
                     it.putString(Constants.TUN_OUTPUT_SCHEDULER_KEY, previousScheduler)
+                    it.putString(Constants.TUN_LOSS_RECOVERY_KEY, previousRecovery)
                     it.putString(Constants.TUN_DRIVER_KEY, previousDriver)
                 }
             }
