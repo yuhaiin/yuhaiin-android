@@ -41,6 +41,7 @@ import yuhaiin.App
 import yuhaiin.Closer
 import yuhaiin.Opts
 import yuhaiin.SocketProtect
+import yuhaiin.SocketBind
 import yuhaiin.TUN
 import yuhaiin.TunAddress
 import yuhaiin.Yuhaiin
@@ -132,7 +133,7 @@ class YuhaiinVpnService : VpnService() {
     private var foregroundStarted = false
     private var runtimeOwned = false
     private var mInterface: ParcelFileDescriptor? = null
-    private var currentUnderlyingNetwork: Network? = null
+    @Volatile private var currentUnderlyingNetwork: Network? = null
     private val vpnNotification by lazy { VpnNotification(this) }
     @Volatile private var lastError: String? = null
     private val app = App()
@@ -283,6 +284,58 @@ class YuhaiinVpnService : VpnService() {
         val applied = this@YuhaiinVpnService.setUnderlyingNetworks(network?.let { arrayOf(it) })
         if (!applied) {
             Log.w(tag, "failed to update VPN underlying network")
+        }
+    }
+
+    // Called only for outbound sockets, after protect(). VpnService's
+    // setUnderlyingNetworks is a hint; it does not bind an individual socket.
+    private fun bindOutboundSocket(socket: Int, iface: String): Long {
+        if (!protect(socket)) return -1L
+        val connectivity = (application as MainApplication).connectivity
+        return runCatching {
+                fun physical(network: Network): Boolean =
+                    connectivity.getNetworkCapabilities(network)
+                        ?.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN) == true
+                if (iface.isNotBlank()) {
+                    // An explicit interface must never silently fall back to
+                    // another network, so failures here fail the socket.
+                    val network =
+                        networkMonitor.networkForInterface(iface)
+                            ?: @Suppress("DEPRECATION")
+                            connectivity.allNetworks.firstOrNull {
+                                physical(it) &&
+                                    connectivity.getLinkProperties(it)?.interfaceName == iface
+                            }
+                            ?: return -1L
+                    bind(socket, network)
+                    return network.networkHandle
+                }
+                val network =
+                    currentUnderlyingNetwork
+                        ?: connectivity.activeNetwork?.takeIf(::physical)
+                        ?: return 0L // Unknown selection on older APIs: retain OS behavior.
+                // The selection hint can lag a handover and name a Network
+                // that is already gone. Leave such a socket with Android's
+                // default (unknown identity) rather than failing the dial.
+                runCatching { bind(socket, network) }
+                    .fold(
+                        onSuccess = { network.networkHandle },
+                        onFailure = {
+                            Log.d(tag, "selected Network binding failed, using default", it)
+                            0L
+                        },
+                    )
+            }
+            .getOrElse {
+                Log.d(tag, "outbound Network binding failed", it)
+                -1L
+            }
+    }
+
+    private fun bind(socket: Int, network: Network) {
+        // fromFd duplicates the descriptor; the binding applies to the shared socket.
+        ParcelFileDescriptor.fromFd(socket).use { descriptor ->
+            network.bindSocket(descriptor.fileDescriptor)
         }
     }
 
@@ -594,6 +647,7 @@ class YuhaiinVpnService : VpnService() {
                             socketProtect = SocketProtect {
                                 return@SocketProtect protect(it)
                             }
+                            socketBind = SocketBind { socket, iface -> bindOutboundSocket(socket, iface) }
                         }
 
                     closeFallback = Closer {
