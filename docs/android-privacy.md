@@ -98,31 +98,38 @@ their existing scenarios.
 
 ## Validation record (November 6, 2026)
 
-- Android base: `9d99ef301a8bd76bb756c6a4cf01f196df505792`.
-- Native AAR: upstream core `030a0a0d6df05c8f8d5d2e994faf8c614628bcd8`,
-  workflow run `42056981314`, SHA-256
-  `884fba6d3d5037edbfb2c9786f6931b7731ef13544e5e61a0f91700645688927`.
+- Final Android base: `15ea6ba` (#269), including the updated lightweight TUN
+  settings and migration assertions.
+- Final native AAR: upstream core `6dbb7b6f8627bc3d169582523fc119c25785a6e7`,
+  workflow run `42149116854`, SHA-256
+  `0d8f0892b1d374e45ce45dd90fd2d4e550d876cf25171a52fcb5ff765af3420c`.
 - Temurin JDK 25.0.5, Gradle 9.8.2, SDK 37 and Build Tools 36.1.0.
 - Debug lint: zero errors (128 warnings remain); all 60 JVM tests pass.
 - Debug APK, instrumentation APK and both unsigned release APKs build successfully.
 - Final ARM64 and x86_64 APK/ELF alignment checks pass. The merged release APK
   omits both removed permissions and retains the required permissions above.
-- All 11 focused instrumentation tests (`PrivacyFlowsTest`, `UpdateRecoveryTest`)
+- Before rebasing onto #269, all 11 focused instrumentation tests (`PrivacyFlowsTest`, `UpdateRecoveryTest`)
   pass on API 34 (4 KB pages) and API 35 (16 KB pages), using separate disposable
   emulator data directories. These include actual foreground-service rejection,
   withdrawal during a VPN session, policy access without consent/VPN, and installer
   preflight with real signed archives.
-- The full API 34 run completes 27 tests: 26 pass. The unchanged legacy-stack
+- The initial full API 34 run completed 27 tests: 26 passed. The old legacy-stack
   expectation in `TunStackDeviceTest.legacyAndLightweightSchedulersStartAndAcceptTCPUDP`
   fails: expected an empty stack but the native runtime reports `lightweight`.
   The selected core [explicitly migrates legacy settings to lightweight](https://github.com/yuhaiin/yuhaiin/blob/030a0a0d6df05c8f8d5d2e994faf8c614628bcd8/cmd/android/yuhaiin.go#L270).
-  This task does not change TUN selection or weaken that assertion.
-- The full API 35 run completes 22 tests successfully, including all six privacy
+  The final base already includes the updated assertions from #269. The subsequent
+  full run was stopped at the user's request before reaching the TUN test; a green
+  full-suite result is not claimed.
+- The initial full API 35 run completed 22 tests successfully, including all six privacy
   tests present at that point, then terminates during
   `StatusMonitoringTest.backgroundWithoutConsumersStopsSnapshotsAndPeriodicHealthThenResumes`.
-  The process receives SIGTRAP in the system WebView's `libmonochrome_64.so`
-  (`MemoryInfra` thread). The final 11 focused tests pass independently afterwards.
-  The full device suite is therefore **not fully green**.
+  The process received SIGTRAP in the system WebView's `libmonochrome_64.so`
+  (`MemoryInfra` thread). The 11 focused tests passed independently afterwards.
+  A temporary diagnostic also reproduced the same failure without starting a VPN:
+  open and close the dashboard, then request a Chromium memory dump through CDP.
+  The API 35 r05 image uses WebView `124.0.6367.219`. Further emulator/WebView
+  investigation was deferred at the user's request; no provider replacement or
+  application workaround is shipped. The full device suite is **not fully green**.
 
 ## Official references
 
