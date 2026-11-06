@@ -50,7 +50,10 @@ class ConnectionControlsTest {
             device.executeShellCommand(
                 "pm grant ${BuildConfig.APPLICATION_ID} ${Manifest.permission.POST_NOTIFICATIONS}"
             )
-        compose.runOnUiThread { activity.startService() }
+        compose.runOnUiThread {
+            grantVpnConsentForLifecycleTest(activity)
+            activity.startService()
+        }
         waitFor {
             runCatching { device.findObject(By.res("android", "button1"))?.click() }
             activity.state.value == State.CONNECTED

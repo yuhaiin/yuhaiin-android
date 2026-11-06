@@ -1,5 +1,6 @@
 package io.github.asutorufa.yuhaiin.compose
 
+import android.content.Intent
 import android.net.ConnectivityManager
 import android.net.LinkProperties
 import android.net.Network
@@ -28,6 +29,9 @@ import io.github.asutorufa.yuhaiin.compose.AppMotion.navigateBack
 import io.github.asutorufa.yuhaiin.compose.AppMotion.navigateForward
 import io.github.asutorufa.yuhaiin.compose.route.RouteConfigScreen
 import io.github.asutorufa.yuhaiin.compose.route.RouteEditScreen
+import io.github.asutorufa.yuhaiin.privacy.PrivacyConsent.Purpose
+import io.github.asutorufa.yuhaiin.service.VpnActions
+import io.github.asutorufa.yuhaiin.service.YuhaiinVpnService
 import io.github.asutorufa.yuhaiin.service.YuhaiinVpnService.Companion.State
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.awaitCancellation
@@ -43,11 +47,20 @@ fun Main(activity: MainActivity) {
     val error by activity.error.collectAsStateWithLifecycle()
     val status by activity.status.collectAsStateWithLifecycle()
     val navigationAction by activity.navigationAction.collectAsStateWithLifecycle()
+    val vpnDisclosure by activity.vpnDisclosure.collectAsStateWithLifecycle()
 
     androidx.activity.compose.ReportDrawnAfter {
         runCatching { MainApplication.settings.ready.await() }
     }
     AppTheme {
+        if (vpnDisclosure) {
+            DataDisclosureDialog(
+                purpose = Purpose.VPN,
+                error = error,
+                onAccept = activity::acceptVpnDisclosure,
+                onDismiss = activity::dismissVpnDisclosure,
+            )
+        }
         SharedTransitionLayout(modifier = Modifier.background(MaterialTheme.colorScheme.surface)) {
             val backStack = rememberNavBackStack(HomeRoute)
             val navigator =
@@ -157,8 +170,21 @@ fun Main(activity: MainActivity) {
                                     updateManager = MainApplication.updateManager,
                                     proxyReady = vpnState == State.CONNECTED,
                                     startProxy = { activity.startService() },
+                                    onOpenPrivacy = { navigator.push(PrivacyRoute) },
                                 )
                             }
+                        }
+
+                        entry<PrivacyRoute> {
+                            PrivacyScreen(
+                                onBack = { navigator.popFrom(PrivacyRoute) },
+                                disconnect = {
+                                    activity.startService(
+                                        Intent(activity, YuhaiinVpnService::class.java)
+                                            .setAction(VpnActions.DISCONNECT)
+                                    )
+                                },
+                            )
                         }
 
                         entry<AppListRoute> {

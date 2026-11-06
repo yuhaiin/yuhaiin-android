@@ -5,6 +5,8 @@ import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.util.LruCache
 import androidx.core.graphics.drawable.toBitmap
+import io.github.asutorufa.yuhaiin.privacy.PrivacyConsent
+import io.github.asutorufa.yuhaiin.privacy.PrivacyConsent.Purpose
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -13,7 +15,10 @@ import kotlinx.coroutines.withContext
 /** Metadata is cached separately from a bounded, lazily loaded icon cache. */
 data class InstalledApp(val name: String, val packageName: String, val system: Boolean)
 
-class InstalledAppsRepository(private val packages: PackageManager) {
+class InstalledAppsRepository(
+    private val packages: PackageManager,
+    private val consent: PrivacyConsent,
+) {
     private val lock = Mutex()
     private var cached: List<InstalledApp>? = null
     private var loadedAt = 0L
@@ -22,6 +27,7 @@ class InstalledAppsRepository(private val packages: PackageManager) {
     suspend fun load(force: Boolean = false): List<InstalledApp> =
         withContext(Dispatchers.IO) {
             lock.withLock {
+                check(consent.has(Purpose.INSTALLED_APPS)) { "App list consent is required" }
                 if (!force && System.currentTimeMillis() - loadedAt < 60_000)
                     cached?.let {
                         return@withLock it
@@ -46,6 +52,7 @@ class InstalledAppsRepository(private val packages: PackageManager) {
 
     suspend fun icon(packageName: String): Bitmap? =
         withContext(Dispatchers.IO) {
+            if (!consent.has(Purpose.INSTALLED_APPS)) return@withContext null
             icons.get(packageName)
                 ?: runCatching {
                     packages.getApplicationIcon(packageName).toBitmap(96, 96).also {
@@ -53,5 +60,12 @@ class InstalledAppsRepository(private val packages: PackageManager) {
                     }
                 }
                     .getOrNull()
+        }
+
+    suspend fun clear() =
+        lock.withLock {
+            cached = null
+            loadedAt = 0L
+            icons.evictAll()
         }
 }

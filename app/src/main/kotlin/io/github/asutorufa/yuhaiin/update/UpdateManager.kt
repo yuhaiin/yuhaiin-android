@@ -393,6 +393,7 @@ class UpdateManager(context: Context) {
     }
 
     private suspend fun beginInstall(apk: File) {
+        withContextIo { validateUpdateApk(context, apk) }
         preferences.edit().putString("pending_apk", apk.name).putString("phase", "install").apply()
         if (
             Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
@@ -456,6 +457,7 @@ class UpdateManager(context: Context) {
         val params =
             PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL).apply {
                 setSize(apk.length())
+                setAppPackageName(context.packageName)
             }
         val sessionId = packageInstaller.createSession(params)
         preferences.edit().putInt("session_id", sessionId).putString("phase", "install").commit()

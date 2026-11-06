@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="privacy_policy_title">Privacy policy</string>
+    <string name="privacy_policy_summary">Data use, permissions and your choices</string>
+    <string name="privacy_effective_date">Updated: November 6, 2026</string>
+    <string name="privacy_agree">Agree and continue</string>
+    <string name="privacy_not_now">Not now</string>
+    <string name="privacy_choice_failed">Could not save your privacy choice. Please try again.</string>
+    <string name="vpn_disclosure_title">How Yuhaiin uses the VPN</string>
+    <string name="vpn_disclosure_body">Yuhaiin processes traffic routed through its VPN, including DNS requests, destination addresses and ports, traffic counters and, when enabled, the originating app UID/package name. This is used for routing, connection details and diagnostics.\n\nTraffic and necessary credentials go to the proxy, DNS or mesh services used by your configuration. Their operators can process that data. Encryption depends on your chosen protocol and settings; use trusted, encrypted endpoints.\n\nThe VPN runs in the background until disconnected, and can reconnect after boot if you enable auto-connect. You can disconnect at any time. Agreeing here does not enable reading the full installed app list.</string>
+    <string name="vpn_disclosure_required">Open Yuhaiin and review the VPN data disclosure before connecting.</string>
+    <string name="apps_disclosure_title">Access to installed apps</string>
+    <string name="apps_disclosure_body">Yuhaiin reads installed app names, package names, icons and system-app status to let you choose which apps use or bypass the VPN, including apps without launcher icons.\n\nThe list is cached in memory on this device. It is not automatically uploaded to the project maintainers or used for advertising. Your selected package names are saved in settings and are included if you export or back up your configuration.\n\nChoose Agree and continue to load the list. You can use the VPN without opening this chooser, and withdraw consent in About → Privacy policy.</string>
+    <string name="privacy_developer_title">About this policy</string>
+    <string name="privacy_developer_body">This policy covers Yuhaiin Android, the open-source VPN and network routing app maintained by the yuhaiin project contributors. Privacy questions can be submitted through the project issue tracker using the contact button below. Issues are public: do not attach passwords, subscription links or unredacted logs.</string>
+    <string name="privacy_storage_title">Settings, diagnostics and sharing</string>
+    <string name="privacy_storage_body">Configuration is stored in app-specific storage and can contain proxy passwords, subscription credentials, routing choices and selected app packages. Local logs and connection/session statistics can contain destinations, IP addresses, app identifiers and traffic totals.\n\nThe log export feature shares files only when you choose to export them. Configuration backups can contain credentials; exported files are not encrypted by Yuhaiin. Android backup or device transfer may copy configuration according to your system settings. Consent receipts stay on this device and are excluded from backups.\n\nIf you enable LAN connections, other devices on that network may access the dashboard, configuration and connection details. Enable it only on a trusted network. Do not share logs, backups or dashboard access with untrusted parties.</string>
+    <string name="privacy_network_title">External services</string>
+    <string name="privacy_network_body">Proxy, DNS, subscription, rule-list and optional mesh/control services receive the requests and connection information needed for their functions. Connectivity checks contact the configured or built-in test endpoints. These services are operated independently and have their own data practices.\n\nChecking for updates contacts GitHub for release information. Downloading an update retrieves the APK and its checksum; installation uses the Android system installer after your action. GitHub and download infrastructure can receive your IP address and normal HTTP request information.\n\nYuhaiin does not sell the installed app inventory or use it for advertising. It does not automatically send that inventory or exported diagnostic files to the project maintainers.</string>
+    <string name="privacy_retention_title">Retention and deletion</string>
+    <string name="privacy_retention_body">Configuration and saved traffic totals remain until replaced or deleted, or until you clear app storage or uninstall. In-memory app metadata is cleared when you withdraw consent or the process exits. Logs and cached files remain until rotated, cleared or removed with app storage.\n\nTo delete all local app data, use Android Settings → Apps → Yuhaiin → Storage → Clear storage. Delete exported files and system backups separately. Data already received by external services follows their retention policies; contact their operators for deletion. Yuhaiin Android does not require a project account.\n\nWithdrawing consent disconnects the VPN and stops future app-list access. It keeps your configuration so you can review it; using either feature again requires a new affirmative choice.</string>
+    <string name="privacy_contact">Contact the project about privacy</string>
+    <string name="privacy_contact_failed">Could not open the issue tracker. Visit github.com/yuhaiin/yuhaiin-android/issues.</string>
+    <string name="privacy_withdraw">Withdraw consent</string>
+    <string name="privacy_withdraw_body">Disconnect the VPN and withdraw both VPN and installed-app consent? The app-list cache will be cleared. Your configuration and per-app selections will be kept. These features will ask again before their next use.</string>
+    <string name="privacy_withdrawn">Consent withdrawn. The VPN is stopping; both features will ask again before use.</string>
+    <string name="allow_lan_privacy_summary">Other devices on this network may access the dashboard, settings, credentials and connection details. Only enable on a trusted network.</string>
+    <string name="log_share_disclosure">Logs may contain destination domains, IP addresses, app identifiers and credentials. Review and redact sensitive information before sending the exported file to anyone. Continue to the Android share sheet?</string>
+    <string name="log_share_continue">Continue to sharing</string>
+    <string name="update_apk_invalid">The downloaded file is not a valid signed APK.</string>
+    <string name="update_apk_wrong_package">This APK is for a different app. Installation was stopped.</string>
+    <string name="update_apk_older_version">This APK has an older version code than the installed app.</string>
+    <string name="update_apk_wrong_signature">This APK is not signed by a trusted update key for this app.</string>
+</resources>

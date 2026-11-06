@@ -50,6 +50,13 @@ class AndroidFlowsTest {
     @Test
     fun applicationSelectionIsPersistedBeforeLeavingScreen() {
         open(R.string.adv_app_list_title)
+        if (
+            compose
+                .onAllNodesWithText(label(R.string.privacy_agree))
+                .fetchSemanticsNodes()
+                .isNotEmpty()
+        )
+            compose.onNodeWithText(label(R.string.privacy_agree)).performClick()
         compose.onNode(hasSetTextAction()).performTextReplacement(BuildConfig.APPLICATION_ID)
         compose.waitUntil(10_000) {
             compose

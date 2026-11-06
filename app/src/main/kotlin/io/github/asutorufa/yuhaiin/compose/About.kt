@@ -38,6 +38,7 @@ fun AboutScreen(
     proxyReady: Boolean = false,
     startProxy: () -> Unit = {},
     onBack: () -> Unit = {},
+    onOpenPrivacy: () -> Unit = {},
 ) {
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     Scaffold(
@@ -59,7 +60,7 @@ fun AboutScreen(
                     }
                 },
             )
-        }
+        },
     ) { padding ->
         ReadingPane(Modifier.scaffoldBody(padding)) {
             LazyColumn(
@@ -141,6 +142,13 @@ fun AboutScreen(
                         manager = updateManager,
                         proxyReady = proxyReady,
                         startProxy = startProxy,
+                    )
+                }
+                item {
+                    SettingsItem(
+                        title = stringResource(R.string.privacy_policy_title),
+                        summary = stringResource(R.string.privacy_policy_summary),
+                        onClick = onOpenPrivacy,
                     )
                 }
             }

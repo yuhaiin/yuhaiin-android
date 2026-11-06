@@ -42,6 +42,7 @@ fun LogcatCompose(excludeList: ArrayList<String>? = null, onBack: () -> Unit) {
     var query by rememberSaveable { mutableStateOf("") }
     var selected by remember { mutableStateOf<LogEntry?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
+    var confirmLogSharing by rememberSaveable { mutableStateOf(false) }
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
@@ -109,12 +110,7 @@ fun LogcatCompose(excludeList: ArrayList<String>? = null, onBack: () -> Unit) {
                         Icon(painterResource(R.drawable.clear_all), stringResource(R.string.clear))
                     }
                     IconButton(
-                        onClick = {
-                            scope.launch {
-                                runCatching { exportLogs(context, visible) }
-                                    .onFailure { error = it.message }
-                            }
-                        }
+                        onClick = { confirmLogSharing = true }
                     ) {
                         Icon(painterResource(R.drawable.save), stringResource(R.string.export_logs))
                     }
@@ -228,6 +224,30 @@ fun LogcatCompose(excludeList: ArrayList<String>? = null, onBack: () -> Unit) {
             }
         }
     }
+    if (confirmLogSharing)
+        AlertDialog(
+            onDismissRequest = { confirmLogSharing = false },
+            title = { Text(stringResource(R.string.export_logs)) },
+            text = { Text(stringResource(R.string.log_share_disclosure)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        confirmLogSharing = false
+                        scope.launch {
+                            runCatching { exportLogs(context, visible) }
+                                .onFailure { error = it.message }
+                        }
+                    }
+                ) {
+                    Text(stringResource(R.string.log_share_continue))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmLogSharing = false }) {
+                    Text(stringResource(R.string.privacy_not_now))
+                }
+            },
+        )
     selected?.let { entry ->
         ModalBottomSheet(
             onDismissRequest = { selected = null },
