@@ -104,6 +104,9 @@ open class MainApplication : Application() {
                 .absolutePath
         )
         Yuhaiin.setConfigLockPath(java.io.File(noBackupFilesDir, "configuration.lock").absolutePath)
+        // The management HTTPS key stays in internal storage, outside Auto Backup, and is
+        // reused across VPN reconnects and app restarts.
+        Yuhaiin.setManagementTLSDir(java.io.File(noBackupFilesDir, "management-tls").absolutePath)
         store = Yuhaiin.getStore()
         updateManager = UpdateManager(this)
         installedApps =
