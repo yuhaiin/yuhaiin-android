@@ -17,22 +17,13 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -102,11 +93,9 @@ fun WebViewComponent(
     val pageBackground = MaterialTheme.colorScheme.surface.toArgb()
     val nativeAction by rememberUpdatedState(onNativeAction)
     var view by remember { mutableStateOf<WebView?>(null) }
-    var controlsExpanded by rememberSaveable { mutableStateOf(false) }
     var loading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
     var canBack by remember { mutableStateOf(false) }
-    var canForward by remember { mutableStateOf(false) }
     var renderer by remember { mutableIntStateOf(0) }
     // A dead renderer is replaced only on an explicit retry, never in a loop.
     var rendererGone by remember { mutableStateOf(false) }
@@ -122,7 +111,6 @@ fun WebViewComponent(
 
     fun updateHistory(web: WebView) {
         canBack = web.canGoBack()
-        canForward = web.canGoForward()
         if (NativeAction.isLocalPage(web.url, port)) state.url = web.url
     }
 
@@ -329,50 +317,6 @@ fun WebViewComponent(
                         else -> onRetry()
                     }
                 })
-            Box(Modifier.align(Alignment.BottomEnd).padding(12.dp)) {
-                val controlsLabel = stringResource(R.string.web_controls)
-                SmallFloatingActionButton(
-                    onClick = { controlsExpanded = !controlsExpanded },
-                    modifier =
-                        Modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp).semantics {
-                            contentDescription = controlsLabel
-                        },
-                ) {
-                    Icon(Icons.Default.MoreVert, contentDescription = null)
-                }
-                DropdownMenu(
-                    expanded = controlsExpanded,
-                    onDismissRequest = { controlsExpanded = false },
-                ) {
-                    DropdownMenuItem(
-                        text = { Text(stringResource(R.string.web_back)) },
-                        leadingIcon = { Icon(Icons.AutoMirrored.Filled.ArrowBack, null) },
-                        enabled = canBack,
-                        onClick = {
-                            controlsExpanded = false
-                            view?.goBack()
-                        },
-                    )
-                    DropdownMenuItem(
-                        text = { Text(stringResource(R.string.web_forward)) },
-                        leadingIcon = { Icon(Icons.AutoMirrored.Filled.ArrowForward, null) },
-                        enabled = canForward,
-                        onClick = {
-                            controlsExpanded = false
-                            view?.goForward()
-                        },
-                    )
-                    DropdownMenuItem(
-                        text = { Text(stringResource(R.string.refresh)) },
-                        leadingIcon = { Icon(Icons.Default.Refresh, null) },
-                        onClick = {
-                            controlsExpanded = false
-                            error = null
-                            if (view != null) view?.reload() else onRetry()
-                        },
-                    )
-                }
-            }
         }
     }
 }
