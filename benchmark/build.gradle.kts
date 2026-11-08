@@ -11,6 +11,7 @@ android {
         minSdk = 28
         targetSdk = 37
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        missingDimensionStrategy("track", "v2")
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17

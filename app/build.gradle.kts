@@ -20,6 +20,11 @@ fun getVersionName(): String =
         ?: gitOutput("describe", "--tags", "--always", "--dirty")
         ?: getCommit()
 
+fun com.android.build.api.dsl.ApplicationProductFlavor.documentsAuthority(value: String) {
+    manifestPlaceholders["documentsAuthority"] = value
+    buildConfigField("String", "DOCUMENTS_AUTHORITY", "\"$value\"")
+}
+
 tasks.withType<org.jetbrains.kotlin.gradle.internal.KaptWithoutKotlincTask>().configureEach {
     kaptProcessJvmArgs.add("-Xmx512m")
 }
@@ -35,12 +40,7 @@ android {
 
     defaultConfig {
         applicationId = "io.github.asutorufa.yuhaiin"
-        val documentsAuthorityValue = "$applicationId.documents"
-
-        // Now we can use ${documentsAuthority} in our Manifest
-        manifestPlaceholders["documentsAuthority"] = documentsAuthorityValue
-        // Now we can use BuildConfig.DOCUMENTS_AUTHORITY in our code
-        buildConfigField("String", "DOCUMENTS_AUTHORITY", "\"$documentsAuthorityValue\"")
+        // DOCUMENTS_AUTHORITY and ${documentsAuthority} follow each flavor's applicationId.
         buildConfigField("String", "GIT_COMMIT", "\"${getCommit()}\"")
         minSdk = 24
         // uses-sdk:minSdkVersion 21 cannot be smaller than version 23 declared in library
@@ -55,6 +55,26 @@ android {
         vectorDrawables.useSupportLibrary = true
     }
 
+    // v2 (Go core + Web UI + platform adapter) installs next to the stable app: its own
+    // applicationId, data directory, document/file-provider authorities and update track.
+    // Only one VPN can be active at a time, but both apps can be installed together.
+    flavorDimensions += "track"
+    productFlavors {
+        create("v2") {
+            dimension = "track"
+            isDefault = true
+            applicationIdSuffix = ".v2"
+            versionNameSuffix = "-v2"
+            buildConfigField("String", "UPDATE_TRACK", "\"v2\"")
+            documentsAuthority("io.github.asutorufa.yuhaiin.v2.documents")
+        }
+        // Stable package name; never built or published from the v2 branch CI.
+        create("stable") {
+            dimension = "track"
+            buildConfigField("String", "UPDATE_TRACK", "\"stable\"")
+            documentsAuthority("io.github.asutorufa.yuhaiin.documents")
+        }
+    }
     signingConfigs {
         if (System.getenv("KEYSTORE_PATH") != null)
             create("releaseConfig") {
