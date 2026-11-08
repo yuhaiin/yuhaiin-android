@@ -314,7 +314,7 @@ fun WebViewComponent(
                     )
                 }
             androidx.compose.animation.AnimatedVisibility(
-                (loading && error == null) || session.state == CoreState.STARTING,
+                loading && error == null && port > 0,
                 enter = fadeIn(AppMotion.effects()),
                 exit = fadeOut(AppMotion.effects()),
             ) {
@@ -404,6 +404,7 @@ private fun CoreStateScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             val starting = error == null && session.state == CoreState.STARTING
+            if (starting) MaterialLoadingIndicator()
             Text(
                 when {
                     error != null -> error

@@ -64,6 +64,7 @@ class MainActivity : AppCompatActivity() {
     val navigationAction = MutableStateFlow<String?>(null)
     val vpnDisclosure = MutableStateFlow(false)
     private var pendingAction: String? = null
+    private var startingSince = 0L
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -83,7 +84,11 @@ class MainActivity : AppCompatActivity() {
                         }
                     if (snapshot != null) status.value = snapshot
                     // Self-heal: never stay on the "starting" screen if a callback was missed.
-                    if (session.value.state == CoreState.STARTING) refreshSession()
+                    if (session.value.state == CoreState.STARTING) {
+                        if (vpnBinder != null) refreshSession()
+                        else if (android.os.SystemClock.elapsedRealtime() - startingSince > 15_000)
+                            session.value = CoreSession(state = CoreState.STOPPED)
+                    }
                     delay(1000)
                 }
             }
@@ -135,8 +140,10 @@ class MainActivity : AppCompatActivity() {
     /** Starts the core; the service keeps it running independently of the VPN. */
     fun startCore() {
         // Only show "starting" when the core is not already serving this UI.
-        if (!session.value.ready)
+        if (!session.value.ready) {
             session.value = session.value.copy(state = CoreState.STARTING, error = "")
+            startingSince = android.os.SystemClock.elapsedRealtime()
+        }
         YuhaiinCoreService.start(this)
     }
 
@@ -206,7 +213,10 @@ class MainActivity : AppCompatActivity() {
         vpnBinder = null
         MainApplication.updateManager.setProxyBinder(null)
         state.value = State.DISCONNECTED
-        session.value = CoreSession(state = CoreState.STOPPED)
+        // The ":bg" process died; Android restarts the sticky core service, so show the
+        // loading state. The polling loop falls back to "stopped" if it does not return.
+        session.value = CoreSession(state = CoreState.STARTING)
+        startingSince = android.os.SystemClock.elapsedRealtime()
         status.value =
             status.value.copy(
                 state = State.DISCONNECTED,
