@@ -1,5 +1,7 @@
 package io.github.asutorufa.yuhaiin.compose
 
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -36,6 +38,7 @@ fun SettingCompose(
     status: io.github.asutorufa.yuhaiin.service.VpnStatus =
         io.github.asutorufa.yuhaiin.service.VpnStatus(),
     snooze: (Int) -> Unit = {},
+    onBack: (() -> Unit)? = null,
 ) {
     val settings = MainApplication.settings
     val values by settings.snapshot.collectAsStateWithLifecycle()
@@ -48,8 +51,17 @@ fun SettingCompose(
         topBar = {
             TopAppBar(
                 windowInsets = appBarInsets,
-                title = { ScreenTitle(stringResource(R.string.yuhaiin)) },
+                title = { ScreenTitle(stringResource(R.string.native_settings)) },
                 scrollBehavior = scrollBehavior,
+                navigationIcon = {
+                    if (onBack != null)
+                        IconButton(onClick = onBack) {
+                            Icon(
+                                Icons.AutoMirrored.Filled.ArrowBack,
+                                stringResource(R.string.back),
+                            )
+                        }
+                },
             )
         },
     ) { padding ->

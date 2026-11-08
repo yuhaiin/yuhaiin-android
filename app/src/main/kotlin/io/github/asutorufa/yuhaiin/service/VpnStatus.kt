@@ -23,7 +23,11 @@ data class VpnStatus(
     val nativeHealth: String = "",
     val healthChecking: Boolean = false,
     val healthError: String = "",
+    val coreState: CoreState = CoreState.STOPPED,
 ) {
+    val coreRunning: Boolean
+        get() = coreState == CoreState.RUNNING
+
     fun toBundle() =
         Bundle().apply {
             putInt("state", state.ordinal)
@@ -39,6 +43,7 @@ data class VpnStatus(
             putString("nativeHealth", nativeHealth)
             putBoolean("healthChecking", healthChecking)
             putString("healthError", healthError)
+            putInt("coreState", coreState.ordinal)
         }
 
     companion object {
@@ -58,6 +63,7 @@ data class VpnStatus(
                 bundle.getString("nativeHealth").orEmpty(),
                 bundle.getBoolean("healthChecking"),
                 bundle.getString("healthError").orEmpty(),
+                CoreState.entries.getOrNull(bundle.getInt("coreState")) ?: CoreState.STOPPED,
             )
     }
 }
@@ -96,7 +102,12 @@ fun VpnStatus.toggle(): VpnToggle =
     }
 
 fun VpnStatus.titleResource(): Int =
-    if (resumeAt > 0) R.string.status_paused else state.labelResource()
+    when {
+        resumeAt > 0 -> R.string.status_paused
+        state == State.DISCONNECTED && coreRunning -> R.string.status_core_only
+        state == State.DISCONNECTED && coreState == CoreState.FAILED -> R.string.core_start_failed
+        else -> state.labelResource()
+    }
 
 fun VpnStatus.connectedSummary(routeLabel: String): String =
     listOf(network, routeLabel).filter { it.isNotBlank() }.joinToString(" · ")
@@ -113,3 +124,12 @@ fun VpnStatus.detail(context: Context, showSpeed: Boolean): String =
         showSpeed && speed.isNotBlank() -> speed
         else -> connectedSummary(routeLabelResource(route)?.let(context::getString) ?: route)
     }
+
+/** Lifecycle of the Go core, independent of the VPN. */
+enum class CoreState {
+    STOPPED,
+    STARTING,
+    RUNNING,
+    STOPPING,
+    FAILED,
+}

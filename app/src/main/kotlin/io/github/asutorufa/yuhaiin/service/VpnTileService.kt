@@ -31,6 +31,8 @@ class VpnTileService : TileService() {
             }
 
             override fun onMsg(msg: String?) {}
+
+            override fun onCoreChanged(coreState: Int, port: Int) {}
         }
 
     private fun mainExecutorCompat(block: () -> Unit) {
@@ -60,7 +62,7 @@ class VpnTileService : TileService() {
         if (!bound)
             bound =
                 bindService(
-                    Intent(this, YuhaiinVpnService::class.java),
+                    Intent(this, YuhaiinCoreService::class.java),
                     connection,
                     BIND_AUTO_CREATE,
                 )
@@ -98,6 +100,7 @@ class VpnTileService : TileService() {
         unlockAndRun {
             if (state == State.CONNECTING || state == State.DISCONNECTING) return@unlockAndRun
             if (state == State.CONNECTED) {
+                // Turns the VPN off; the core keeps running for the management UI.
                 runCatching { binder?.stop() }.onFailure { openConsent() }
             } else if (
                 !PrivacyConsent.forContext(this).has(Purpose.VPN) ||
@@ -113,8 +116,7 @@ class VpnTileService : TileService() {
                         MainApplication.settings.flush()
                         ContextCompat.startForegroundService(
                             this@VpnTileService,
-                            Intent(this@VpnTileService, YuhaiinVpnService::class.java)
-                                .setAction(VpnActions.CONNECT),
+                            YuhaiinCoreService.intent(this@VpnTileService, VpnActions.CONNECT),
                         )
                     }.onFailure { openConsent() }
                 }

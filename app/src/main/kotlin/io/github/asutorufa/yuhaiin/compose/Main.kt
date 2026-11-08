@@ -1,6 +1,5 @@
 package io.github.asutorufa.yuhaiin.compose
 
-import android.content.Intent
 import android.net.ConnectivityManager
 import android.net.LinkProperties
 import android.net.Network
@@ -31,7 +30,6 @@ import io.github.asutorufa.yuhaiin.compose.route.RouteConfigScreen
 import io.github.asutorufa.yuhaiin.compose.route.RouteEditScreen
 import io.github.asutorufa.yuhaiin.privacy.PrivacyConsent.Purpose
 import io.github.asutorufa.yuhaiin.service.VpnActions
-import io.github.asutorufa.yuhaiin.service.YuhaiinVpnService
 import io.github.asutorufa.yuhaiin.service.YuhaiinVpnService.Companion.State
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.awaitCancellation
@@ -70,7 +68,12 @@ fun Main(activity: MainActivity) {
 
             LaunchedEffect(navigationAction) {
                 if (navigationAction == io.github.asutorufa.yuhaiin.service.VpnActions.DASHBOARD) {
-                    navigator.push(WebViewRoute)
+                    // The Web UI is the home screen in v2.
+                    navigator.popToRoot()
+                    activity.navigationAction.value = null
+                }
+                if (navigationAction == io.github.asutorufa.yuhaiin.service.VpnActions.SETTINGS) {
+                    navigator.push(NativeSettingsRoute)
                     activity.navigationAction.value = null
                 }
                 if (navigationAction == io.github.asutorufa.yuhaiin.service.VpnActions.HOME) {
@@ -94,6 +97,28 @@ fun Main(activity: MainActivity) {
                 entryProvider =
                     entryProvider<NavKey> {
                         entry<HomeRoute> {
+                            val session by activity.session.collectAsStateWithLifecycle()
+                            WebViewComponent(
+                                session = session,
+                                onRetry = activity::startCore,
+                                onOpenLogs = { navigator.push(LogcatRoute) },
+                                onNativeAction = { action ->
+                                    when (action) {
+                                        NativeAction.VPN_AUTHORIZE -> activity.startService()
+                                        NativeAction.NATIVE_SETTINGS ->
+                                            navigator.push(NativeSettingsRoute)
+                                        NativeAction.APPS -> navigator.push(AppListRoute)
+                                        NativeAction.ROUTES -> navigator.push(RouteConfigRoute)
+                                        NativeAction.LOGS -> navigator.push(LogcatRoute)
+                                        NativeAction.BACKUP -> navigator.push(BackupRoute)
+                                        NativeAction.UPDATE -> navigator.push(AboutRoute)
+                                        NativeAction.PRIVACY -> navigator.push(PrivacyRoute)
+                                    }
+                                },
+                            )
+                        }
+
+                        entry<NativeSettingsRoute> {
                             val context = LocalContext.current
                             val addresses by
                                 produceState<List<String>>(
@@ -155,10 +180,11 @@ fun Main(activity: MainActivity) {
                                     onOpenAbout = { navigator.push(AboutRoute) },
                                     onOpenAppList = { navigator.push(AppListRoute) },
                                     onOpenRouteConfig = { navigator.push(RouteConfigRoute) },
-                                    onOpenWebView = { navigator.push(WebViewRoute) },
+                                    onOpenWebView = { navigator.popToRoot() },
                                     onOpenLogcat = { navigator.push(LogcatRoute) },
                                     onOpenBackup = { navigator.push(BackupRoute) },
                                     checkHealth = { activity.vpnBinder?.checkHealth() },
+                                    onBack = { navigator.popFrom(NativeSettingsRoute) },
                                 )
                             }
                         }
@@ -168,8 +194,8 @@ fun Main(activity: MainActivity) {
                                 AboutScreen(
                                     onBack = { navigator.popFrom(AboutRoute) },
                                     updateManager = MainApplication.updateManager,
-                                    proxyReady = vpnState == State.CONNECTED,
-                                    startProxy = { activity.startService() },
+                                    proxyReady = status.coreRunning,
+                                    startProxy = { activity.startCore() },
                                     onOpenPrivacy = { navigator.push(PrivacyRoute) },
                                 )
                             }
@@ -180,8 +206,8 @@ fun Main(activity: MainActivity) {
                                 onBack = { navigator.popFrom(PrivacyRoute) },
                                 disconnect = {
                                     activity.startService(
-                                        Intent(activity, YuhaiinVpnService::class.java)
-                                            .setAction(VpnActions.DISCONNECT)
+                                        io.github.asutorufa.yuhaiin.service.YuhaiinCoreService
+                                            .intent(activity, VpnActions.DISCONNECT)
                                     )
                                 },
                             )
@@ -221,26 +247,17 @@ fun Main(activity: MainActivity) {
                         }
 
                         entry<WebViewRoute> {
-                            with(this@SharedTransitionLayout) {
-                                WebViewComponent(onBack = { navigator.popFrom(WebViewRoute) }) {
-                                    MainApplication.store.getInt(
-                                        io.github.asutorufa.yuhaiin.Constants.WEB_PORT_KEY
-                                    )
-                                }
-                            }
+                            // Legacy back stacks restored from v1 state: the Web UI is home.
+                            LaunchedEffect(Unit) { navigator.popToRoot() }
                         }
 
                         entry<BackupRoute> {
                             BackupScreen(
                                 onBack = { navigator.popFrom(BackupRoute) },
-                                disconnect = {
-                                    activity.vpnBinder?.stop()
-                                    kotlinx.coroutines.withTimeout(15_000) {
-                                        activity.state.first {
-                                            it == State.DISCONNECTED || it == State.ERROR
-                                        }
-                                    }
-                                },
+                                // The core owns the configuration lock whether or not the VPN
+                                // runs, so a restore stops the core and starts it afterwards.
+                                disconnect = { activity.stopCoreAndWait() },
+                                resume = { activity.startCore() },
                             )
                         }
 

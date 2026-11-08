@@ -14,7 +14,9 @@ import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.Until
+import io.github.asutorufa.yuhaiin.compose.NativeAction
 import io.github.asutorufa.yuhaiin.compose.WebViewComponent
+import io.github.asutorufa.yuhaiin.service.CoreState
 import java.net.ServerSocket
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
@@ -30,6 +32,8 @@ import org.junit.Test
 class DashboardLayoutTest {
     @get:Rule val compose = createAndroidComposeRule<ComponentActivity>()
     private val server = ServerSocket(0)
+
+    private fun session() = CoreSession(CoreState.RUNNING, server.localPort, "test-token")
     private val requests = AtomicInteger()
 
     init {
@@ -108,7 +112,7 @@ class DashboardLayoutTest {
             compose.activity.enableEdgeToEdge()
         }
         compose.setContent {
-            MaterialTheme { WebViewComponent(onBack = {}, getPort = { server.localPort }) }
+            MaterialTheme { WebViewComponent(session(), onRetry = {}, onOpenLogs = {}) {} }
         }
         val pageHeight = AtomicReference(0.0)
         compose.waitUntil(10_000) {
@@ -152,7 +156,9 @@ class DashboardLayoutTest {
         }
         compose.setContent {
             MaterialTheme {
-                WebViewComponent(onBack = { closed.set(true) }, getPort = { server.localPort })
+                WebViewComponent(session(), onRetry = {}, onOpenLogs = {}) {
+                    if (it == NativeAction.NATIVE_SETTINGS) closed.set(true)
+                }
             }
         }
         waitForPath("/")
@@ -171,7 +177,7 @@ class DashboardLayoutTest {
         }
         val device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
         device.pressBack()
-        compose.onNodeWithText(label(R.string.web_close)).assertDoesNotExist()
+        compose.onNodeWithText(label(R.string.native_settings)).assertDoesNotExist()
         // A real touch keeps the initial entry eligible for Android WebView's Back action.
         requireNotNull(device.wait(Until.findObject(By.text("Next")), 5000)).click()
         waitForPath("/next")
@@ -193,7 +199,8 @@ class DashboardLayoutTest {
         compose.waitUntil(10_000) { requests.get() > beforeRefresh }
         waitForPath("/next")
         openControls()
-        compose.onNodeWithText(label(R.string.web_close)).performClick()
+        // v2: the Web UI is the home screen; the menu opens the native settings instead.
+        compose.onNodeWithText(label(R.string.native_settings)).performClick()
         assertTrue(closed.get())
     }
 }

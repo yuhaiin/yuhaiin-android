@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="core_channel_name">Yuhaiin core</string>
+    <string name="status_core_only">Core running · VPN off</string>
+    <string name="status_core_stopped">Core stopped</string>
+    <string name="connect_vpn">Connect VPN</string>
+    <string name="exit_core">Exit</string>
+    <string name="core_starting">Starting yuhaiin core…</string>
+    <string name="core_start_failed">The yuhaiin core could not start</string>
+    <string name="core_stopped_hint">The core is not running.</string>
+    <string name="start_core">Start core</string>
+    <string name="open_logs">Logs</string>
+    <string name="native_settings">Android settings</string>
+    <string name="vpn_permission_needed">Grant the Android VPN permission to start the VPN.</string>
+    <string name="v2_preview_badge">v2 preview</string>
+</resources>

@@ -17,6 +17,8 @@ class BackupUiTest {
     fun backupPageLaunchesSystemFilePickersAndShareSheet() {
         val activity = compose.activity
         val device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
+        openNativeSettings(activity)
+        compose.waitForIdle()
         val destination = hasText(activity.getString(R.string.backup_title)) and hasClickAction()
         compose.onNode(hasScrollAction()).performScrollToNode(destination)
         compose.onNode(destination).performClick()

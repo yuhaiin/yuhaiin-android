@@ -5,7 +5,11 @@ import kotlinx.serialization.Serializable
 
 @Serializable sealed interface AppRoute : NavKey
 
+/** v2 main screen: the yuhaiin Web UI served by the core. */
 @Serializable data object HomeRoute : AppRoute
+
+/** Native Android settings kept until the Web UI covers them. */
+@Serializable data object NativeSettingsRoute : AppRoute
 
 @Serializable data object AboutRoute : AppRoute
 
