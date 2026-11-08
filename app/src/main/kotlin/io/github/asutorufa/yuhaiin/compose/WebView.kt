@@ -93,7 +93,6 @@ private fun installPlatformSession(port: Int, token: String) {
 fun WebViewComponent(
     session: CoreSession,
     onRetry: () -> Unit,
-    onOpenLogs: () -> Unit,
     onNativeAction: (NativeAction) -> Unit,
 ) {
     val state: WebPageState = viewModel()
@@ -152,12 +151,9 @@ fun WebViewComponent(
                                 // No addJavascriptInterface: device functions go through the
                                 // authenticated platform API or the fixed NativeAction links.
                                 setDownloadListener { url, userAgent, disposition, mime, _ ->
-                                    if (url.startsWith("blob:")) {
-                                        // WebView cannot save script-generated blobs without a
-                                        // JavaScript bridge; the native screen exports backups.
-                                        nativeAction(NativeAction.BACKUP)
-                                        return@setDownloadListener
-                                    }
+                                    // Script-generated blobs cannot be saved without a
+                                    // JavaScript bridge; the Web UI uses one-time links.
+                                    if (url.startsWith("blob:")) return@setDownloadListener
                                     if (!NativeAction.isLocalPage(url, port)) return@setDownloadListener
                                     runCatching {
                                             val name = URLUtil.guessFileName(url, disposition, mime)
@@ -331,7 +327,7 @@ fun WebViewComponent(
                         session.ready -> view?.reload() ?: run { renderer++ }
                         else -> onRetry()
                     }
-                }, onOpenLogs = onOpenLogs)
+                })
             Box(Modifier.align(Alignment.BottomEnd).padding(12.dp)) {
                 val controlsLabel = stringResource(R.string.web_controls)
                 SmallFloatingActionButton(
@@ -374,15 +370,6 @@ fun WebViewComponent(
                             if (view != null) view?.reload() else onRetry()
                         },
                     )
-                    HorizontalDivider()
-                    DropdownMenuItem(
-                        text = { Text(stringResource(R.string.native_settings)) },
-                        leadingIcon = { Icon(Icons.Default.Settings, null) },
-                        onClick = {
-                            controlsExpanded = false
-                            nativeAction(NativeAction.NATIVE_SETTINGS)
-                        },
-                    )
                 }
             }
         }
@@ -395,7 +382,6 @@ private fun CoreStateScreen(
     session: CoreSession,
     error: String?,
     onRetry: () -> Unit,
-    onOpenLogs: () -> Unit,
 ) {
     Surface(Modifier.fillMaxSize()) {
         Column(
@@ -430,7 +416,6 @@ private fun CoreStateScreen(
                             )
                         )
                     }
-                    OutlinedButton(onClick = onOpenLogs) { Text(stringResource(R.string.open_logs)) }
                 }
         }
     }

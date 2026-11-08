@@ -112,7 +112,7 @@ class DashboardLayoutTest {
             compose.activity.enableEdgeToEdge()
         }
         compose.setContent {
-            MaterialTheme { WebViewComponent(session(), onRetry = {}, onOpenLogs = {}) {} }
+            MaterialTheme { WebViewComponent(session(), onRetry = {}) {} }
         }
         val pageHeight = AtomicReference(0.0)
         compose.waitUntil(10_000) {
@@ -156,9 +156,7 @@ class DashboardLayoutTest {
         }
         compose.setContent {
             MaterialTheme {
-                WebViewComponent(session(), onRetry = {}, onOpenLogs = {}) {
-                    if (it == NativeAction.NATIVE_SETTINGS) closed.set(true)
-                }
+                WebViewComponent(session(), onRetry = {}) {}
             }
         }
         waitForPath("/")
@@ -177,7 +175,7 @@ class DashboardLayoutTest {
         }
         val device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
         device.pressBack()
-        compose.onNodeWithText(label(R.string.native_settings)).assertDoesNotExist()
+        compose.onNodeWithText(label(R.string.refresh)).assertDoesNotExist()
         // A real touch keeps the initial entry eligible for Android WebView's Back action.
         requireNotNull(device.wait(Until.findObject(By.text("Next")), 5000)).click()
         waitForPath("/next")
@@ -199,8 +197,7 @@ class DashboardLayoutTest {
         compose.waitUntil(10_000) { requests.get() > beforeRefresh }
         waitForPath("/next")
         openControls()
-        // v2: the Web UI is the home screen; the menu opens the native settings instead.
-        compose.onNodeWithText(label(R.string.native_settings)).performClick()
-        assertTrue(closed.get())
+        // v2: the Web UI is the home screen; the menu has no native destinations.
+        assertTrue(!closed.get())
     }
 }
