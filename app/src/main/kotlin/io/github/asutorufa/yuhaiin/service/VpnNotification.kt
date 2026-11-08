@@ -50,6 +50,9 @@ class VpnNotification(private val context: Context) {
 
     fun builder(status: VpnStatus): NotificationCompat.Builder {
         val paused = status.resumeAt > 0
+        val vpnUp =
+            status.state == YuhaiinVpnService.Companion.State.CONNECTED ||
+                status.state == YuhaiinVpnService.Companion.State.CONNECTING
         val builder =
             NotificationCompat.Builder(context, context.packageName)
                 .setContentTitle(context.getString(status.titleResource()))
@@ -59,25 +62,48 @@ class VpnNotification(private val context: Context) {
                 .setShowWhen(false)
                 .setPriority(NotificationCompat.PRIORITY_LOW)
                 .setContentIntent(VpnActions.activity(context, VpnActions.HOME))
-                .addAction(
-                    0,
-                    context.getString(if (paused) R.string.cancel_resume else R.string.Stop),
-                    VpnActions.service(context, VpnActions.DISCONNECT),
-                )
-                .addAction(
-                    0,
-                    context.getString(if (paused) R.string.resume_now else R.string.reconnect),
-                    VpnActions.service(context, VpnActions.RECONNECT),
-                )
+        when {
+            paused ->
+                builder
+                    .addAction(
+                        0,
+                        context.getString(R.string.cancel_resume),
+                        VpnActions.service(context, VpnActions.DISCONNECT),
+                    )
+                    .addAction(
+                        0,
+                        context.getString(R.string.resume_now),
+                        VpnActions.service(context, VpnActions.RECONNECT),
+                    )
+            vpnUp ->
+                // Stopping the VPN keeps the core and its management UI running.
+                builder
+                    .addAction(
+                        0,
+                        context.getString(R.string.Stop),
+                        VpnActions.service(context, VpnActions.DISCONNECT),
+                    )
+                    .addAction(
+                        0,
+                        context.getString(R.string.reconnect),
+                        VpnActions.service(context, VpnActions.RECONNECT),
+                    )
+            else ->
+                builder
+                    .addAction(
+                        0,
+                        context.getString(R.string.connect_vpn),
+                        VpnActions.activity(context, VpnActions.CONNECT),
+                    )
+                    .addAction(
+                        0,
+                        context.getString(R.string.exit_core),
+                        VpnActions.service(context, VpnActions.EXIT),
+                    )
+        }
         val base = chronometerBase(status)
         if (base > 0) {
-            // The dashboard is served by the running proxy, so it only exists while connected.
             builder
-                .addAction(
-                    0,
-                    context.getString(R.string.open_dashboard),
-                    VpnActions.activity(context, VpnActions.DASHBOARD),
-                )
                 .setShowWhen(true)
                 .setUsesChronometer(true)
                 .setWhen(System.currentTimeMillis() - (SystemClock.elapsedRealtime() - base))
@@ -106,19 +132,61 @@ class VpnNotification(private val context: Context) {
     fun needsSpeedUpdates(): Boolean =
         MainApplication.store.getBoolean(Constants.NOTIFICATION_SPEED_KEY) && canShow()
 
+    private val handler = android.os.Handler(android.os.Looper.getMainLooper())
+    private var lastNotifyAt = 0L
+    private var pending: VpnStatus? = null
+
+    /**
+     * Android drops notification updates above a few per second. Updates closer than
+     * [MIN_INTERVAL_MS] are coalesced and the latest status is posted afterwards, so the final
+     * state (for example "VPN off" after a burst of reconnects) is never lost.
+     */
     fun update(status: VpnStatus) {
+        val wait = lastNotifyAt + MIN_INTERVAL_MS - SystemClock.elapsedRealtime()
+        if (wait > 0) {
+            val scheduled = pending != null
+            pending = status
+            if (!scheduled)
+                handler.postDelayed(
+                    {
+                        val latest = pending
+                        pending = null
+                        if (latest != null) update(latest)
+                    },
+                    wait,
+                )
+            return
+        }
+        pending = null
         if (!canShow()) {
             published = null
             return
         }
-        val display = Triple(status.titleResource(), detail(status), chronometerBase(status))
+        val display =
+            Triple(
+                status.titleResource() * 31 + status.state.ordinal,
+                detail(status),
+                chronometerBase(status),
+            )
         if (display == published) return
         try {
             manager.notify(1, builder(status).build())
             published = display
+            lastNotifyAt = SystemClock.elapsedRealtime()
         } catch (error: SecurityException) {
             published = null
             Log.w("VpnNotification", "Notification permission changed", error)
         }
+    }
+
+    /** startForeground() posts directly; count it so the next update is not dropped. */
+    fun posted(status: VpnStatus) {
+        published = null
+        lastNotifyAt = SystemClock.elapsedRealtime()
+        update(status)
+    }
+
+    private companion object {
+        const val MIN_INTERVAL_MS = 300L
     }
 }

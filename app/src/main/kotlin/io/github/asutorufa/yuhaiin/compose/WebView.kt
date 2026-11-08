@@ -1,22 +1,28 @@
 package io.github.asutorufa.yuhaiin.compose
 
 import android.annotation.SuppressLint
+import android.app.DownloadManager
+import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Bundle
+import android.os.Environment
 import android.view.ViewGroup
 import android.webkit.*
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -27,16 +33,17 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.asutorufa.yuhaiin.BuildConfig
+import io.github.asutorufa.yuhaiin.CoreSession
 import io.github.asutorufa.yuhaiin.R
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import io.github.asutorufa.yuhaiin.service.CoreState
+import yuhaiin.Yuhaiin
 
 class WebPageState(private val savedState: SavedStateHandle) : ViewModel() {
     // History survives rotation in memory; only a small URL goes into the system saved state.
@@ -48,74 +55,149 @@ class WebPageState(private val savedState: SavedStateHandle) : ViewModel() {
         }
 }
 
+/** Builds the local management URL, keeping the saved path only for the same origin. */
+internal fun managementUrl(port: Int, saved: String?): String {
+    val uri = saved?.let(Uri::parse)
+    val local = NativeAction.isLocalPage(saved, port) || uri?.host == "127.0.0.1"
+    return Uri.Builder()
+        .scheme("http")
+        .encodedAuthority("127.0.0.1:$port")
+        .encodedPath(if (local) uri?.encodedPath ?: "/" else "/")
+        .encodedQuery(if (local) uri?.encodedQuery else null)
+        .encodedFragment(if (local) uri?.encodedFragment else null)
+        .build()
+        .toString()
+}
+
+/**
+ * Gives the WebView the core's per-start platform session. The cookie is HttpOnly, SameSite=Strict
+ * and scoped to the platform API path, so page scripts cannot read it, other sites cannot send it,
+ * and LAN browsers never have it.
+ */
+private fun installPlatformSession(port: Int, token: String) {
+    val cookies = CookieManager.getInstance()
+    val value =
+        "${Yuhaiin.PlatformCookieName}=$token; Path=/android/; HttpOnly; SameSite=Strict"
+    cookies.setCookie("http://127.0.0.1:$port", value)
+    cookies.flush()
+}
+
+/**
+ * The v2 main screen: the yuhaiin Web UI of the running core. The WebView lives in the UI process;
+ * the core lives in ":bg", so a renderer crash never stops the core and a VPN reconfiguration
+ * never reloads the page. Only a new port or token (core restart) reconnects.
+ */
 @SuppressLint("SetJavaScriptEnabled")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun WebViewComponent(onBack: () -> Unit, getPort: () -> Int) {
+fun WebViewComponent(
+    session: CoreSession,
+    onRetry: () -> Unit,
+    onOpenLogs: () -> Unit,
+    onNativeAction: (NativeAction) -> Unit,
+) {
     val state: WebPageState = viewModel()
     val context = LocalContext.current
     val renderError by rememberUpdatedState(stringResource(R.string.web_render_failed))
-    val scope = rememberCoroutineScope()
     val pageBackground = MaterialTheme.colorScheme.surface.toArgb()
+    val nativeAction by rememberUpdatedState(onNativeAction)
     var view by remember { mutableStateOf<WebView?>(null) }
     var controlsExpanded by rememberSaveable { mutableStateOf(false) }
     var loading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
     var canBack by remember { mutableStateOf(false) }
     var canForward by remember { mutableStateOf(false) }
-    var generation by remember { mutableIntStateOf(0) }
-    var port by remember { mutableIntStateOf(0) }
-    LaunchedEffect(generation) { port = withContext(Dispatchers.IO) { getPort() } }
+    var renderer by remember { mutableIntStateOf(0) }
+    // A dead renderer is replaced only on an explicit retry, never in a loop.
+    var rendererGone by remember { mutableStateOf(false) }
+    var fileCallback by remember { mutableStateOf<ValueCallback<Array<Uri>>?>(null) }
+    val filePicker =
+        rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+            fileCallback?.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(it.resultCode, it.data))
+            fileCallback = null
+        }
+    val port = if (session.ready) session.port else 0
+    // A new token or port means the core restarted; the old page cannot reach the platform API.
+    val identity = "$port/${session.token}/$renderer"
+
     fun updateHistory(web: WebView) {
         canBack = web.canGoBack()
         canForward = web.canGoForward()
-        state.url = web.url
+        if (NativeAction.isLocalPage(web.url, port)) state.url = web.url
     }
-    fun refresh() {
-        scope.launch {
-            port = withContext(Dispatchers.IO) { getPort() }
-            error = null
-            val current = view
-            if (current != null && port > 0) {
-                val path = current.url?.let(Uri::parse)
-                current.loadUrl(
-                    Uri.Builder()
-                        .scheme("http")
-                        .encodedAuthority("127.0.0.1:$port")
-                        .encodedPath(path?.encodedPath ?: "/")
-                        .encodedQuery(path?.encodedQuery)
-                        .encodedFragment(path?.encodedFragment)
-                        .build()
-                        .toString()
-                )
-            } else generation++
-        }
-    }
+
     BackHandler(enabled = canBack && error == null) { view?.goBack() }
     Scaffold(contentWindowInsets = appContentInsets) { padding ->
-        // Only system insets reserve space. Native browser controls float over the page.
         Box(Modifier.fillMaxSize().padding(padding).consumeWindowInsets(padding).imePadding()) {
-            if (port > 0)
-                key(generation) {
+            if (port > 0 && !rendererGone)
+                key(identity) {
                     AndroidView(
                         factory = { ctx ->
+                            installPlatformSession(port, session.token)
                             WebView.setWebContentsDebuggingEnabled(BuildConfig.DEBUG)
                             WebView(ctx).apply {
-                                // Give WebView a viewport instead of its wrap-content default.
-                                // A zero initial viewport also collapses CSS vh/dvh page layouts.
                                 layoutParams =
                                     ViewGroup.LayoutParams(
                                         ViewGroup.LayoutParams.MATCH_PARENT,
                                         ViewGroup.LayoutParams.MATCH_PARENT,
                                     )
-                                // Avoid a white flash before the dashboard paints in dark theme.
                                 setBackgroundColor(pageBackground)
                                 settings.javaScriptEnabled = true
                                 settings.domStorageEnabled = true
                                 settings.allowFileAccess = false
                                 settings.allowContentAccess = false
+                                settings.javaScriptCanOpenWindowsAutomatically = false
+                                settings.setSupportMultipleWindows(false)
                                 settings.mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
-                                webChromeClient = WebChromeClient()
+                                // No addJavascriptInterface: device functions go through the
+                                // authenticated platform API or the fixed NativeAction links.
+                                setDownloadListener { url, userAgent, disposition, mime, _ ->
+                                    if (url.startsWith("blob:")) {
+                                        // WebView cannot save script-generated blobs without a
+                                        // JavaScript bridge; the native screen exports backups.
+                                        nativeAction(NativeAction.BACKUP)
+                                        return@setDownloadListener
+                                    }
+                                    if (!NativeAction.isLocalPage(url, port)) return@setDownloadListener
+                                    runCatching {
+                                            val name = URLUtil.guessFileName(url, disposition, mime)
+                                            val request =
+                                                DownloadManager.Request(Uri.parse(url))
+                                                    .setMimeType(mime)
+                                                    .addRequestHeader("User-Agent", userAgent)
+                                                    .setNotificationVisibility(
+                                                        DownloadManager.Request
+                                                            .VISIBILITY_VISIBLE_NOTIFY_COMPLETED
+                                                    )
+                                                    .setDestinationInExternalPublicDir(
+                                                        Environment.DIRECTORY_DOWNLOADS,
+                                                        name,
+                                                    )
+                                            ctx.getSystemService(DownloadManager::class.java)
+                                                .enqueue(request)
+                                        }
+                                        .onFailure {
+                                            Toast.makeText(ctx, it.message, Toast.LENGTH_LONG).show()
+                                        }
+                                }
+                                webChromeClient =
+                                    object : WebChromeClient() {
+                                        override fun onShowFileChooser(
+                                            web: WebView,
+                                            callback: ValueCallback<Array<Uri>>,
+                                            params: FileChooserParams,
+                                        ): Boolean {
+                                            fileCallback?.onReceiveValue(null)
+                                            fileCallback = callback
+                                            return try {
+                                                filePicker.launch(params.createIntent())
+                                                true
+                                            } catch (_: ActivityNotFoundException) {
+                                                fileCallback = null
+                                                false
+                                            }
+                                        }
+                                    }
                                 webViewClient =
                                     object : WebViewClient() {
                                         override fun shouldOverrideUrlLoading(
@@ -124,11 +206,22 @@ fun WebViewComponent(onBack: () -> Unit, getPort: () -> Int) {
                                         ): Boolean {
                                             val url = request.url
                                             if (
-                                                url.scheme == "http" &&
+                                                url.scheme in listOf("http", "https") &&
                                                     url.host == "127.0.0.1" &&
                                                     url.port == port
                                             )
                                                 return false
+                                            if (url.scheme == NativeAction.SCHEME) {
+                                                NativeAction.parse(
+                                                        url.toString(),
+                                                        web.url,
+                                                        port,
+                                                        request.isForMainFrame,
+                                                        request.hasGesture(),
+                                                    )
+                                                    ?.let(nativeAction)
+                                                return true
+                                            }
                                             if (
                                                 request.isForMainFrame &&
                                                     request.hasGesture() &&
@@ -190,37 +283,22 @@ fun WebViewComponent(onBack: () -> Unit, getPort: () -> Int) {
                                             web: WebView,
                                             detail: RenderProcessGoneDetail,
                                         ): Boolean {
+                                            // Only the renderer died; the core is unaffected.
                                             loading = false
                                             error = renderError
                                             state.history = null
-                                            // Remove the dead instance. Retry creates a new
-                                            // renderer and view.
-                                            port = 0
+                                            rendererGone = true
                                             return true
                                         }
                                     }
                                 view = this
-                                val saved = state.url?.let(Uri::parse)
-                                val local = saved?.scheme == "http" && saved.host == "127.0.0.1"
-                                // A reconnect can choose another port. Do not restore a history
-                                // whose origin now belongs to a stale listener.
-                                val history = state.history.takeIf { local && saved.port == port }
-                                if (history == null || restoreState(history) == null) {
-                                    loadUrl(
-                                        Uri.Builder()
-                                            .scheme("http")
-                                            .encodedAuthority("127.0.0.1:$port")
-                                            .encodedPath(
-                                                if (local) saved.encodedPath ?: "/" else "/"
-                                            )
-                                            .encodedQuery(if (local) saved.encodedQuery else null)
-                                            .encodedFragment(
-                                                if (local) saved.encodedFragment else null
-                                            )
-                                            .build()
-                                            .toString()
-                                    )
-                                }
+                                val saved = state.url
+                                // A restarted core can choose another port. Never restore a
+                                // history whose origin now belongs to a stale listener.
+                                val history =
+                                    state.history.takeIf { NativeAction.isLocalPage(saved, port) }
+                                if (history == null || restoreState(history) == null)
+                                    loadUrl(managementUrl(port, saved))
                             }
                         },
                         onRelease = { web ->
@@ -236,26 +314,24 @@ fun WebViewComponent(onBack: () -> Unit, getPort: () -> Int) {
                     )
                 }
             androidx.compose.animation.AnimatedVisibility(
-                loading && error == null,
+                loading && error == null && port > 0,
                 enter = fadeIn(AppMotion.effects()),
                 exit = fadeOut(AppMotion.effects()),
             ) {
                 MaterialLinearProgressIndicator()
             }
-            if (error != null || port == 0)
-                Surface(Modifier.fillMaxSize()) {
-                    Column(
-                        Modifier.fillMaxSize().padding(24.dp),
-                        verticalArrangement = Arrangement.Center,
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
-                        Text(
-                            error ?: stringResource(R.string.web_not_running),
-                            style = MaterialTheme.typography.titleMedium,
-                        )
-                        Button(onClick = ::refresh) { Text(stringResource(R.string.retry)) }
+            if (port == 0 || error != null || rendererGone)
+                CoreStateScreen(session, error, onRetry = {
+                    error = null
+                    when {
+                        rendererGone -> {
+                            rendererGone = false
+                            renderer++
+                        }
+                        session.ready -> view?.reload() ?: run { renderer++ }
+                        else -> onRetry()
                     }
-                }
+                }, onOpenLogs = onOpenLogs)
             Box(Modifier.align(Alignment.BottomEnd).padding(12.dp)) {
                 val controlsLabel = stringResource(R.string.web_controls)
                 SmallFloatingActionButton(
@@ -294,20 +370,68 @@ fun WebViewComponent(onBack: () -> Unit, getPort: () -> Int) {
                         leadingIcon = { Icon(Icons.Default.Refresh, null) },
                         onClick = {
                             controlsExpanded = false
-                            refresh()
+                            error = null
+                            if (view != null) view?.reload() else onRetry()
                         },
                     )
                     HorizontalDivider()
                     DropdownMenuItem(
-                        text = { Text(stringResource(R.string.web_close)) },
-                        leadingIcon = { Icon(Icons.Default.Close, null) },
+                        text = { Text(stringResource(R.string.native_settings)) },
+                        leadingIcon = { Icon(Icons.Default.Settings, null) },
                         onClick = {
                             controlsExpanded = false
-                            onBack()
+                            nativeAction(NativeAction.NATIVE_SETTINGS)
                         },
                     )
                 }
             }
+        }
+    }
+}
+
+/** Native loading and failure screen, shown while the core is unavailable. */
+@Composable
+private fun CoreStateScreen(
+    session: CoreSession,
+    error: String?,
+    onRetry: () -> Unit,
+    onOpenLogs: () -> Unit,
+) {
+    Surface(Modifier.fillMaxSize()) {
+        Column(
+            Modifier.fillMaxSize().padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            val starting = error == null && session.state == CoreState.STARTING
+            if (starting) MaterialLoadingIndicator()
+            Text(
+                when {
+                    error != null -> error
+                    starting -> stringResource(R.string.core_starting)
+                    session.state == CoreState.FAILED -> stringResource(R.string.core_start_failed)
+                    else -> stringResource(R.string.core_stopped_hint)
+                },
+                style = MaterialTheme.typography.titleMedium,
+                textAlign = TextAlign.Center,
+            )
+            if (error == null && session.error.isNotBlank())
+                Text(
+                    session.error,
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Center,
+                )
+            if (!starting)
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Button(onClick = onRetry) {
+                        Text(
+                            stringResource(
+                                if (session.ready) R.string.retry else R.string.start_core
+                            )
+                        )
+                    }
+                    OutlinedButton(onClick = onOpenLogs) { Text(stringResource(R.string.open_logs)) }
+                }
         }
     }
 }

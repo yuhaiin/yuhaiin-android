@@ -25,7 +25,7 @@ import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun BackupScreen(onBack: () -> Unit, disconnect: suspend () -> Unit) {
+fun BackupScreen(onBack: () -> Unit, disconnect: suspend () -> Unit, resume: () -> Unit = {}) {
     val context = LocalContext.current
     val model: BackupViewModel = viewModel()
     val state by model.state.collectAsStateWithLifecycle()
@@ -133,7 +133,7 @@ fun BackupScreen(onBack: () -> Unit, disconnect: suspend () -> Unit) {
                 }
             },
             confirmButton = {
-                TextButton(enabled = !state.busy, onClick = { model.restore(disconnect) }) {
+                TextButton(enabled = !state.busy, onClick = { model.restore(disconnect, resume) }) {
                     Text(stringResource(R.string.backup_restore))
                 }
             },

@@ -46,10 +46,15 @@ class BackupViewModel : ViewModel() {
         mutableState.value = mutableState.value.copy(preview = null, completed = false)
     }
 
-    fun restore(disconnect: suspend () -> Unit) = run {
+    fun restore(disconnect: suspend () -> Unit, resume: () -> Unit = {}) = run {
         val data = requireNotNull(pending) { "Select a backup first" }
         disconnect()
-        ConfigBackup.restore(data)
+        try {
+            ConfigBackup.restore(data)
+        } finally {
+            // Restart the core even when the restore was rejected.
+            resume()
+        }
         pending = null
         mutableState.value = mutableState.value.copy(preview = null)
     }

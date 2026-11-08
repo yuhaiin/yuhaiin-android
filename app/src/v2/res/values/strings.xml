@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Distinguishes the v2 preview from the stable app in the launcher and settings. -->
+    <string name="app_name">yuhaiin v2</string>
+</resources>

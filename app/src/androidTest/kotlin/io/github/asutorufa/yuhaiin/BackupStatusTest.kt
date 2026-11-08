@@ -35,8 +35,8 @@ class BackupStatusTest {
     @Test
     fun fileExportPreviewAndRestoreUseRealCoreAndOpenPreferenceHandle() {
         waitFor { activity.vpnBinder != null }
-        activity.vpnBinder!!.stop()
-        waitFor { activity.state.value == State.DISCONNECTED }
+        // v2: the core holds the configuration lock even with the VPN off.
+        runBlocking { activity.stopCoreAndWait() }
         runBlocking(Dispatchers.IO) { MainApplication.settings.flush() }
         val original = Yuhaiin.exportConfig()
         val file =
@@ -78,6 +78,7 @@ class BackupStatusTest {
         } finally {
             runBlocking(Dispatchers.IO) { ConfigBackup.restore(original) }
             file.delete()
+            compose.runOnUiThread { activity.startCore() }
         }
     }
 
@@ -110,7 +111,7 @@ class BackupStatusTest {
             assertTrue(decodeNativeHealth(snapshot().nativeHealth)!!.checkedAt > 0)
             val backup = Yuhaiin.exportConfig()
             val rejected = runCatching { Yuhaiin.importConfig(backup) }.exceptionOrNull()
-            assertNotNull("Running VPN must reject import", rejected)
+            assertNotNull("A running core must reject import", rejected)
             activity.vpnBinder!!.stop()
             waitFor { activity.state.value == State.DISCONNECTED }
             val ended = decodeNativeStatus(snapshot().nativeStatus)!!

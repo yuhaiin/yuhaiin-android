@@ -11,7 +11,6 @@ import io.github.asutorufa.yuhaiin.Constants
 import io.github.asutorufa.yuhaiin.MainApplication
 import io.github.asutorufa.yuhaiin.R
 import io.github.asutorufa.yuhaiin.getStringSet
-import yuhaiin.TunAddress
 import yuhaiin.Yuhaiin
 
 /** Exact complement of the existing IPv4 preset; do not silently redefine local networks. */
@@ -24,13 +23,16 @@ internal val nonLocalExclusions =
         "224.0.0.0/3",
     )
 
+/**
+ * Builds the VPN interface requested by the core. Values owned by the core (addresses, DNS,
+ * MTU, explicit routes, FakeIP pools) come from [config]; Android-only preferences are read here.
+ */
 fun VpnService.Builder.configure(
     context: Context,
-    address: TunAddress,
-    mtu: Int,
+    config: PlatformVpnConfig,
 ): VpnService.Builder = apply {
     val store = MainApplication.store
-    setMtu(mtu)
+    setMtu(config.mtu)
     setSession(context.getString(R.string.yuhaiin))
     if (store.getBoolean(Constants.PER_APP_KEY)) {
         val bypass = store.getBoolean(Constants.APP_BYPASS_KEY)
@@ -46,32 +48,26 @@ fun VpnService.Builder.configure(
             }
         }
     }
-    addAddress(address.iPv4Address, 24).addRoute(address.iPv4, 24)
-    addAddress(address.iPv6Address, 64).addRoute("2000::", 3).addRoute(address.iPv6, 64)
+    if (config.ipv4.isNotBlank()) addAddress(config.ipv4, config.ipv4Prefix)
+    if (config.ipv6.isNotBlank()) addAddress(config.ipv6, config.ipv6Prefix)
     val name = store.getString(Constants.ROUTE_KEY).ifBlank { Constants.ALL_ROUTE }
-    val content = store.getString(Constants.ROUTE_CONTENT_PREFIX + name)
-    val lines = content.lineSequence().map(String::trim).filter(String::isNotBlank).toList()
-    val preset = context.resources.getStringArray(R.array.all_routes_except_local).toList()
-    val useExclusions =
-        Build.VERSION.SDK_INT >= 33 && name == Constants.NON_LOCAL_ROUTE && lines == preset
-    if (useExclusions) {
-        addRoute("0.0.0.0", 0)
-        nonLocalExclusions.forEach {
-            excludeRoute(
-                IpPrefix(
-                    java.net.InetAddress.getByName(it.substringBefore('/')),
-                    it.substringAfter('/').toInt(),
-                )
-            )
+    val plan =
+        planRoutes(
+            config,
+            name,
+            store.getString(Constants.ROUTE_CONTENT_PREFIX + name).lines(),
+            context.resources.getStringArray(R.array.all_routes_except_local).toList(),
+            Constants.NON_LOCAL_ROUTE,
+            Build.VERSION.SDK_INT,
+            Yuhaiin.isIPv6(),
+        )
+    plan.routes.forEach { addCidr(it) }
+    if (Build.VERSION.SDK_INT >= 33)
+        plan.excludes.forEach {
+            val prefix = Yuhaiin.parseCIDR(it)
+            excludeRoute(IpPrefix(java.net.InetAddress.getByName(prefix.ip), prefix.mask))
         }
-        lines.filter { ':' in it }.forEach { addCidr(it) }
-    } else if (lines.isEmpty()) {
-        addRoute("0.0.0.0", 0)
-        if (Yuhaiin.isIPv6()) addRoute("::", 0)
-    } else lines.forEach { addCidr(it) }
-    addDnsServer(address.iPv4Portal)
-    addDnsServer(address.iPv6Portal)
-    Yuhaiin.addFakeDnsCidr { addRoute(it.ip, it.mask) }
+    config.dns.forEach { addDnsServer(it) }
     if (Build.VERSION.SDK_INT >= 29) {
         // false inherits underlying network meteredness; Android cannot force unmetered.
         setMetered(store.getString(Constants.METERED_MODE_KEY) == "metered")
@@ -82,8 +78,7 @@ fun VpnService.Builder.configure(
 }
 
 private fun VpnService.Builder.addCidr(cidr: String) {
+    // Invalid rules fail establishment visibly instead of being ignored.
     val prefix = Yuhaiin.parseCIDR(cidr)
-    // Android refuses loopback routes. Other invalid rules fail startup visibly instead of being
-    // ignored.
-    if (!prefix.ip.startsWith("127.")) addRoute(prefix.ip, prefix.mask)
+    addRoute(prefix.ip, prefix.mask)
 }

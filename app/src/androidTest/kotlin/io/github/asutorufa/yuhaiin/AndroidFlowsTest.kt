@@ -15,6 +15,9 @@ class AndroidFlowsTest {
     private fun label(id: Int, vararg arguments: Any) = compose.activity.getString(id, *arguments)
 
     private fun open(id: Int) {
+        // v2 starts on the Web UI; the native screens live under "Android settings".
+        openNativeSettings(compose.activity)
+        compose.waitForIdle()
         compose.onNode(hasScrollAction()).performScrollToNode(hasText(label(id)))
         compose.onNodeWithText(label(id)).performClick()
     }
@@ -25,7 +28,13 @@ class AndroidFlowsTest {
         compose.onNodeWithContentDescription(label(R.string.back)).performClick()
         // Returning preserves the home scroll position; expose the status card explicitly.
         compose.onNode(hasScrollAction()).performScrollToIndex(0)
-        compose.onNodeWithText(label(R.string.status_disconnected)).assertIsDisplayed()
+        // v2: the core keeps running with the VPN off.
+        compose
+            .onNode(
+                hasText(label(R.string.status_disconnected)) or
+                    hasText(label(R.string.status_core_only))
+            )
+            .assertIsDisplayed()
     }
 
     @Test

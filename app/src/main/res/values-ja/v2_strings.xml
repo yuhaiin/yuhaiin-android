@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="core_channel_name">Yuhaiin コア</string>
+    <string name="status_core_only">コア実行中 · VPN オフ</string>
+    <string name="status_core_stopped">コア停止</string>
+    <string name="connect_vpn">VPN に接続</string>
+    <string name="exit_core">終了</string>
+    <string name="core_starting">yuhaiin コアを起動しています…</string>
+    <string name="core_start_failed">yuhaiin コアを起動できませんでした</string>
+    <string name="core_stopped_hint">コアは実行されていません。</string>
+    <string name="start_core">コアを起動</string>
+    <string name="open_logs">ログ</string>
+    <string name="native_settings">Android 設定</string>
+    <string name="vpn_permission_needed">VPN を開始するには Android の VPN 権限を許可してください。</string>
+    <string name="v2_preview_badge">v2 プレビュー</string>
+</resources>

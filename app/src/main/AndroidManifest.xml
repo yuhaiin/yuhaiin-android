@@ -41,6 +41,18 @@
             </intent-filter>
         </activity>
 
+        <!-- v2: the Go core, management server and notification. Same process as the
+             VpnService so the TUN descriptor never crosses Binder. -->
+        <service
+            android:name=".service.YuhaiinCoreService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse"
+            android:process=":bg">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="proxy core and local management server" />
+        </service>
+
         <service
             android:name=".service.YuhaiinVpnService"
             android:exported="false"
