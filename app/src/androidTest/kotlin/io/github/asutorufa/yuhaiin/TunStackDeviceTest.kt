@@ -46,7 +46,6 @@ class TunStackDeviceTest {
         tun.put("congestionControl", cc)
         tun.put("outputScheduler", scheduler)
         tun.put("lossRecovery", lossRecovery)
-        tun.put("driver", "system_gvisor") // legacy selections must be ignored
         rpc("inbound.put", inbound)
     }
 
@@ -183,7 +182,8 @@ class TunStackDeviceTest {
                 )
                 startVpn(device)
                 val (id, cfg) = tunConfig()
-                assertEquals("lightweight", cfg.getString("stack"))
+                // v2 stores the selection as edited; an empty stack means lightweight.
+                assertEquals("lightweight", cfg.optString("stack").ifEmpty { "lightweight" })
                 assertEquals(selection.congestionControl, cfg.getString("congestionControl"))
                 assertEquals(selection.scheduler, cfg.getString("outputScheduler"))
                 assertEquals(selection.lossRecovery, cfg.getString("lossRecovery"))

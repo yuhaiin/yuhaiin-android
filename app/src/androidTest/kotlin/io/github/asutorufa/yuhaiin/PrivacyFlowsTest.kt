@@ -51,10 +51,12 @@ class PrivacyFlowsTest {
         activity.vpnBinder?.stop()
     }
 
-    private fun open(id: Int) {
+    private fun open(id: Int, fromHome: Boolean = true) {
         // v2 starts on the Web UI; these native screens live under "Android settings".
-        openNativeSettings(activity)
-        compose.waitForIdle()
+        if (fromHome) {
+            openNativeSettings(activity)
+            compose.waitForIdle()
+        }
         compose.onNode(hasScrollAction()).performScrollToNode(hasText(label(id)))
         compose.onNodeWithText(label(id)).performClick()
     }
@@ -146,8 +148,8 @@ class PrivacyFlowsTest {
         consent.grant(Purpose.INSTALLED_APPS)
         runBlocking { MainApplication.installedApps.load() }
         open(R.string.about)
-        open(R.string.privacy_policy_title)
-        open(R.string.privacy_withdraw)
+        open(R.string.privacy_policy_title, fromHome = false)
+        open(R.string.privacy_withdraw, fromHome = false)
         compose.onNodeWithText(label(R.string.privacy_withdraw_body)).assertIsDisplayed()
         compose.onAllNodesWithText(label(R.string.privacy_withdraw)).onLast().performClick()
         compose.waitUntil(15_000) {
@@ -163,7 +165,7 @@ class PrivacyFlowsTest {
     @Test
     fun privacyPolicyIsAvailableWithoutVpnOrEitherConsent() {
         open(R.string.about)
-        open(R.string.privacy_policy_title)
+        open(R.string.privacy_policy_title, fromHome = false)
         compose.onNodeWithText(label(R.string.privacy_developer_title)).assertIsDisplayed()
         compose.onNode(hasScrollAction())
             .performScrollToNode(hasText(label(R.string.privacy_retention_title)))
