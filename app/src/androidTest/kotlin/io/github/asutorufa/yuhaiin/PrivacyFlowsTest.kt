@@ -52,6 +52,9 @@ class PrivacyFlowsTest {
     }
 
     private fun open(id: Int) {
+        // v2 starts on the Web UI; these native screens live under "Android settings".
+        openNativeSettings(activity)
+        compose.waitForIdle()
         compose.onNode(hasScrollAction()).performScrollToNode(hasText(label(id)))
         compose.onNodeWithText(label(id)).performClick()
     }

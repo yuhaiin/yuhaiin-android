@@ -132,7 +132,32 @@ class VpnNotification(private val context: Context) {
     fun needsSpeedUpdates(): Boolean =
         MainApplication.store.getBoolean(Constants.NOTIFICATION_SPEED_KEY) && canShow()
 
+    private val handler = android.os.Handler(android.os.Looper.getMainLooper())
+    private var lastNotifyAt = 0L
+    private var pending: VpnStatus? = null
+
+    /**
+     * Android drops notification updates above a few per second. Updates closer than
+     * [MIN_INTERVAL_MS] are coalesced and the latest status is posted afterwards, so the final
+     * state (for example "VPN off" after a burst of reconnects) is never lost.
+     */
     fun update(status: VpnStatus) {
+        val wait = lastNotifyAt + MIN_INTERVAL_MS - SystemClock.elapsedRealtime()
+        if (wait > 0) {
+            val scheduled = pending != null
+            pending = status
+            if (!scheduled)
+                handler.postDelayed(
+                    {
+                        val latest = pending
+                        pending = null
+                        if (latest != null) update(latest)
+                    },
+                    wait,
+                )
+            return
+        }
+        pending = null
         if (!canShow()) {
             published = null
             return
@@ -147,9 +172,21 @@ class VpnNotification(private val context: Context) {
         try {
             manager.notify(1, builder(status).build())
             published = display
+            lastNotifyAt = SystemClock.elapsedRealtime()
         } catch (error: SecurityException) {
             published = null
             Log.w("VpnNotification", "Notification permission changed", error)
         }
+    }
+
+    /** startForeground() posts directly; count it so the next update is not dropped. */
+    fun posted(status: VpnStatus) {
+        published = null
+        lastNotifyAt = SystemClock.elapsedRealtime()
+        update(status)
+    }
+
+    private companion object {
+        const val MIN_INTERVAL_MS = 300L
     }
 }

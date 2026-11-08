@@ -83,7 +83,8 @@ class ConnectionControlsTest {
         assertTrue(initial.route.isNotBlank())
         assertTrue(initial.network.isNotBlank())
         waitFor { snapshot().speed.contains("↓") && snapshot().speed.contains("↑") }
-        assertEquals(3, notification().actions.size)
+        // v2: Stop and Reconnect; the Web UI is the app's home, so no Dashboard action.
+        assertEquals(2, notification().actions.size)
         val reconnect = notification().actions[1].actionIntent
         reconnect.send()
         waitFor {
@@ -101,11 +102,13 @@ class ConnectionControlsTest {
         waitFor { snapshot().resumeAt > 0 && activity.state.value == State.DISCONNECTED }
         notification().actions[0].actionIntent.send()
         waitFor { snapshot().resumeAt == 0L && activity.state.value == State.DISCONNECTED }
-        waitFor {
-            activity.getSystemService(NotificationManager::class.java).activeNotifications.none {
-                it.id == 1
-            }
-        }
+        // v2: the core keeps running with the VPN off, so its notification stays and says so.
+        fun title() =
+            notification().extras.getCharSequence(android.app.Notification.EXTRA_TITLE)?.toString()
+        val end = SystemClock.elapsedRealtime() + 20_000
+        while (title() != activity.getString(R.string.status_core_only) &&
+            SystemClock.elapsedRealtime() < end) SystemClock.sleep(100)
+        assertEquals(activity.getString(R.string.status_core_only), title())
         assertEquals(0L, snapshot().connectedAt)
         activity.startService(
             Intent(activity, YuhaiinVpnService::class.java).setAction(VpnActions.RESUME)
@@ -175,7 +178,9 @@ class ConnectionControlsTest {
     @Test
     fun quickSettingsTileAndWidgetControlTheRemoteService() {
         connect()
-        val component = "${BuildConfig.APPLICATION_ID}/.service.VpnTileService"
+        // The v2 applicationId differs from the Kotlin package; name the class in full.
+        val component =
+            "${BuildConfig.APPLICATION_ID}/${io.github.asutorufa.yuhaiin.service.VpnTileService::class.java.name}"
         val oldTiles =
             device.executeShellCommand("settings get secure sysui_qs_tiles").trim().trim('\'')
         val route = MainApplication.store.getString(Constants.ROUTE_KEY)
@@ -238,7 +243,14 @@ class ConnectionControlsTest {
                 view!!.findViewById<android.view.View>(R.id.widget_toggle).performClick()
             }
             waitFor { activity.state.value == State.DISCONNECTED }
-            waitFor { widgetText() == activity.getString(R.string.status_disconnected) }
+            // v2: the core keeps running, so the widget reports "core running, VPN off".
+            waitFor {
+                widgetText() in
+                    setOf(
+                        activity.getString(R.string.status_disconnected),
+                        activity.getString(R.string.status_core_only),
+                    )
+            }
             instrumentation.runOnMainSync {
                 view!!.findViewById<android.view.View>(R.id.widget_toggle).performClick()
             }

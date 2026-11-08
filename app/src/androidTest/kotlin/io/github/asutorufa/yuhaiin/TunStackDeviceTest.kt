@@ -37,17 +37,18 @@ class TunStackDeviceTest {
         val lossRecovery: String,
     )
 
-    private fun writeSelection(stack: String, cc: String, scheduler: String, lossRecovery: String) =
-        runBlocking(Dispatchers.IO) {
-            MainApplication.settings.commit {
-                it.putString(Constants.TUN_STACK_KEY, stack)
-                it.putString(Constants.TUN_CONGESTION_CONTROL_KEY, cc)
-                it.putString(Constants.TUN_OUTPUT_SCHEDULER_KEY, scheduler)
-                it.putString(Constants.TUN_LOSS_RECOVERY_KEY, lossRecovery)
-                // Old persisted selections must be ignored by current native builds.
-                it.putString(Constants.TUN_DRIVER_KEY, "system_gvisor")
-            }
-        }
+    /** v2: TUN tuning belongs to the core's TUN inbound, edited through the core API
+     * (as the Web UI does); a running VPN is rebuilt in place. */
+    private fun writeSelection(stack: String, cc: String, scheduler: String, lossRecovery: String) {
+        val inbound = tunInbound()
+        val tun = inbound.getJSONObject("protocol").getJSONObject("tun")
+        tun.put("stack", stack)
+        tun.put("congestionControl", cc)
+        tun.put("outputScheduler", scheduler)
+        tun.put("lossRecovery", lossRecovery)
+        tun.put("driver", "system_gvisor") // legacy selections must be ignored
+        rpc("inbound.put", inbound)
+    }
 
     private fun startVpn(device: UiDevice) {
         compose.runOnUiThread {
@@ -72,7 +73,7 @@ class TunStackDeviceTest {
         compose.waitUntil(20_000) { compose.activity.state.value == State.DISCONNECTED }
     }
 
-    private fun rpc(route: String): JSONObject {
+    private fun rpc(route: String, body: JSONObject = JSONObject()): JSONObject {
         val port = MainApplication.store.getInt(Constants.WEB_PORT_KEY)
         check(port in 1..65535) { "Native API port not ready: $port" }
         val conn = URL("http://127.0.0.1:$port/api/v2/rpc/$route")
@@ -80,15 +81,28 @@ class TunStackDeviceTest {
         return try {
             conn.requestMethod = "POST"
             conn.connectTimeout = 3000
-            conn.readTimeout = 3000
+            conn.readTimeout = 10000
             conn.doOutput = true
             conn.setRequestProperty("Content-Type", "application/json")
-            conn.outputStream.use { it.write("{}".toByteArray()) }
-            check(conn.responseCode == 200) { "$route returned HTTP ${conn.responseCode}" }
-            JSONObject(conn.inputStream.bufferedReader().use { it.readText() })
+            conn.outputStream.use { it.write(body.toString().toByteArray()) }
+            check(conn.responseCode == 200) {
+                "$route returned HTTP ${conn.responseCode}: " +
+                    conn.errorStream?.bufferedReader()?.use { it.readText() }
+            }
+            val text = conn.inputStream.bufferedReader().use { it.readText() }
+            if (text.isBlank()) JSONObject() else JSONObject(text)
         } finally {
             conn.disconnect()
         }
+    }
+
+    private fun tunInbound(): JSONObject {
+        val items = rpc("inbounds.get").getJSONArray("items")
+        for (i in 0 until items.length()) {
+            val inbound = items.getJSONObject(i)
+            if (inbound.getJSONObject("protocol").getString("type") == "tun") return inbound
+        }
+        error("No native TUN inbound")
     }
 
     private fun tunConfig(): Pair<String, JSONObject> {
@@ -146,6 +160,8 @@ class TunStackDeviceTest {
                 "pm grant ${BuildConfig.APPLICATION_ID} ${Manifest.permission.POST_NOTIFICATIONS}"
             )
         val store = MainApplication.store
+        compose.waitUntil(20_000) { compose.activity.session.value.ready }
+        val original = tunInbound()
         val previousStack = store.getString(Constants.TUN_STACK_KEY)
         val previousCC = store.getString(Constants.TUN_CONGESTION_CONTROL_KEY)
         val previousScheduler = store.getString(Constants.TUN_OUTPUT_SCHEDULER_KEY)
@@ -193,6 +209,7 @@ class TunStackDeviceTest {
             InstrumentationRegistry.getInstrumentation().runOnMainSync {
                 compose.activity.vpnBinder?.stop()
             }
+            runCatching { rpc("inbound.put", original) }
         }
     }
 }

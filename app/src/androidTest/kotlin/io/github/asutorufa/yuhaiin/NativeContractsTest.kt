@@ -117,6 +117,8 @@ class NativeContractsTest {
     private fun assertDashboardHasViewport() {
         // Flush the connection recomposition and expose the card before using the system UI.
         compose.waitForIdle()
+        openNativeSettings(compose.activity)
+        compose.waitForIdle()
         compose.onNode(hasScrollAction()).performScrollToIndex(0)
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         val device = UiDevice.getInstance(instrumentation)

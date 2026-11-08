@@ -55,6 +55,22 @@ class YuhaiinVpnService : VpnService() {
                 else -> VpnActions.CONNECT_ALWAYS_ON
             }
         Log.d(tag, "start command ${intent?.action} -> $action")
+        // startForegroundService() callers (v1 shortcuts, some always-on paths) require a
+        // prompt startForeground(), even though the core service owns the real notification.
+        runCatching {
+                val note = VpnNotification(this)
+                note.createChannel()
+                val built = note.builder(VpnStatus()).build()
+                if (Build.VERSION.SDK_INT >= 34)
+                    startForeground(
+                        2,
+                        built,
+                        android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE,
+                    )
+                else startForeground(2, built)
+                stopForeground(STOP_FOREGROUND_REMOVE)
+            }
+            .onFailure { Log.w(tag, "transient foreground failed", it) }
         YuhaiinCoreService.start(this, action)
         stopSelf(startId)
         return START_NOT_STICKY

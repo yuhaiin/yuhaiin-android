@@ -108,6 +108,8 @@ fun WebViewComponent(
     var canBack by remember { mutableStateOf(false) }
     var canForward by remember { mutableStateOf(false) }
     var renderer by remember { mutableIntStateOf(0) }
+    // A dead renderer is replaced only on an explicit retry, never in a loop.
+    var rendererGone by remember { mutableStateOf(false) }
     var fileCallback by remember { mutableStateOf<ValueCallback<Array<Uri>>?>(null) }
     val filePicker =
         rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
@@ -127,7 +129,7 @@ fun WebViewComponent(
     BackHandler(enabled = canBack && error == null) { view?.goBack() }
     Scaffold(contentWindowInsets = appContentInsets) { padding ->
         Box(Modifier.fillMaxSize().padding(padding).consumeWindowInsets(padding).imePadding()) {
-            if (port > 0)
+            if (port > 0 && !rendererGone)
                 key(identity) {
                     AndroidView(
                         factory = { ctx ->
@@ -285,7 +287,7 @@ fun WebViewComponent(
                                             loading = false
                                             error = renderError
                                             state.history = null
-                                            renderer++
+                                            rendererGone = true
                                             return true
                                         }
                                     }
@@ -318,10 +320,17 @@ fun WebViewComponent(
             ) {
                 MaterialLinearProgressIndicator()
             }
-            if (port == 0 || error != null)
+            if (port == 0 || error != null || rendererGone)
                 CoreStateScreen(session, error, onRetry = {
                     error = null
-                    if (session.ready) view?.reload() ?: run { renderer++ } else onRetry()
+                    when {
+                        rendererGone -> {
+                            rendererGone = false
+                            renderer++
+                        }
+                        session.ready -> view?.reload() ?: run { renderer++ }
+                        else -> onRetry()
+                    }
                 }, onOpenLogs = onOpenLogs)
             Box(Modifier.align(Alignment.BottomEnd).padding(12.dp)) {
                 val controlsLabel = stringResource(R.string.web_controls)

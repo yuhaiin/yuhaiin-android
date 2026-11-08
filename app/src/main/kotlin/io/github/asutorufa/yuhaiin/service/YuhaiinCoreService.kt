@@ -164,6 +164,17 @@ class YuhaiinCoreService : android.app.Service() {
 
     private suspend fun handle(action: String) {
         Log.d(tag, "command $action")
+        // As in v1, no VPN request from a background entry point bypasses the disclosure.
+        if (
+            action in setOf(VpnActions.CONNECT, VpnActions.CONNECT_ALWAYS_ON, VpnActions.RECONNECT, VpnActions.RESUME) &&
+                !PrivacyConsent.forContext(this).has(Purpose.VPN)
+        ) {
+            setResumeAt(0)
+            sendMessage(getString(R.string.vpn_disclosure_required))
+            ensureCore()
+            evaluateIdle()
+            return
+        }
         when (action) {
             STOP_CORE -> stopCore(user = true)
             VpnActions.DISCONNECT -> {
@@ -225,6 +236,7 @@ class YuhaiinCoreService : android.app.Service() {
             startForeground(NOTIFICATION_ID, built, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
         else startForeground(NOTIFICATION_ID, built)
         foreground = true
+        notification.posted(status)
     }
 
     // ---- core ----
@@ -337,12 +349,16 @@ class YuhaiinCoreService : android.app.Service() {
             }
         }
         lastError = null
+        // Keep v1's end-of-session summary for the dashboard/widget when the VPN stops.
+        if (!enabled && status.state == State.CONNECTED) saveSummary()
         withContext(Dispatchers.IO) { runCatching { app.setVpnEnabled(enabled) } }
             .onFailure {
                 Log.w(tag, "set VPN $enabled failed", it)
                 sendMessage(it.message ?: it.toString())
             }
     }
+
+    private var connectedGeneration = 0L
 
     private fun onPlatformStatus(platform: PlatformVpnStatus) {
         val next = platform.vpnState()
@@ -354,7 +370,10 @@ class YuhaiinCoreService : android.app.Service() {
                 connectedAt =
                     when {
                         next != State.CONNECTED -> 0
-                        before == State.CONNECTED && status.connectedAt > 0 -> status.connectedAt
+                        // A new interface generation is a new connection (reconnect, rebuild).
+                        before == State.CONNECTED &&
+                            status.connectedAt > 0 &&
+                            platform.generation == connectedGeneration -> status.connectedAt
                         else -> SystemClock.elapsedRealtime()
                     },
                 mtu = applied?.mtu ?: 0,
@@ -364,6 +383,7 @@ class YuhaiinCoreService : android.app.Service() {
                     Constants.ALL_ROUTE
                 },
             )
+        connectedGeneration = if (next == State.CONNECTED) platform.generation else 0
         refreshNetworkStatus()
         if (platform.state == "failed" || platform.state == "revoked") {
             if (platform.lastError.isNotBlank()) sendMessage(platform.lastError)
