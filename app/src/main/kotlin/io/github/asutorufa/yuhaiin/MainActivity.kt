@@ -63,6 +63,7 @@ class MainActivity : AppCompatActivity() {
     val session = MutableStateFlow(CoreSession(state = CoreState.STARTING))
     val navigationAction = MutableStateFlow<String?>(null)
     val vpnDisclosure = MutableStateFlow(false)
+    val appsDisclosure = MutableStateFlow(false)
     private var pendingAction: String? = null
     private var startingSince = 0L
 
@@ -115,9 +116,7 @@ class MainActivity : AppCompatActivity() {
         when (action) {
             VpnActions.CONNECT -> startService()
             VpnActions.DISCONNECT -> vpnBinder?.stop()
-            VpnActions.HOME,
-            VpnActions.DASHBOARD,
-            VpnActions.SETTINGS,
+            // v2: the Web UI is the only screen; HOME and DASHBOARD just open it.
             VpnActions.ROUTES -> navigationAction.value = action
         }
     }
@@ -301,6 +300,23 @@ class MainActivity : AppCompatActivity() {
                 requestNotificationPermission()
             }
             .onFailure { error.value = getString(R.string.privacy_choice_failed) }
+    }
+
+    /** Opened by the Web UI's per-app list; the page reloads the list after consent. */
+    fun requestAppsConsent() {
+        if (PrivacyConsent.forContext(this).has(Purpose.INSTALLED_APPS)) return
+        error.value = null
+        appsDisclosure.value = true
+    }
+
+    fun acceptAppsDisclosure() {
+        runCatching { PrivacyConsent.forContext(this).grant(Purpose.INSTALLED_APPS) }
+            .onSuccess { appsDisclosure.value = false }
+            .onFailure { error.value = getString(R.string.privacy_choice_failed) }
+    }
+
+    fun dismissAppsDisclosure() {
+        appsDisclosure.value = false
     }
 
     fun dismissVpnDisclosure() {

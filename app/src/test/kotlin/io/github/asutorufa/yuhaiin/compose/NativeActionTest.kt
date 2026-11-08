@@ -19,16 +19,18 @@ class NativeActionTest {
     @Test
     fun acceptsAllowlistedActionsFromTheLocalPage() {
         assertEquals(NativeAction.VPN_AUTHORIZE, parse("yuhaiin-android://action/vpn/authorize"))
-        assertEquals(NativeAction.APPS, parse("yuhaiin-android://action/apps"))
         assertEquals(
-            NativeAction.BACKUP,
-            parse("yuhaiin-android://action/backup", "https://127.0.0.1:8080/"),
+            NativeAction.APPS_CONSENT,
+            parse("yuhaiin-android://action/consent/apps", "https://127.0.0.1:8080/"),
         )
     }
 
     @Test
     fun rejectsUnknownActionsAndHosts() {
         assertNull(parse("yuhaiin-android://action/exec"))
+        // Native screens moved to the Web UI; their old links do nothing.
+        assertNull(parse("yuhaiin-android://action/backup"))
+        assertNull(parse("yuhaiin-android://action/settings"))
         assertNull(parse("yuhaiin-android://evil/vpn/authorize"))
         assertNull(parse("intent://action/vpn/authorize"))
     }
