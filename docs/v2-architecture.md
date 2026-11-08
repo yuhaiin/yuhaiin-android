@@ -24,7 +24,7 @@ Main process (UI)                        ":bg" process
 MainActivity                             YuhaiinCoreService (foreground, specialUse)
  ├─ WebView: http://127.0.0.1:<port>      ├─ Go core (App): DNS, FakeIP, routing, nodes,
  ├─ consent / VpnService.prepare()        │   inbounds, HTTP+HTTPS management server,
- ├─ file chooser, native screens          │   Android platform API (/android/v1/)
+ ├─ file chooser, downloads, dialogs     │   Android platform API (/android/v1/)
  └─ Binder client ──── IYuhaiinVpnBinder ─┤
                                           ├─ VpnCoordinator (in-process, no Binder)
                                           │   implements yuhaiin.VpnProvider
@@ -156,13 +156,33 @@ always-on) never show dialogs.
 
 | Area | v2 |
 |---|---|
-| Dashboard, VPN connect/state, core state | Web UI (native dashboard removed from start) |
+| Dashboard, VPN connect/state, core state | Web UI |
 | Routing, DNS/FakeIP, TUN settings, nodes | Web UI (existing core pages) |
-| Android settings (MTU, metered, route profile choice, boot, background, notification speed) | Web UI Android page |
-| Per-app VPN | Web UI (no icons) and native list (icons) |
-| Route profile editor, logs, backup/restore, updates, privacy | **Native**, opened from the Web UI via `NativeAction` |
-| Old native settings screen | Kept as "Android settings" in the WebView menu |
+| Android settings (MTU, metered, route profile choice, boot, background, notification speed, LAN, process lookup, HTTP proxy) | Web UI → Android |
+| Per-app VPN | Web UI → Android (app list after the native installed-apps disclosure) |
+| Route profiles | Web UI → Android → Route profiles |
+| Logs (view, filter, download) | Web UI → Android → Logs |
+| Backup export / preview / restore | Web UI → Android → Backup & restore |
+| Updates (channel, check, download, install) | Web UI → Android → Updates |
+| Privacy policy, consent withdrawal | Web UI → Android → Privacy |
 
-Native screens were not deleted because their Web UI replacements do not exist
-yet. WebView cannot save script-generated blob downloads without a JavaScript
-bridge, so backup export from the Web UI redirects to the native backup screen.
+The native Compose screens for these were removed. What stays native:
+
+* disclosure/consent dialogs, `VpnService.prepare()` and the notification
+  permission request (opened through `NativeAction` from a user gesture);
+* the starting / core-failure screen (Material 3 loading indicator, retry, and a
+  log share that works without the core);
+* the route chooser for widgets, tiles and launcher shortcuts;
+* the system file chooser for restore and DownloadManager for downloads.
+
+Downloads (backup, logs) use one-time links from `POST .../export`: the URL
+holds a random token, works from loopback only, expires after 2 minutes and
+allows 3 fetches (the WebView probes the URL before DownloadManager fetches it).
+Restore uploads the file to the core, which stops, imports and restarts itself
+in `:bg`; the WebView then reconnects with the new session token.
+
+## Known issues
+
+* The system WebView sometimes aborts the UI process with SIGTRAP in its
+  `MemoryInfra` thread (seen on the API 35 emulator). The core in `:bg` keeps
+  running and the UI recovers on the next launch.

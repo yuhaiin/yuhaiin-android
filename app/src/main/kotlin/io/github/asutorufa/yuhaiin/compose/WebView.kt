@@ -43,6 +43,7 @@ import io.github.asutorufa.yuhaiin.BuildConfig
 import io.github.asutorufa.yuhaiin.CoreSession
 import io.github.asutorufa.yuhaiin.R
 import io.github.asutorufa.yuhaiin.service.CoreState
+import kotlinx.coroutines.launch
 import yuhaiin.Yuhaiin
 
 class WebPageState(private val savedState: SavedStateHandle) : ViewModel() {
@@ -383,6 +384,29 @@ private fun CoreStateScreen(
     error: String?,
     onRetry: () -> Unit,
 ) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var confirmLogs by remember { mutableStateOf(false) }
+    if (confirmLogs)
+        AlertDialog(
+            onDismissRequest = { confirmLogs = false },
+            text = { Text(stringResource(R.string.log_share_disclosure)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        confirmLogs = false
+                        scope.launch { runCatching { shareLogs(context) } }
+                    }
+                ) {
+                    Text(stringResource(R.string.log_share_continue))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmLogs = false }) {
+                    Text(stringResource(R.string.privacy_not_now))
+                }
+            },
+        )
     Surface(Modifier.fillMaxSize()) {
         Column(
             Modifier.fillMaxSize().padding(24.dp),
@@ -415,6 +439,10 @@ private fun CoreStateScreen(
                                 if (session.ready) R.string.retry else R.string.start_core
                             )
                         )
+                    }
+                    // The Web UI's log page needs a running core.
+                    OutlinedButton(onClick = { confirmLogs = true }) {
+                        Text(stringResource(R.string.open_logs))
                     }
                 }
         }
