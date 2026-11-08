@@ -93,6 +93,16 @@
             android:exported="false"
             android:process=":bg" />
 
+        <!-- Log sharing from the native startup-failure screen, when no Web UI exists. -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.logcat_fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/logcat_filepaths" />
+        </provider>
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.update_fileprovider"
