@@ -29,6 +29,7 @@ jobs:
       - name: Resolve latest native build
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CORE_BRANCH: v2
         run: bash scripts/resolve-latest-core.sh >> "$GITHUB_ENV"
 
       - uses: actions/download-artifact@v8
@@ -64,7 +65,7 @@ jobs:
           disable-animations: true
           script: |
             test "$(adb shell getconf PAGESIZE | tr -d '\r')" = "${{ matrix.page-size }}"
-            ./gradlew :app:connectedDebugAndroidTest
+            ./gradlew :app:connectedV2DebugAndroidTest
 
       - name: Upload device reports
         if: always()

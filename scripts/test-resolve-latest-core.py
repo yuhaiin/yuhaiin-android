@@ -22,7 +22,7 @@ def workflow(run, conclusion='success', branch='main', path='.github/workflows/g
 
 
 class LatestCoreTest(unittest.TestCase):
-    def resolve(self, artifacts, runs):
+    def resolve(self, artifacts, runs, branch=None):
         with tempfile.TemporaryDirectory(prefix='latest-core-test-') as temp:
             root = Path(temp)
             fixture = root / 'fixture.json'
@@ -48,8 +48,20 @@ raise SystemExit(result.returncode)
             mock.chmod(0o755)
             env = dict(os.environ, PATH=f'{root}:' + os.environ['PATH'],
                        CORE_TEST_FIXTURE=str(fixture))
+            env.pop('CORE_BRANCH', None)
+            if branch:
+                env['CORE_BRANCH'] = branch
             return subprocess.run(['bash', str(SCRIPT)], capture_output=True,
                                   text=True, env=env)
+
+    def test_v2_builds_use_only_v2_core_artifacts(self):
+        artifacts = [artifact(300, 30), artifact(310, 31, branch='v2'), artifact(320, 32)]
+        runs = {'30': workflow(30), '31': workflow(31, branch='v2'), '32': workflow(32)}
+        result = self.resolve(artifacts, runs, branch='v2')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn('CORE_ARTIFACT_ID=310', result.stdout)
+        result = self.resolve([artifact(320, 32)], {'32': workflow(32)}, branch='v2')
+        self.assertNotEqual(result.returncode, 0)
 
     def test_newest_successful_main_aar_despite_stale_run_list(self):
         # Unordered artifacts include an old rerun, a fork branch, expired data,
