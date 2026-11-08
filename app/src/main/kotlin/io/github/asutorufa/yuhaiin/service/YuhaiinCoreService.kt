@@ -127,6 +127,7 @@ class YuhaiinCoreService : android.app.Service() {
         super.onCreate()
         VpnCoordinator.init(application)
         Yuhaiin.setAppCatalog(InstalledAppCatalog)
+        Yuhaiin.setAppIconProvider(InstalledAppCatalog)
         Yuhaiin.setPlatformActions(
             AndroidPlatformActions(
                 this,
