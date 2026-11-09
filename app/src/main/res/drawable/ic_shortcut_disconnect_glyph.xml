@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Launcher shortcut glyph (stop). Fixed colors: launchers draw shortcut icons
+     outside the app theme, so theme attributes such as colorControlNormal do not resolve. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group
+        android:scaleX="1.25"
+        android:scaleY="1.25"
+        android:translateX="24"
+        android:translateY="24">
+        <path
+            android:fillColor="@color/shortcut_icon_glyph"
+            android:pathData="M15,15V33ZM15,36Q13.75,36 12.875,35.125Q12,34.25 12,33V15Q12,13.75 12.875,12.875Q13.75,12 15,12H33Q34.25,12 35.125,12.875Q36,13.75 36,15V33Q36,34.25 35.125,35.125Q34.25,36 33,36ZM15,33H33V15H15Z" />
+    </group>
+</vector>

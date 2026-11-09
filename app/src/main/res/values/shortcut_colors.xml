@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Launcher shortcut icons, matching the Web UI's Olive accent (soft container + accent glyph). -->
+<resources>
+    <color name="shortcut_icon_background">#FFE8EFE3</color>
+    <color name="shortcut_icon_glyph">#FF5B6D4C</color>
+</resources>
