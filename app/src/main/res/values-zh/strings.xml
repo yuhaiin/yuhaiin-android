@@ -182,4 +182,5 @@
     <string name="copied">已复制</string>
     <string name="route_cleared">已清空路由内容</string>
     <string name="undo">撤销</string>
+    <string name="web_restore_bundled">恢复内置网页界面</string>
 </resources>

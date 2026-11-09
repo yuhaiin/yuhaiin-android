@@ -55,6 +55,7 @@ fun WebViewComponent(onBack: () -> Unit, getPort: () -> Int) {
     val state: WebPageState = viewModel()
     val context = LocalContext.current
     val renderError by rememberUpdatedState(stringResource(R.string.web_render_failed))
+    val noListenerError by rememberUpdatedState(stringResource(R.string.web_not_running))
     val scope = rememberCoroutineScope()
     val pageBackground = MaterialTheme.colorScheme.surface.toArgb()
     var view by remember { mutableStateOf<WebView?>(null) }
@@ -64,6 +65,7 @@ fun WebViewComponent(onBack: () -> Unit, getPort: () -> Int) {
     var canBack by remember { mutableStateOf(false) }
     var canForward by remember { mutableStateOf(false) }
     var generation by remember { mutableIntStateOf(0) }
+    var recoveryNavigation by remember { mutableStateOf(false) }
     var port by remember { mutableIntStateOf(0) }
     LaunchedEffect(generation) { port = withContext(Dispatchers.IO) { getPort() } }
     fun updateHistory(web: WebView) {
@@ -89,6 +91,25 @@ fun WebViewComponent(onBack: () -> Unit, getPort: () -> Int) {
                         .toString()
                 )
             } else generation++
+        }
+    }
+    fun openRecovery() {
+        controlsExpanded = false
+        // onRenderProcessGone deliberately sets port=0 and destroys the old
+        // renderer. Always look up the live Core port and create a fresh view.
+        scope.launch {
+            val activePort = withContext(Dispatchers.IO) { getPort() }
+            if (activePort <= 0) {
+                error = noListenerError
+                return@launch
+            }
+            recoveryNavigation = true
+            state.history = null
+            state.url = "http://127.0.0.1:$activePort/__ui_recovery"
+            error = null
+            loading = true
+            port = activePort
+            generation++
         }
     }
     BackHandler(enabled = canBack && error == null) { view?.goBack() }
@@ -154,6 +175,7 @@ fun WebViewComponent(onBack: () -> Unit, getPort: () -> Int) {
                                         override fun onPageFinished(web: WebView, url: String?) {
                                             loading = false
                                             updateHistory(web)
+                                            if (url?.endsWith("/__ui_recovery") == true) recoveryNavigation = false
                                         }
 
                                         override fun doUpdateVisitedHistory(
@@ -224,7 +246,7 @@ fun WebViewComponent(onBack: () -> Unit, getPort: () -> Int) {
                             }
                         },
                         onRelease = { web ->
-                            if (error == null) state.history = Bundle().also(web::saveState)
+                            if (error == null && !recoveryNavigation) state.history = Bundle().also(web::saveState)
                             web.stopLoading()
                             web.webViewClient = WebViewClient()
                             web.webChromeClient = null
@@ -254,6 +276,11 @@ fun WebViewComponent(onBack: () -> Unit, getPort: () -> Int) {
                             style = MaterialTheme.typography.titleMedium,
                         )
                         Button(onClick = ::refresh) { Text(stringResource(R.string.retry)) }
+                        if (error != null || port > 0) {
+                            Button(onClick = ::openRecovery) {
+                                Text(stringResource(R.string.web_restore_bundled))
+                            }
+                        }
                     }
                 }
             Box(Modifier.align(Alignment.BottomEnd).padding(12.dp)) {
@@ -298,6 +325,11 @@ fun WebViewComponent(onBack: () -> Unit, getPort: () -> Int) {
                         },
                     )
                     HorizontalDivider()
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.web_restore_bundled)) },
+                        leadingIcon = { Icon(Icons.Default.Refresh, null) },
+                        onClick = ::openRecovery,
+                    )
                     DropdownMenuItem(
                         text = { Text(stringResource(R.string.web_close)) },
                         leadingIcon = { Icon(Icons.Default.Close, null) },

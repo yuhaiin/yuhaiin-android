@@ -182,4 +182,5 @@
     <string name="copied">コピーしました</string>
     <string name="route_cleared">ルートの内容をクリアしました</string>
     <string name="undo">元に戻す</string>
+    <string name="web_restore_bundled">内蔵 Web UI に復元</string>
 </resources>
