@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="shortcut_icon_background">#FF3E4D33</color>
+    <color name="shortcut_icon_glyph">#FFD6E6C2</color>
+</resources>
