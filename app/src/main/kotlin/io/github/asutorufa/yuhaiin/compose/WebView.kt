@@ -91,6 +91,19 @@ fun WebViewComponent(onBack: () -> Unit, getPort: () -> Int) {
             } else generation++
         }
     }
+    fun openRecovery() {
+        controlsExpanded = false
+        val recoveryUrl = "http://127.0.0.1:${if (port > 0) port else 1}/__ui_recovery"
+        val current = view
+        if (current != null && port > 0) {
+            error = null
+            current.loadUrl(recoveryUrl)
+        } else {
+            state.history = null
+            state.url = recoveryUrl
+            generation++
+        }
+    }
     BackHandler(enabled = canBack && error == null) { view?.goBack() }
     Scaffold(contentWindowInsets = appContentInsets) { padding ->
         // Only system insets reserve space. Native browser controls float over the page.
@@ -254,6 +267,11 @@ fun WebViewComponent(onBack: () -> Unit, getPort: () -> Int) {
                             style = MaterialTheme.typography.titleMedium,
                         )
                         Button(onClick = ::refresh) { Text(stringResource(R.string.retry)) }
+                        if (port > 0) {
+                            Button(onClick = ::openRecovery) {
+                                Text(stringResource(R.string.web_restore_bundled))
+                            }
+                        }
                     }
                 }
             Box(Modifier.align(Alignment.BottomEnd).padding(12.dp)) {
@@ -298,6 +316,11 @@ fun WebViewComponent(onBack: () -> Unit, getPort: () -> Int) {
                         },
                     )
                     HorizontalDivider()
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.web_restore_bundled)) },
+                        leadingIcon = { Icon(Icons.Default.Refresh, null) },
+                        onClick = ::openRecovery,
+                    )
                     DropdownMenuItem(
                         text = { Text(stringResource(R.string.web_close)) },
                         leadingIcon = { Icon(Icons.Default.Close, null) },
