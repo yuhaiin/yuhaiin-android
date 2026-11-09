@@ -1,101 +1,54 @@
 package io.github.asutorufa.yuhaiin.compose
 
-import android.view.LayoutInflater
-import android.view.View
-import android.widget.FrameLayout
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.progressSemantics
+import androidx.compose.material3.CircularWavyProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.viewinterop.AndroidView
-import com.google.android.material.loadingindicator.LoadingIndicator
-import com.google.android.material.progressindicator.CircularProgressIndicator
-import com.google.android.material.progressindicator.LinearProgressIndicator
-import io.github.asutorufa.yuhaiin.R
-import kotlin.math.roundToInt
 
-// Use the official Expressive widgets until these APIs reach stable Compose Material 3.
+/** Wavy bar for loading with an optional known [progress] in 0..1; indeterminate when null. */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-fun MaterialLoadingIndicator(
-    modifier: Modifier = Modifier,
-    color: Color = MaterialTheme.colorScheme.primary,
-) {
-    AndroidView(
-        factory = { context ->
-            LoadingIndicator(context).apply {
-                importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
-            }
-        },
-        modifier = modifier.size(48.dp).progressSemantics(),
-        update = { it.setIndicatorColor(color.toArgb()) },
-        onRelease = {
-            it.drawable.setVisible(false, false)
-            it.drawable.callback = null
-        },
-    )
-}
-
-@Composable
-fun MaterialLinearProgressIndicator(
-    modifier: Modifier = Modifier,
-    progress: Float? = null,
-) {
-    val fraction = progress?.coerceIn(0f, 1f)
+fun MaterialLinearProgressIndicator(modifier: Modifier = Modifier, progress: Float? = null) {
     val colors = MaterialTheme.colorScheme
-    val semantics =
-        if (fraction == null) Modifier.progressSemantics() else Modifier.progressSemantics(fraction)
-    AndroidView(
-        factory = { context ->
-            (LayoutInflater.from(context)
-                    .inflate(R.layout.expressive_linear_progress, FrameLayout(context), false)
-                    as LinearProgressIndicator)
-                .apply {
-                    max = 10_000
-                    isIndeterminate = fraction == null
-                    importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
-                }
-        },
-        modifier = modifier.fillMaxWidth().then(semantics),
-        update = { view ->
-            view.setIndicatorColor(colors.primary.toArgb())
-            view.trackColor = colors.primaryContainer.toArgb()
-            // Match the Compose Expressive motion: move one wavelength per second.
-            view.waveSpeed =
-                if (fraction == null) view.wavelengthIndeterminate else view.wavelengthDeterminate
-            if (fraction == null) {
-                if (!view.isIndeterminate) view.isIndeterminate = true
-            } else {
-                val target = (fraction * view.max).roundToInt()
-                if (view.isIndeterminate || view.progress != target) {
-                    view.setProgressCompat(target, true)
-                }
-            }
-        },
-        onRelease = { it.hide() },
-    )
+    val bar = modifier.fillMaxWidth()
+    if (progress == null)
+        LinearWavyProgressIndicator(
+            modifier = bar,
+            color = colors.primary,
+            trackColor = colors.primaryContainer,
+        )
+    else
+        LinearWavyProgressIndicator(
+            progress = { progress.coerceIn(0f, 1f) },
+            modifier = bar,
+            color = colors.primary,
+            trackColor = colors.primaryContainer,
+        )
 }
 
-/** Large wavy circular indicator for work with no known progress, e.g. starting the core. */
+/** Large wavy ring for work with no known progress, e.g. starting the core. */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun MaterialCircularProgressIndicator(modifier: Modifier = Modifier) {
     val colors = MaterialTheme.colorScheme
-    AndroidView(
-        factory = { context ->
-            (LayoutInflater.from(context)
-                    .inflate(R.layout.expressive_circular_progress, FrameLayout(context), false)
-                    as CircularProgressIndicator)
-                .apply { importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO }
-        },
-        modifier = modifier.progressSemantics(),
-        update = { view ->
-            view.setIndicatorColor(colors.primary.toArgb())
-            view.trackColor = colors.primaryContainer.toArgb()
-        },
-        onRelease = { it.hide() },
+    val density = LocalDensity.current
+    val stroke = remember(density) { Stroke(with(density) { 14.dp.toPx() }, cap = StrokeCap.Round) }
+    CircularWavyProgressIndicator(
+        modifier = modifier.size(240.dp).progressSemantics(),
+        color = colors.primary,
+        trackColor = colors.primaryContainer,
+        stroke = stroke,
+        trackStroke = stroke,
+        wavelength = 44.dp,
     )
 }
