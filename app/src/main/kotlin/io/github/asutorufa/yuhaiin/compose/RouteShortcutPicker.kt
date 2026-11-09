@@ -43,3 +43,7 @@ fun RouteShortcutPicker(activity: MainActivity, action: String?) {
         },
     )
 }
+
+@Composable
+fun routeLabel(id: String): String =
+    io.github.asutorufa.yuhaiin.service.routeLabelResource(id)?.let { stringResource(it) } ?: id

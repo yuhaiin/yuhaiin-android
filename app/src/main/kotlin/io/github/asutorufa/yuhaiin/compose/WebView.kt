@@ -17,22 +17,13 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -43,6 +34,7 @@ import io.github.asutorufa.yuhaiin.BuildConfig
 import io.github.asutorufa.yuhaiin.CoreSession
 import io.github.asutorufa.yuhaiin.R
 import io.github.asutorufa.yuhaiin.service.CoreState
+import kotlinx.coroutines.launch
 import yuhaiin.Yuhaiin
 
 class WebPageState(private val savedState: SavedStateHandle) : ViewModel() {
@@ -93,7 +85,6 @@ private fun installPlatformSession(port: Int, token: String) {
 fun WebViewComponent(
     session: CoreSession,
     onRetry: () -> Unit,
-    onOpenLogs: () -> Unit,
     onNativeAction: (NativeAction) -> Unit,
 ) {
     val state: WebPageState = viewModel()
@@ -102,11 +93,9 @@ fun WebViewComponent(
     val pageBackground = MaterialTheme.colorScheme.surface.toArgb()
     val nativeAction by rememberUpdatedState(onNativeAction)
     var view by remember { mutableStateOf<WebView?>(null) }
-    var controlsExpanded by rememberSaveable { mutableStateOf(false) }
     var loading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
     var canBack by remember { mutableStateOf(false) }
-    var canForward by remember { mutableStateOf(false) }
     var renderer by remember { mutableIntStateOf(0) }
     // A dead renderer is replaced only on an explicit retry, never in a loop.
     var rendererGone by remember { mutableStateOf(false) }
@@ -122,12 +111,13 @@ fun WebViewComponent(
 
     fun updateHistory(web: WebView) {
         canBack = web.canGoBack()
-        canForward = web.canGoForward()
         if (NativeAction.isLocalPage(web.url, port)) state.url = web.url
     }
 
     BackHandler(enabled = canBack && error == null) { view?.goBack() }
-    Scaffold(contentWindowInsets = appContentInsets) { padding ->
+    // The Web UI draws under the status and navigation bars and pads itself with
+    // env(safe-area-inset-top/bottom); only the sides (cutout) are kept native.
+    Scaffold(contentWindowInsets = appContentInsets.only(WindowInsetsSides.Horizontal)) { padding ->
         Box(Modifier.fillMaxSize().padding(padding).consumeWindowInsets(padding).imePadding()) {
             if (port > 0 && !rendererGone)
                 key(identity) {
@@ -152,12 +142,9 @@ fun WebViewComponent(
                                 // No addJavascriptInterface: device functions go through the
                                 // authenticated platform API or the fixed NativeAction links.
                                 setDownloadListener { url, userAgent, disposition, mime, _ ->
-                                    if (url.startsWith("blob:")) {
-                                        // WebView cannot save script-generated blobs without a
-                                        // JavaScript bridge; the native screen exports backups.
-                                        nativeAction(NativeAction.BACKUP)
-                                        return@setDownloadListener
-                                    }
+                                    // Script-generated blobs cannot be saved without a
+                                    // JavaScript bridge; the Web UI uses one-time links.
+                                    if (url.startsWith("blob:")) return@setDownloadListener
                                     if (!NativeAction.isLocalPage(url, port)) return@setDownloadListener
                                     runCatching {
                                             val name = URLUtil.guessFileName(url, disposition, mime)
@@ -331,60 +318,7 @@ fun WebViewComponent(
                         session.ready -> view?.reload() ?: run { renderer++ }
                         else -> onRetry()
                     }
-                }, onOpenLogs = onOpenLogs)
-            Box(Modifier.align(Alignment.BottomEnd).padding(12.dp)) {
-                val controlsLabel = stringResource(R.string.web_controls)
-                SmallFloatingActionButton(
-                    onClick = { controlsExpanded = !controlsExpanded },
-                    modifier =
-                        Modifier.sizeIn(minWidth = 48.dp, minHeight = 48.dp).semantics {
-                            contentDescription = controlsLabel
-                        },
-                ) {
-                    Icon(Icons.Default.MoreVert, contentDescription = null)
-                }
-                DropdownMenu(
-                    expanded = controlsExpanded,
-                    onDismissRequest = { controlsExpanded = false },
-                ) {
-                    DropdownMenuItem(
-                        text = { Text(stringResource(R.string.web_back)) },
-                        leadingIcon = { Icon(Icons.AutoMirrored.Filled.ArrowBack, null) },
-                        enabled = canBack,
-                        onClick = {
-                            controlsExpanded = false
-                            view?.goBack()
-                        },
-                    )
-                    DropdownMenuItem(
-                        text = { Text(stringResource(R.string.web_forward)) },
-                        leadingIcon = { Icon(Icons.AutoMirrored.Filled.ArrowForward, null) },
-                        enabled = canForward,
-                        onClick = {
-                            controlsExpanded = false
-                            view?.goForward()
-                        },
-                    )
-                    DropdownMenuItem(
-                        text = { Text(stringResource(R.string.refresh)) },
-                        leadingIcon = { Icon(Icons.Default.Refresh, null) },
-                        onClick = {
-                            controlsExpanded = false
-                            error = null
-                            if (view != null) view?.reload() else onRetry()
-                        },
-                    )
-                    HorizontalDivider()
-                    DropdownMenuItem(
-                        text = { Text(stringResource(R.string.native_settings)) },
-                        leadingIcon = { Icon(Icons.Default.Settings, null) },
-                        onClick = {
-                            controlsExpanded = false
-                            nativeAction(NativeAction.NATIVE_SETTINGS)
-                        },
-                    )
-                }
-            }
+                })
         }
     }
 }
@@ -395,8 +329,30 @@ private fun CoreStateScreen(
     session: CoreSession,
     error: String?,
     onRetry: () -> Unit,
-    onOpenLogs: () -> Unit,
 ) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var confirmLogs by remember { mutableStateOf(false) }
+    if (confirmLogs)
+        AlertDialog(
+            onDismissRequest = { confirmLogs = false },
+            text = { Text(stringResource(R.string.log_share_disclosure)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        confirmLogs = false
+                        scope.launch { runCatching { shareLogs(context) } }
+                    }
+                ) {
+                    Text(stringResource(R.string.log_share_continue))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmLogs = false }) {
+                    Text(stringResource(R.string.privacy_not_now))
+                }
+            },
+        )
     Surface(Modifier.fillMaxSize()) {
         Column(
             Modifier.fillMaxSize().padding(24.dp),
@@ -404,17 +360,28 @@ private fun CoreStateScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             val starting = error == null && session.state == CoreState.STARTING
-            if (starting) MaterialLoadingIndicator()
-            Text(
-                when {
-                    error != null -> error
-                    starting -> stringResource(R.string.core_starting)
-                    session.state == CoreState.FAILED -> stringResource(R.string.core_start_failed)
-                    else -> stringResource(R.string.core_stopped_hint)
-                },
-                style = MaterialTheme.typography.titleMedium,
-                textAlign = TextAlign.Center,
-            )
+            if (starting)
+                Box(contentAlignment = Alignment.Center) {
+                    MaterialCircularProgressIndicator()
+                    // The wavy ring is 240dp with ~19dp of stroke and wave on each side.
+                    Text(
+                        stringResource(R.string.core_starting),
+                        modifier = Modifier.width(150.dp),
+                        style = MaterialTheme.typography.titleMedium,
+                        textAlign = TextAlign.Center,
+                    )
+                }
+            else
+                Text(
+                    when {
+                        error != null -> error
+                        session.state == CoreState.FAILED ->
+                            stringResource(R.string.core_start_failed)
+                        else -> stringResource(R.string.core_stopped_hint)
+                    },
+                    style = MaterialTheme.typography.titleMedium,
+                    textAlign = TextAlign.Center,
+                )
             if (error == null && session.error.isNotBlank())
                 Text(
                     session.error,
@@ -430,7 +397,10 @@ private fun CoreStateScreen(
                             )
                         )
                     }
-                    OutlinedButton(onClick = onOpenLogs) { Text(stringResource(R.string.open_logs)) }
+                    // The Web UI's log page needs a running core.
+                    OutlinedButton(onClick = { confirmLogs = true }) {
+                        Text(stringResource(R.string.open_logs))
+                    }
                 }
         }
     }

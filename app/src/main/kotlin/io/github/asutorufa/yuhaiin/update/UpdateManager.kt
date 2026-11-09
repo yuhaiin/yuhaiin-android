@@ -522,19 +522,14 @@ class UpdateManager(context: Context) {
         }
     }
 
+    // In ":bg" (v2) the core runs in this process; the UI process goes through the Binder.
     private fun proxyGet(url: String): ByteArray =
-        proxyBinder?.proxyGet(url)
-            ?: throw IllegalStateException(
-                "The proxy is not running. Start the proxy and try again."
-            )
+        proxyBinder?.proxyGet(url) ?: yuhaiin.Yuhaiin.proxyGet(url)
 
     private fun proxyDownload(url: String, destination: String) {
-        val binder =
-            proxyBinder
-                ?: throw IllegalStateException(
-                    "The proxy is not running. Start the proxy and try again."
-                )
-        binder.proxyDownload(url, destination)
+        val binder = proxyBinder
+        if (binder != null) binder.proxyDownload(url, destination)
+        else yuhaiin.Yuhaiin.proxyDownload(url, destination)
     }
 
     private fun cleanupOldDownloads() {

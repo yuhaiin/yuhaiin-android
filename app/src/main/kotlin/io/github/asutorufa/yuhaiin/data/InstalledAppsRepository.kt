@@ -50,6 +50,8 @@ class InstalledAppsRepository(
             }
         }
 
+    fun hasConsent() = consent.has(Purpose.INSTALLED_APPS)
+
     suspend fun icon(packageName: String): Bitmap? =
         withContext(Dispatchers.IO) {
             if (!consent.has(Purpose.INSTALLED_APPS)) return@withContext null

@@ -127,6 +127,26 @@ class YuhaiinCoreService : android.app.Service() {
         super.onCreate()
         VpnCoordinator.init(application)
         Yuhaiin.setAppCatalog(InstalledAppCatalog)
+        Yuhaiin.setAppIconProvider(InstalledAppCatalog)
+        Yuhaiin.setPlatformActions(
+            AndroidPlatformActions(
+                this,
+                object : AndroidPlatformActions.CoreControl {
+                    override fun restart(between: (suspend () -> Unit)?) {
+                        scope.launch { commands.withLock { restartCore(between) } }
+                    }
+
+                    override fun disableVpn() {
+                        scope.launch {
+                            commands.withLock {
+                                setResumeAt(0)
+                                if (app.running()) setVpn(false)
+                            }
+                        }
+                    }
+                },
+            )
+        )
         val sameBoot = pausePreferences.getInt("bootCount", -1) == bootCount()
         status =
             status.copy(
@@ -304,6 +324,29 @@ class YuhaiinCoreService : android.app.Service() {
         if (foreground) stopForeground(STOP_FOREGROUND_REMOVE)
         foreground = false
         stopSelf()
+    }
+
+    /**
+     * Stops and starts the core in place (the service and its notification stay), running
+     * [between] while the core is down, e.g. a backup restore that needs the configuration lock.
+     * The persisted TUN inbound brings the VPN back.
+     */
+    private suspend fun restartCore(between: (suspend () -> Unit)?) {
+        if (app.running()) {
+            setCore(CoreState.STOPPING)
+            saveSummary()
+            coreEpoch++
+            withContext(Dispatchers.IO) { runCatching { app.stop() } }
+                .onFailure { Log.w(tag, "stop core for restart", it) }
+            VpnCoordinator.releaseAll()
+        }
+        if (between != null)
+            withContext(Dispatchers.IO) { runCatching { between() } }
+                .onFailure {
+                    Log.w(tag, "work while the core was stopped failed", it)
+                    sendMessage(it.message ?: it.toString())
+                }
+        ensureCore()
     }
 
     /** The core exited without a stop request (crash or fatal listener error). */

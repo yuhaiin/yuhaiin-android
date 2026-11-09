@@ -3,19 +3,14 @@ package io.github.asutorufa.yuhaiin.compose
 import java.net.URI
 
 /**
- * The fixed set of native screens and OS dialogs the Web UI may ask for. There is no JavaScript
- * bridge: the page navigates to `yuhaiin-android://action/<path>` from a user gesture, and the
- * WebView client accepts it only for a main-frame navigation of the local management page.
+ * The fixed set of OS dialogs the Web UI may ask for. There is no JavaScript bridge: the page
+ * navigates to `yuhaiin-android://action/<path>` from a user gesture, and the WebView client
+ * accepts it only for a main-frame navigation of the local management page. Consent is never
+ * granted by the page itself; these open the in-app disclosures and the Android VPN dialog.
  */
 enum class NativeAction(val path: String) {
     VPN_AUTHORIZE("vpn/authorize"),
-    NATIVE_SETTINGS("settings"),
-    APPS("apps"),
-    ROUTES("routes"),
-    LOGS("logs"),
-    BACKUP("backup"),
-    UPDATE("update"),
-    PRIVACY("privacy");
+    APPS_CONSENT("consent/apps");
 
     companion object {
         const val SCHEME = "yuhaiin-android"

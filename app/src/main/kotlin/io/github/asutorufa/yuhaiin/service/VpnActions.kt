@@ -13,8 +13,6 @@ object VpnActions {
     const val HOME = "io.github.asutorufa.yuhaiin.HOME"
     const val DASHBOARD = "io.github.asutorufa.yuhaiin.DASHBOARD"
     const val ROUTES = "io.github.asutorufa.yuhaiin.ROUTES"
-    /** Opens the native Android settings kept next to the Web UI. */
-    const val SETTINGS = "io.github.asutorufa.yuhaiin.SETTINGS"
     const val REFRESH_MONITORING = "io.github.asutorufa.yuhaiin.REFRESH_MONITORING"
     const val RESUME = "io.github.asutorufa.yuhaiin.RESUME"
     /** Always-on VPN start forwarded by [YuhaiinVpnService]. */

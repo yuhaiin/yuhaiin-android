@@ -168,7 +168,8 @@ dependencies {
     implementation("androidx.compose.ui:ui-text")
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
-    implementation("androidx.compose.material3:material3")
+    // The BOM pins 1.4.0; the wavy progress indicators ship in 1.5.0.
+    implementation("androidx.compose.material3:material3:1.5.0-rc01")
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.foundation:foundation")
     debugImplementation("androidx.compose.ui:ui-tooling")
