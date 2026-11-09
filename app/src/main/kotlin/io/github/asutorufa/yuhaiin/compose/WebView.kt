@@ -115,7 +115,9 @@ fun WebViewComponent(
     }
 
     BackHandler(enabled = canBack && error == null) { view?.goBack() }
-    Scaffold(contentWindowInsets = appContentInsets) { padding ->
+    // The Web UI draws under the status and navigation bars and pads itself with
+    // env(safe-area-inset-top/bottom); only the sides (cutout) are kept native.
+    Scaffold(contentWindowInsets = appContentInsets.only(WindowInsetsSides.Horizontal)) { padding ->
         Box(Modifier.fillMaxSize().padding(padding).consumeWindowInsets(padding).imePadding()) {
             if (port > 0 && !rendererGone)
                 key(identity) {
@@ -358,17 +360,28 @@ private fun CoreStateScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             val starting = error == null && session.state == CoreState.STARTING
-            if (starting) MaterialLoadingIndicator()
-            Text(
-                when {
-                    error != null -> error
-                    starting -> stringResource(R.string.core_starting)
-                    session.state == CoreState.FAILED -> stringResource(R.string.core_start_failed)
-                    else -> stringResource(R.string.core_stopped_hint)
-                },
-                style = MaterialTheme.typography.titleMedium,
-                textAlign = TextAlign.Center,
-            )
+            if (starting)
+                Box(contentAlignment = Alignment.Center) {
+                    MaterialCircularProgressIndicator()
+                    // The wavy ring is 240dp with ~19dp of stroke and wave on each side.
+                    Text(
+                        stringResource(R.string.core_starting),
+                        modifier = Modifier.width(150.dp),
+                        style = MaterialTheme.typography.titleMedium,
+                        textAlign = TextAlign.Center,
+                    )
+                }
+            else
+                Text(
+                    when {
+                        error != null -> error
+                        session.state == CoreState.FAILED ->
+                            stringResource(R.string.core_start_failed)
+                        else -> stringResource(R.string.core_stopped_hint)
+                    },
+                    style = MaterialTheme.typography.titleMedium,
+                    textAlign = TextAlign.Center,
+                )
             if (error == null && session.error.isNotBlank())
                 Text(
                     session.error,

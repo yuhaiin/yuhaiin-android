@@ -14,6 +14,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.google.android.material.loadingindicator.LoadingIndicator
+import com.google.android.material.progressindicator.CircularProgressIndicator
 import com.google.android.material.progressindicator.LinearProgressIndicator
 import io.github.asutorufa.yuhaiin.R
 import kotlin.math.roundToInt
@@ -74,6 +75,26 @@ fun MaterialLinearProgressIndicator(
                     view.setProgressCompat(target, true)
                 }
             }
+        },
+        onRelease = { it.hide() },
+    )
+}
+
+/** Large wavy circular indicator for work with no known progress, e.g. starting the core. */
+@Composable
+fun MaterialCircularProgressIndicator(modifier: Modifier = Modifier) {
+    val colors = MaterialTheme.colorScheme
+    AndroidView(
+        factory = { context ->
+            (LayoutInflater.from(context)
+                    .inflate(R.layout.expressive_circular_progress, FrameLayout(context), false)
+                    as CircularProgressIndicator)
+                .apply { importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO }
+        },
+        modifier = modifier.progressSemantics(),
+        update = { view ->
+            view.setIndicatorColor(colors.primary.toArgb())
+            view.trackColor = colors.primaryContainer.toArgb()
         },
         onRelease = { it.hide() },
     )
