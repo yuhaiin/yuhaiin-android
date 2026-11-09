@@ -55,6 +55,7 @@ fun WebViewComponent(onBack: () -> Unit, getPort: () -> Int) {
     val state: WebPageState = viewModel()
     val context = LocalContext.current
     val renderError by rememberUpdatedState(stringResource(R.string.web_render_failed))
+    val noListenerError by rememberUpdatedState(stringResource(R.string.web_not_running))
     val scope = rememberCoroutineScope()
     val pageBackground = MaterialTheme.colorScheme.surface.toArgb()
     var view by remember { mutableStateOf<WebView?>(null) }
@@ -99,7 +100,7 @@ fun WebViewComponent(onBack: () -> Unit, getPort: () -> Int) {
         scope.launch {
             val activePort = withContext(Dispatchers.IO) { getPort() }
             if (activePort <= 0) {
-                error = context.getString(R.string.web_not_running)
+                error = noListenerError
                 return@launch
             }
             recoveryNavigation = true
