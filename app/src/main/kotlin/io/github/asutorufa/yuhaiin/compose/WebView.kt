@@ -64,6 +64,7 @@ fun WebViewComponent(onBack: () -> Unit, getPort: () -> Int) {
     var canBack by remember { mutableStateOf(false) }
     var canForward by remember { mutableStateOf(false) }
     var generation by remember { mutableIntStateOf(0) }
+    var recoveryNavigation by remember { mutableStateOf(false) }
     var port by remember { mutableIntStateOf(0) }
     LaunchedEffect(generation) { port = withContext(Dispatchers.IO) { getPort() } }
     fun updateHistory(web: WebView) {
@@ -93,14 +94,20 @@ fun WebViewComponent(onBack: () -> Unit, getPort: () -> Int) {
     }
     fun openRecovery() {
         controlsExpanded = false
-        val recoveryUrl = "http://127.0.0.1:${if (port > 0) port else 1}/__ui_recovery"
-        val current = view
-        if (current != null && port > 0) {
-            error = null
-            current.loadUrl(recoveryUrl)
-        } else {
+        // onRenderProcessGone deliberately sets port=0 and destroys the old
+        // renderer. Always look up the live Core port and create a fresh view.
+        scope.launch {
+            val activePort = withContext(Dispatchers.IO) { getPort() }
+            if (activePort <= 0) {
+                error = context.getString(R.string.web_not_running)
+                return@launch
+            }
+            recoveryNavigation = true
             state.history = null
-            state.url = recoveryUrl
+            state.url = "http://127.0.0.1:$activePort/__ui_recovery"
+            error = null
+            loading = true
+            port = activePort
             generation++
         }
     }
@@ -167,6 +174,7 @@ fun WebViewComponent(onBack: () -> Unit, getPort: () -> Int) {
                                         override fun onPageFinished(web: WebView, url: String?) {
                                             loading = false
                                             updateHistory(web)
+                                            if (url?.endsWith("/__ui_recovery") == true) recoveryNavigation = false
                                         }
 
                                         override fun doUpdateVisitedHistory(
@@ -237,7 +245,7 @@ fun WebViewComponent(onBack: () -> Unit, getPort: () -> Int) {
                             }
                         },
                         onRelease = { web ->
-                            if (error == null) state.history = Bundle().also(web::saveState)
+                            if (error == null && !recoveryNavigation) state.history = Bundle().also(web::saveState)
                             web.stopLoading()
                             web.webViewClient = WebViewClient()
                             web.webChromeClient = null
@@ -267,7 +275,7 @@ fun WebViewComponent(onBack: () -> Unit, getPort: () -> Int) {
                             style = MaterialTheme.typography.titleMedium,
                         )
                         Button(onClick = ::refresh) { Text(stringResource(R.string.retry)) }
-                        if (port > 0) {
+                        if (error != null || port > 0) {
                             Button(onClick = ::openRecovery) {
                                 Text(stringResource(R.string.web_restore_bundled))
                             }
