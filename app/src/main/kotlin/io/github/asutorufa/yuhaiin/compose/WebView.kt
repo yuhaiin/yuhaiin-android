@@ -99,6 +99,8 @@ fun WebViewComponent(
     var renderer by remember { mutableIntStateOf(0) }
     // A dead renderer is replaced only on an explicit retry, never in a loop.
     var rendererGone by remember { mutableStateOf(false) }
+    // True while the Core-hosted recovery page loads; its history must not replace the app's.
+    var recoveryNavigation by remember { mutableStateOf(false) }
     var fileCallback by remember { mutableStateOf<ValueCallback<Array<Uri>>?>(null) }
     val filePicker =
         rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
@@ -112,6 +114,19 @@ fun WebViewComponent(
     fun updateHistory(web: WebView) {
         canBack = web.canGoBack()
         if (NativeAction.isLocalPage(web.url, port)) state.url = web.url
+    }
+
+    // Opens the Core's bundled Web UI so a broken OTA frontend can be repaired or reverted.
+    // A fresh WebView is created for the live port; the old history is not carried over.
+    fun openRecovery() {
+        if (port <= 0) return
+        recoveryNavigation = true
+        state.history = null
+        state.url = "http://127.0.0.1:$port/__ui_recovery"
+        error = null
+        rendererGone = false
+        loading = true
+        renderer++
     }
 
     BackHandler(enabled = canBack && error == null) { view?.goBack() }
@@ -234,6 +249,7 @@ fun WebViewComponent(
                                         override fun onPageFinished(web: WebView, url: String?) {
                                             loading = false
                                             updateHistory(web)
+                                            if (url?.endsWith("/__ui_recovery") == true) recoveryNavigation = false
                                         }
 
                                         override fun doUpdateVisitedHistory(
@@ -289,7 +305,7 @@ fun WebViewComponent(
                             }
                         },
                         onRelease = { web ->
-                            if (error == null) state.history = Bundle().also(web::saveState)
+                            if (error == null && !recoveryNavigation) state.history = Bundle().also(web::saveState)
                             web.stopLoading()
                             web.webViewClient = WebViewClient()
                             web.webChromeClient = null
@@ -308,17 +324,23 @@ fun WebViewComponent(
                 MaterialLinearProgressIndicator()
             }
             if (port == 0 || error != null || rendererGone)
-                CoreStateScreen(session, error, onRetry = {
-                    error = null
-                    when {
-                        rendererGone -> {
-                            rendererGone = false
-                            renderer++
+                CoreStateScreen(
+                    session,
+                    error,
+                    onRetry = {
+                        error = null
+                        when {
+                            rendererGone -> {
+                                rendererGone = false
+                                renderer++
+                            }
+                            session.ready -> view?.reload() ?: run { renderer++ }
+                            else -> onRetry()
                         }
-                        session.ready -> view?.reload() ?: run { renderer++ }
-                        else -> onRetry()
-                    }
-                })
+                    },
+                    // Only meaningful once the core listens; without it there is nothing to host.
+                    onRecovery = if (port > 0) ::openRecovery else null,
+                )
         }
     }
 }
@@ -329,6 +351,7 @@ private fun CoreStateScreen(
     session: CoreSession,
     error: String?,
     onRetry: () -> Unit,
+    onRecovery: (() -> Unit)?,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -401,6 +424,10 @@ private fun CoreStateScreen(
                     OutlinedButton(onClick = { confirmLogs = true }) {
                         Text(stringResource(R.string.open_logs))
                     }
+                }
+            if (!starting && onRecovery != null)
+                TextButton(onClick = onRecovery) {
+                    Text(stringResource(R.string.web_restore_bundled))
                 }
         }
     }
