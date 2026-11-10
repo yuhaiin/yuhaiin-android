@@ -9,6 +9,8 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <!-- Haptic feedback requested by the Web UI (navigator.vibrate); a normal permission. -->
+    <uses-permission android:name="android.permission.VIBRATE" />
     <!-- Per-app VPN routing must include apps without launcher activities. -->
     <uses-permission
         android:name="android.permission.QUERY_ALL_PACKAGES"
@@ -40,6 +42,18 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- v2: the Go core, management server and notification. Same process as the
+             VpnService so the TUN descriptor never crosses Binder. -->
+        <service
+            android:name=".service.YuhaiinCoreService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse"
+            android:process=":bg">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="proxy core and local management server" />
+        </service>
 
         <service
             android:name=".service.YuhaiinVpnService"
@@ -75,10 +89,13 @@
             </intent-filter>
         </receiver>
 
+        <!-- v2: software updates run next to the core, which downloads them. -->
         <receiver
             android:name=".update.UpdateInstallReceiver"
-            android:exported="false" />
+            android:exported="false"
+            android:process=":bg" />
 
+        <!-- Log sharing from the native startup-failure screen, when no Web UI exists. -->
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.logcat_fileprovider"
@@ -96,11 +113,6 @@
             <meta-data
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/update_filepaths" />
-        </provider>
-        <provider android:name=".backup.BackupFileProvider"
-            android:authorities="${applicationId}.backup_fileprovider"
-            android:exported="false" android:grantUriPermissions="true">
-            <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/backup_filepaths" />
         </provider>
         <provider
             android:name=".documentprovider.YuhaiinDocumentProvider"

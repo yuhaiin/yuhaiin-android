@@ -14,7 +14,9 @@ import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.Until
+import io.github.asutorufa.yuhaiin.compose.NativeAction
 import io.github.asutorufa.yuhaiin.compose.WebViewComponent
+import io.github.asutorufa.yuhaiin.service.CoreState
 import java.net.ServerSocket
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
@@ -30,6 +32,8 @@ import org.junit.Test
 class DashboardLayoutTest {
     @get:Rule val compose = createAndroidComposeRule<ComponentActivity>()
     private val server = ServerSocket(0)
+
+    private fun session() = CoreSession(CoreState.RUNNING, server.localPort, "test-token")
     private val requests = AtomicInteger()
 
     init {
@@ -84,21 +88,6 @@ class DashboardLayoutTest {
         compose.waitForIdle()
     }
 
-    private fun openControls() {
-        compose.onNodeWithContentDescription(label(R.string.web_controls)).performClick()
-    }
-
-    private fun navigateHistory(id: Int) {
-        // WebView's visited-history and page-finished callbacks follow the URL change.
-        compose.waitUntil(5000) {
-            compose
-                .onAllNodes(hasText(label(id)) and isEnabled())
-                .fetchSemanticsNodes()
-                .isNotEmpty()
-        }
-        compose.onNodeWithText(label(id)).performClick()
-    }
-
     @Test
     fun dashboardUsesAllSpaceBetweenSystemBars() {
         compose.runOnUiThread {
@@ -108,7 +97,7 @@ class DashboardLayoutTest {
             compose.activity.enableEdgeToEdge()
         }
         compose.setContent {
-            MaterialTheme { WebViewComponent(onBack = {}, getPort = { server.localPort }) }
+            MaterialTheme { WebViewComponent(session(), onRetry = {}) {} }
         }
         val pageHeight = AtomicReference(0.0)
         compose.waitUntil(10_000) {
@@ -142,8 +131,7 @@ class DashboardLayoutTest {
     }
 
     @Test
-    fun floatingControlsNavigateRefreshAndDismissWithoutResizingPage() {
-        val closed = AtomicBoolean()
+    fun webPageHasNoNativeOverlayAndBackFollowsWebHistory() {
         compose.runOnUiThread {
             compose.activity.setTheme(
                 com.google.android.material.R.style.Theme_Material3_DayNight_NoActionBar
@@ -152,48 +140,17 @@ class DashboardLayoutTest {
         }
         compose.setContent {
             MaterialTheme {
-                WebViewComponent(onBack = { closed.set(true) }, getPort = { server.localPort })
+                WebViewComponent(session(), onRetry = {}) {}
             }
         }
         waitForPath("/")
-        var originalHeight = 0
-        compose.runOnUiThread {
-            originalHeight = requireNotNull(webView(compose.activity.window.decorView)).height
-        }
-        openControls()
-        compose.onNodeWithText(label(R.string.web_back)).assertIsNotEnabled()
-        compose.onNodeWithText(label(R.string.web_forward)).assertIsNotEnabled()
-        compose.runOnUiThread {
-            assertEquals(
-                originalHeight,
-                requireNotNull(webView(compose.activity.window.decorView)).height,
-            )
-        }
+        // Reload lives in the Web UI header; no native controls cover the page.
+        compose.onAllNodes(hasClickAction()).assertCountEquals(0)
         val device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
-        device.pressBack()
-        compose.onNodeWithText(label(R.string.web_close)).assertDoesNotExist()
         // A real touch keeps the initial entry eligible for Android WebView's Back action.
         requireNotNull(device.wait(Until.findObject(By.text("Next")), 5000)).click()
         waitForPath("/next")
-        openControls()
-        navigateHistory(R.string.web_back)
-        waitForPath("/")
-        openControls()
-        navigateHistory(R.string.web_forward)
-        waitForPath("/next")
-        // Android Back still navigates web history while the menu is collapsed.
         device.pressBack()
         waitForPath("/")
-        openControls()
-        navigateHistory(R.string.web_forward)
-        waitForPath("/next")
-        openControls()
-        val beforeRefresh = requests.get()
-        compose.onNodeWithText(label(R.string.refresh)).performClick()
-        compose.waitUntil(10_000) { requests.get() > beforeRefresh }
-        waitForPath("/next")
-        openControls()
-        compose.onNodeWithText(label(R.string.web_close)).performClick()
-        assertTrue(closed.get())
     }
 }

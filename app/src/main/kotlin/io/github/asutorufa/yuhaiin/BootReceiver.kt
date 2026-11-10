@@ -11,7 +11,8 @@ import android.util.Log
 import androidx.core.content.ContextCompat
 import io.github.asutorufa.yuhaiin.privacy.PrivacyConsent
 import io.github.asutorufa.yuhaiin.privacy.PrivacyConsent.Purpose
-import io.github.asutorufa.yuhaiin.service.YuhaiinVpnService
+import io.github.asutorufa.yuhaiin.service.VpnActions
+import io.github.asutorufa.yuhaiin.service.YuhaiinCoreService
 
 class BootReceiver : BroadcastReceiver() {
     private val tag = this.javaClass.simpleName
@@ -64,10 +65,10 @@ class BootReceiver : BroadcastReceiver() {
             return
         }
 
-        Log.d(tag, "starting VPN service for $action")
+        Log.d(tag, "starting core and VPN for $action")
         ContextCompat.startForegroundService(
             context,
-            Intent(context, YuhaiinVpnService::class.java),
+            YuhaiinCoreService.intent(context, VpnActions.CONNECT),
         )
     }
 }

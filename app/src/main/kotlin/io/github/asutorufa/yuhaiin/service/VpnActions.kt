@@ -15,6 +15,9 @@ object VpnActions {
     const val ROUTES = "io.github.asutorufa.yuhaiin.ROUTES"
     const val REFRESH_MONITORING = "io.github.asutorufa.yuhaiin.REFRESH_MONITORING"
     const val RESUME = "io.github.asutorufa.yuhaiin.RESUME"
+    /** Always-on VPN start forwarded by [YuhaiinVpnService]. */
+    const val CONNECT_ALWAYS_ON = "io.github.asutorufa.yuhaiin.CONNECT_ALWAYS_ON"
+    const val EXIT = YuhaiinCoreService.STOP_CORE
 
     fun activityIntent(context: Context, action: String) =
         Intent(context, MainActivity::class.java)
@@ -29,11 +32,12 @@ object VpnActions {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
 
-    fun service(context: Context, action: String): PendingIntent =
-        PendingIntent.getService(
-            context,
-            0,
-            Intent(context, YuhaiinVpnService::class.java).setAction(action),
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-        )
+    /** Commands for the core service; it promotes itself to the foreground on every start. */
+    fun service(context: Context, action: String): PendingIntent {
+        val intent = YuhaiinCoreService.intent(context, action)
+        val flags = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        return if (android.os.Build.VERSION.SDK_INT >= 26)
+            PendingIntent.getForegroundService(context, 0, intent, flags)
+        else PendingIntent.getService(context, 0, intent, flags)
+    }
 }

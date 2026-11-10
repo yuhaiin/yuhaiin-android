@@ -286,6 +286,9 @@ class UpdateManager(context: Context) {
     }
 
     private fun matchesChannel(release: GitHubRelease, channel: UpdateChannel): Boolean {
+        // The v2 preview has its own track. It never installs stable, beta or main APKs (a
+        // different package would be rejected anyway), and stable builds skip v2 releases by tag.
+        if (releaseTrackOf(release) != BuildConfig.UPDATE_TRACK) return false
         val main = isMainRelease(release)
         return when (channel) {
             UpdateChannel.STABLE -> !release.prerelease && !main
@@ -293,6 +296,8 @@ class UpdateManager(context: Context) {
             UpdateChannel.MAIN -> main
         }
     }
+
+    private fun releaseTrackOf(release: GitHubRelease): String = releaseTrack(release.tag, release.name)
 
     private fun isMainRelease(release: GitHubRelease): Boolean =
         release.tag == "main" ||
@@ -517,19 +522,14 @@ class UpdateManager(context: Context) {
         }
     }
 
+    // In ":bg" (v2) the core runs in this process; the UI process goes through the Binder.
     private fun proxyGet(url: String): ByteArray =
-        proxyBinder?.proxyGet(url)
-            ?: throw IllegalStateException(
-                "The proxy is not running. Start the proxy and try again."
-            )
+        proxyBinder?.proxyGet(url) ?: yuhaiin.Yuhaiin.proxyGet(url)
 
     private fun proxyDownload(url: String, destination: String) {
-        val binder =
-            proxyBinder
-                ?: throw IllegalStateException(
-                    "The proxy is not running. Start the proxy and try again."
-                )
-        binder.proxyDownload(url, destination)
+        val binder = proxyBinder
+        if (binder != null) binder.proxyDownload(url, destination)
+        else yuhaiin.Yuhaiin.proxyDownload(url, destination)
     }
 
     private fun cleanupOldDownloads() {
@@ -617,3 +617,7 @@ class UpdateManager(context: Context) {
         )
     }
 }
+
+/** Update track of a release: "v2" for tags or names starting with "v2-", otherwise "stable". */
+internal fun releaseTrack(tag: String, name: String?): String =
+    if (tag.startsWith("v2-") || name.orEmpty().startsWith("v2-")) "v2" else "stable"

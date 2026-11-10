@@ -35,12 +35,9 @@ android {
 
     defaultConfig {
         applicationId = "io.github.asutorufa.yuhaiin"
-        val documentsAuthorityValue = "$applicationId.documents"
-
-        // Now we can use ${documentsAuthority} in our Manifest
-        manifestPlaceholders["documentsAuthority"] = documentsAuthorityValue
-        // Now we can use BuildConfig.DOCUMENTS_AUTHORITY in our code
-        buildConfigField("String", "DOCUMENTS_AUTHORITY", "\"$documentsAuthorityValue\"")
+        manifestPlaceholders["documentsAuthority"] = "io.github.asutorufa.yuhaiin.documents"
+        buildConfigField("String", "DOCUMENTS_AUTHORITY", "\"io.github.asutorufa.yuhaiin.documents\"")
+        buildConfigField("String", "UPDATE_TRACK", "\"stable\"")
         buildConfigField("String", "GIT_COMMIT", "\"${getCommit()}\"")
         minSdk = 24
         // uses-sdk:minSdkVersion 21 cannot be smaller than version 23 declared in library
@@ -148,7 +145,8 @@ dependencies {
     implementation("androidx.compose.ui:ui-text")
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
-    implementation("androidx.compose.material3:material3")
+    // The BOM pins 1.4.0; the wavy progress indicators ship in 1.5.0.
+    implementation("androidx.compose.material3:material3:1.5.0-rc01")
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.foundation:foundation")
     debugImplementation("androidx.compose.ui:ui-tooling")

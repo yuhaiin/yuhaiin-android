@@ -8,7 +8,6 @@ import androidx.core.content.FileProvider
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.UiDevice
-import io.github.asutorufa.yuhaiin.backup.ConfigBackup
 import io.github.asutorufa.yuhaiin.service.*
 import io.github.asutorufa.yuhaiin.service.YuhaiinVpnService.Companion.State
 import java.io.File
@@ -33,52 +32,21 @@ class BackupStatusTest {
     private fun snapshot() = VpnStatus.fromBundle(activity.vpnBinder!!.snapshot())
 
     @Test
-    fun fileExportPreviewAndRestoreUseRealCoreAndOpenPreferenceHandle() {
-        waitFor { activity.vpnBinder != null }
-        activity.vpnBinder!!.stop()
-        waitFor { activity.state.value == State.DISCONNECTED }
-        runBlocking(Dispatchers.IO) { MainApplication.settings.flush() }
-        val original = Yuhaiin.exportConfig()
-        val file =
-            File(activity.cacheDir, "backups/test-backup.json").apply { parentFile!!.mkdirs() }
-        val uri =
-            FileProvider.getUriForFile(
-                activity,
-                "${activity.packageName}.backup_fileprovider",
-                file,
-            )
-        try {
-            runBlocking(Dispatchers.IO) {
-                MainApplication.settings.commit {
-                    it.putString(
-                        Constants.ROUTE_CONTENT_PREFIX + Constants.ALL_ROUTE,
-                        "192.0.2.0/24",
-                    )
-                    it.putBoolean(Constants.ALLOW_LAN_KEY, true)
-                }
-                ConfigBackup.export(activity, uri)
-                MainApplication.settings.commit {
-                    it.putString(
-                        Constants.ROUTE_CONTENT_PREFIX + Constants.ALL_ROUTE,
-                        "198.51.100.0/24",
-                    )
-                    it.putBoolean(Constants.ALLOW_LAN_KEY, false)
-                }
-                val (data, preview) = ConfigBackup.read(activity, uri)
-                assertTrue(preview.preferences > 0)
-                ConfigBackup.restore(data)
-            }
-            assertEquals(
-                "192.0.2.0/24",
-                MainApplication.store.getString(
-                    Constants.ROUTE_CONTENT_PREFIX + Constants.ALL_ROUTE
-                ),
-            )
-            assertTrue(MainApplication.store.getBoolean(Constants.ALLOW_LAN_KEY))
-        } finally {
-            runBlocking(Dispatchers.IO) { ConfigBackup.restore(original) }
-            file.delete()
-        }
+    fun webBackupExportPreviewAndRestoreRestartTheCore() {
+        compose.waitUntil(20_000) { activity.session.value.ready }
+        val (code, link) = platformApi(activity, "POST", "backup/export", "{}")
+        assertEquals(200, code)
+        val url = org.json.JSONObject(link).getString("url").removePrefix("/android/v1/")
+        val (downloaded, backup) = platformApi(activity, "GET", url)
+        assertEquals(200, downloaded)
+        val (previewed, preview) = platformApi(activity, "POST", "backup/preview", backup)
+        assertEquals(200, previewed)
+        assertTrue(preview.contains("createdAt"))
+        val oldToken = activity.session.value.token
+        val (restored, _) = platformApi(activity, "POST", "backup/restore", backup)
+        assertEquals(202, restored)
+        // The core restarts with a new session for the WebView.
+        waitFor(30_000) { activity.session.value.ready && activity.session.value.token != oldToken }
     }
 
     @Test
@@ -110,7 +78,7 @@ class BackupStatusTest {
             assertTrue(decodeNativeHealth(snapshot().nativeHealth)!!.checkedAt > 0)
             val backup = Yuhaiin.exportConfig()
             val rejected = runCatching { Yuhaiin.importConfig(backup) }.exceptionOrNull()
-            assertNotNull("Running VPN must reject import", rejected)
+            assertNotNull("A running core must reject import", rejected)
             activity.vpnBinder!!.stop()
             waitFor { activity.state.value == State.DISCONNECTED }
             val ended = decodeNativeStatus(snapshot().nativeStatus)!!

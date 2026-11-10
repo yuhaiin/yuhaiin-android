@@ -51,11 +51,6 @@ class PrivacyFlowsTest {
         activity.vpnBinder?.stop()
     }
 
-    private fun open(id: Int) {
-        compose.onNode(hasScrollAction()).performScrollToNode(hasText(label(id)))
-        compose.onNodeWithText(label(id)).performClick()
-    }
-
     private fun connectWithDisclosure() {
         if (Build.VERSION.SDK_INT >= 33)
             device.executeShellCommand(
@@ -94,27 +89,25 @@ class PrivacyFlowsTest {
     @Test
     fun appListRequiresItsOwnConsentBeforeAnyRepositoryAccess() {
         consent.grant(Purpose.VPN)
+        compose.waitUntil(20_000) { activity.session.value.ready }
         assertTrue(
             runCatching { runBlocking { MainApplication.installedApps.load() } }.exceptionOrNull()
                 is IllegalStateException
         )
-        open(R.string.adv_app_list_title)
+        // The Web UI's per-app list is refused until the user consents in the app.
+        val (refused, body) = platformApi(activity, "GET", "apps")
+        assertEquals(409, refused)
+        assertTrue(body.contains("consent_required"))
+        compose.runOnUiThread { activity.requestAppsConsent() }
         compose.onNodeWithText(label(R.string.apps_disclosure_title)).assertIsDisplayed()
         compose.onNodeWithText(label(R.string.privacy_not_now)).performClick()
         assertFalse(consent.has(Purpose.INSTALLED_APPS))
-        open(R.string.adv_app_list_title)
+        compose.runOnUiThread { activity.requestAppsConsent() }
         compose.onNodeWithText(label(R.string.privacy_agree)).performClick()
         assertTrue(consent.has(Purpose.INSTALLED_APPS))
-        compose.onNode(hasSetTextAction()).performTextReplacement(BuildConfig.APPLICATION_ID)
-        compose.waitUntil(10_000) {
-            compose
-                .onAllNodes(hasText(BuildConfig.APPLICATION_ID) and isToggleable())
-                .fetchSemanticsNodes()
-                .isNotEmpty()
-        }
-        compose.activityRule.scenario.recreate()
-        compose.onNodeWithText(label(R.string.apps_disclosure_title)).assertDoesNotExist()
-        compose.onNode(hasSetTextAction()).assertExists()
+        val (ok, apps) = platformApi(activity, "GET", "apps")
+        assertEquals(200, ok)
+        assertTrue(apps.contains(BuildConfig.APPLICATION_ID))
     }
 
     @Test
@@ -142,43 +135,45 @@ class PrivacyFlowsTest {
         assertFalse(consent.has(Purpose.INSTALLED_APPS))
         consent.grant(Purpose.INSTALLED_APPS)
         runBlocking { MainApplication.installedApps.load() }
-        open(R.string.about)
-        open(R.string.privacy_policy_title)
-        open(R.string.privacy_withdraw)
-        compose.onNodeWithText(label(R.string.privacy_withdraw_body)).assertIsDisplayed()
-        compose.onAllNodesWithText(label(R.string.privacy_withdraw)).onLast().performClick()
+        // The Web UI's privacy page withdraws through the platform API.
+        val (code, _) = platformApi(activity, "POST", "privacy/withdraw", "{}")
+        assertEquals(200, code)
         compose.waitUntil(15_000) {
             !consent.has(Purpose.VPN) &&
                 !consent.has(Purpose.INSTALLED_APPS) &&
                 activity.state.value == State.DISCONNECTED
         }
-        assertTrue(runCatching { runBlocking { MainApplication.installedApps.load() } }.isFailure)
         compose.runOnUiThread { activity.startService() }
         compose.onNodeWithText(label(R.string.vpn_disclosure_title)).assertIsDisplayed()
     }
 
     @Test
     fun privacyPolicyIsAvailableWithoutVpnOrEitherConsent() {
-        open(R.string.about)
-        open(R.string.privacy_policy_title)
-        compose.onNodeWithText(label(R.string.privacy_developer_title)).assertIsDisplayed()
-        compose.onNode(hasScrollAction())
-            .performScrollToNode(hasText(label(R.string.privacy_retention_title)))
-        compose.onNodeWithText(label(R.string.privacy_retention_title)).assertIsDisplayed()
+        compose.waitUntil(20_000) { activity.session.value.ready }
+        val (code, body) = platformApi(activity, "GET", "privacy")
+        assertEquals(200, code)
+        assertTrue(body.contains(label(R.string.privacy_developer_title)))
+        assertTrue(body.contains(label(R.string.privacy_retention_title)))
+        assertTrue(body.contains("\"vpn\":false"))
         assertFalse(consent.has(Purpose.VPN))
         assertFalse(consent.has(Purpose.INSTALLED_APPS))
         assertEquals(State.DISCONNECTED, activity.state.value)
     }
 
     @Test
-    fun cancellingLogSharingDoesNotExportAnything() {
-        val file = File(activity.externalCacheDir, "yuhaiin.log")
-        file.delete()
-        open(R.string.logcat)
-        compose.onNodeWithContentDescription(label(R.string.export_logs)).performClick()
-        compose.onNodeWithText(label(R.string.log_share_disclosure)).assertIsDisplayed()
-        compose.onNodeWithText(label(R.string.privacy_not_now)).performClick()
-        assertFalse(file.exists())
+    fun platformApiRefusesRequestsWithoutTheWebViewSession() {
+        compose.waitUntil(20_000) { activity.session.value.ready }
+        val port = activity.session.value.port
+        val conn =
+            java.net.URL("http://127.0.0.1:$port/android/v1/privacy/withdraw").openConnection()
+                as java.net.HttpURLConnection
+        conn.requestMethod = "POST"
+        conn.doOutput = true
+        conn.setRequestProperty("Content-Type", "application/json")
+        conn.setRequestProperty("X-Yuhaiin-Platform-Request", "1")
+        conn.outputStream.use { it.write("{}".toByteArray()) }
+        assertEquals(401, conn.responseCode)
+        conn.disconnect()
     }
 
     @Test

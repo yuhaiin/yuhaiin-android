@@ -10,7 +10,7 @@
     <string name="vpn_disclosure_body">Yuhaiin 会处理经过 VPN 的流量，包括 DNS 请求、目标地址和端口、流量计数，以及启用应用识别时的来源应用 UID 和包名，用于分流、显示连接详情和诊断。\n\n流量及必要的凭据会发送至配置所使用的代理、DNS 或组网服务，其运营者可以处理这些数据。是否加密取决于所选协议和设置，请使用可信且加密的节点。\n\nVPN 会在后台持续运行，直至你主动断开；启用自动连接后，也可在开机时重新连接。你可以随时断开。此处同意不包含读取完整已安装应用列表。</string>
     <string name="vpn_disclosure_required">请打开 Yuhaiin，阅读并同意 VPN 数据说明后再连接。</string>
     <string name="apps_disclosure_title">访问已安装应用</string>
-    <string name="apps_disclosure_body">Yuhaiin 会读取已安装应用的名称、包名、图标及系统应用标记，让你选择哪些应用经过或绕过 VPN，包括没有启动器图标的应用。\n\n列表仅缓存在本机内存中，不会自动上传给项目维护者，也不用于广告。你选择的包名会保存在设置中，并在导出配置或备份时包含在文件里。\n\n点击“同意并继续”后才会加载列表。不打开此选择器也能使用 VPN；你可在“关于 → 隐私政策”中撤回同意。</string>
+    <string name="apps_disclosure_body">Yuhaiin 会读取已安装应用的名称、包名、图标及系统应用标记，让你选择哪些应用经过或绕过 VPN，包括没有启动器图标的应用。\n\n列表仅缓存在本机内存中，不会自动上传给项目维护者，也不用于广告。你选择的包名会保存在设置中，并在导出配置或备份时包含在文件里。\n\n点击“同意并继续”后才会加载列表。不打开此选择器也能使用 VPN；你可在“Android → 隐私”中撤回同意。</string>
     <string name="privacy_developer_title">关于本政策</string>
     <string name="privacy_developer_body">本政策适用于 Yuhaiin Android，由 yuhaiin 项目贡献者维护的开源 VPN 和网络分流应用。隐私相关问题可通过下方联系按钮向项目问题追踪器提交。问题内容公开，请勿附上密码、订阅链接或未经脱敏的日志。</string>
     <string name="privacy_storage_title">设置、诊断和分享</string>

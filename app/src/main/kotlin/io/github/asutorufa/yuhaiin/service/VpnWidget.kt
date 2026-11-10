@@ -54,7 +54,7 @@ class VpnWidget : AppWidgetProvider() {
             }
         bound =
             appContext.bindService(
-                Intent(appContext, YuhaiinVpnService::class.java),
+                Intent(appContext, YuhaiinCoreService::class.java),
                 connection,
                 Context.BIND_AUTO_CREATE,
             )

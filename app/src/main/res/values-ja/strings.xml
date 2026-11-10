@@ -77,7 +77,6 @@
     <string name="process_lookup_mode_title">プロセスの識別</string>
     <string name="process_lookup_off">オフ</string>
     <string name="process_lookup_rules_only">ルールで必要な場合のみ</string>
-    <string name="refresh">更新</string>
     <string name="register_underlying_network_callback_summary">利用可能な物理ネットワークを監視し、追加の接続を維持せず VPN の接続先を更新します。</string>
     <string name="register_underlying_network_callback_title">基盤ネットワークを追跡</string>
     <string name="reset_filters">フィルターをリセット</string>
@@ -161,10 +160,7 @@
     <string name="vpn_mtu_auto">自動</string>
     <string name="vpn_mtu_profile_title">VPN MTU</string>
     <string name="vpn_permission_cancelled">VPN 権限が許可されませんでした。接続をタップして再試行してください。</string>
-    <string name="web_back">前のページ</string>
-    <string name="web_controls">ダッシュボードの操作</string>
     <string name="web_close">アプリに戻る</string>
-    <string name="web_forward">次のページ</string>
     <string name="web_not_running">ダッシュボードを利用できません。VPN が実行中か確認してください。</string>
     <string name="web_render_failed">描画プロセスが停止しました。再試行してダッシュボードを開いてください。</string>
     <string name="yuhaiin">Yuhaiin</string>

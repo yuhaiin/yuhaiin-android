@@ -60,10 +60,7 @@
     <string name="follow_logs">Follow</string>
     <string name="latest_logs">Latest</string>
     <string name="export_logs">Export filtered logs</string>
-    <string name="web_back">Previous web page</string>
-    <string name="web_controls">Dashboard controls</string>
     <string name="web_close">Return to app</string>
-    <string name="web_forward">Next web page</string>
     <string name="web_render_failed">The web renderer stopped. Retry to reopen the dashboard.</string>
     <string name="web_not_running">The dashboard is unavailable. Check that the VPN is running.</string>
     <string name="vpn_permission_cancelled">VPN permission was not granted. Tap Connect to try again.</string>

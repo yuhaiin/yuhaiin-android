@@ -77,7 +77,6 @@
     <string name="process_lookup_mode_title">进程识别</string>
     <string name="process_lookup_off">关闭</string>
     <string name="process_lookup_rules_only">仅分流规则需要时</string>
-    <string name="refresh">刷新</string>
     <string name="register_underlying_network_callback_summary">观察可用物理网络并更新 VPN 出口，不主动保持额外网络连接。</string>
     <string name="register_underlying_network_callback_title">跟随底层网络</string>
     <string name="reset_filters">重置筛选</string>
@@ -161,10 +160,7 @@
     <string name="vpn_mtu_auto">自动</string>
     <string name="vpn_mtu_profile_title">VPN MTU</string>
     <string name="vpn_permission_cancelled">未获得 VPN 权限。点击连接可重试。</string>
-    <string name="web_back">上一网页</string>
-    <string name="web_controls">控制面板操作</string>
     <string name="web_close">返回应用</string>
-    <string name="web_forward">下一网页</string>
     <string name="web_not_running">控制面板暂不可用，请检查 VPN 是否正在运行。</string>
     <string name="web_render_failed">网页渲染进程已停止。重试以重新打开控制面板。</string>
     <string name="yuhaiin">Yuhaiin</string>

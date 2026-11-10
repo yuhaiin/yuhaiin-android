@@ -117,16 +117,8 @@ class NativeContractsTest {
     private fun assertDashboardHasViewport() {
         // Flush the connection recomposition and expose the card before using the system UI.
         compose.waitForIdle()
-        compose.onNode(hasScrollAction()).performScrollToIndex(0)
+        // v2: the Web UI is the home screen; no native "open dashboard" step.
         val instrumentation = InstrumentationRegistry.getInstrumentation()
-        val device = UiDevice.getInstance(instrumentation)
-        val dashboard =
-            device.wait(
-                Until.findObject(By.desc(compose.activity.getString(R.string.open_dashboard))),
-                5000,
-            )
-        assertNotNull("Connected home must offer the dashboard", dashboard)
-        dashboard.click()
         compose.mainClock.advanceTimeBy(1000)
         val height = AtomicReference(0.0)
         fun webView(view: View): WebView? =
