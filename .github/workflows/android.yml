@@ -1,14 +1,11 @@
 name: Android CI
 
-# v2 branch: builds the v2 flavor (io.github.asutorufa.yuhaiin.v2) from the core's
-# v2 AAR. It never tags, releases or touches the stable update channel; APKs are
-# workflow artifacts only. Tags are not built here so a v2 commit can never
-# become a stable release.
 on:
   push:
-    branches: ["v2"]
+    branches: ["main"]
+    tags: [v*]
   pull_request:
-    branches: ["v2"]
+    branches: ["main"]
 
 # Cancel superseded workflow runs on the same ref.
 concurrency:
@@ -16,7 +13,7 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -32,7 +29,6 @@ jobs:
       - name: Resolve latest native build
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CORE_BRANCH: v2
         run: |
           python3 scripts/test-resolve-latest-core.py
           bash scripts/resolve-latest-core.sh >> "$GITHUB_ENV"
@@ -55,7 +51,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v6
 
       - name: Validate
-        run: ./gradlew :app:lintV2Debug :app:testV2DebugUnitTest :app:assembleV2DebugAndroidTest
+        run: ./gradlew :app:lintDebug :app:testDebugUnitTest :app:assembleDebugAndroidTest
 
       - name: Build with Gradle
         env:
@@ -64,7 +60,7 @@ jobs:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
           KEYSTORE: ${{ secrets.KEYSTORE_BASE64 }}
-          RELEASE_VERSION: ${{ format('v2-{0}', github.sha) }}
+          RELEASE_VERSION: ${{ github.ref_type == 'tag' && github.ref_name || format('main-{0}', github.sha) }}
         run: |
           if [ -n "$KEYSTORE" ]; then
             printf '%s' "$KEYSTORE" | base64 -d > "$KEYSTORE_PATH"
@@ -72,9 +68,9 @@ jobs:
             unset KEYSTORE_PATH
           fi
           chmod +x gradlew
-          ./gradlew :app:assembleV2Release --stacktrace
-          python3 scripts/check-native-pages.py app/build/outputs/apk/v2/release/yuhaiin-v2-arm64-v8a-release*.apk
-          python3 scripts/check-native-pages.py app/build/outputs/apk/v2/release/yuhaiin-v2-x86_64-release*.apk
+          ./gradlew :app:assembleRelease --stacktrace
+          python3 scripts/check-native-pages.py app/build/outputs/apk/release/yuhaiin-arm64-v8a-release*.apk
+          python3 scripts/check-native-pages.py app/build/outputs/apk/release/yuhaiin-x86_64-release*.apk
           {
             echo "android.commit=$GITHUB_SHA"
             echo "core.commit=$CORE_COMMIT"
@@ -96,15 +92,60 @@ jobs:
       - name: upload_arm64-v8a
         uses: actions/upload-artifact@v7
         with:
-          name: app-v2-arm64-v8a-release
-          path: app/build/outputs/apk/v2/release/yuhaiin-v2-arm64-v8a-release*.apk
+          name: app-arm64-v8a-release
+          path: app/build/outputs/apk/release/yuhaiin-arm64-v8a-release*.apk
       - name: upload_x86_64
         uses: actions/upload-artifact@v7
         with:
-          name: app-v2-x86_64-release
-          path: app/build/outputs/apk/v2/release/yuhaiin-v2-x86_64-release*.apk
+          name: app-x86_64-release
+          path: app/build/outputs/apk/release/yuhaiin-x86_64-release*.apk
       - name: metadata.json
         uses: actions/upload-artifact@v7
         with:
-          name: v2-metadata.json
-          path: app/build/outputs/apk/v2/release/output-metadata.json
+          name: metadata.json
+          path: app/build/outputs/apk/release/output-metadata.json
+
+      - id: generate-release-notes
+        if: github.event_name != 'pull_request'
+        run: |
+          # Start from HEAD^ so a tag build does not select the tag being released
+          # as its own "previous" tag and generate an empty notes file.
+          previous_tag=$(git describe --tags --match 'v*' --abbrev=0 HEAD^ 2>/dev/null || true)
+          if [ -n "${previous_tag}" ]; then
+            git log "${previous_tag}..HEAD" --oneline > release_notes.txt
+          else
+            git log -n 100 --oneline > release_notes.txt
+          fi
+          # Keep the release body usable even for unusual histories/reruns.
+          if [ ! -s release_notes.txt ]; then
+            git log -1 --oneline > release_notes.txt
+          fi
+          sha256sum \
+            app/build/outputs/apk/release/yuhaiin-x86_64-release*.apk \
+            app/build/outputs/apk/release/yuhaiin-arm64-v8a-release*.apk \
+            > checksums.txt
+
+      - name: Update rolling main tag
+        if: github.event_name == 'push' && github.ref_type == 'branch' && github.ref_name == 'main'
+        run: |
+          git tag -f main "$GITHUB_SHA"
+          git push origin refs/tags/main --force
+
+      - name: Release
+        if: github.event_name != 'pull_request'
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ github.ref_type == 'tag' && github.ref_name || 'main' }}
+          body_path: release_notes.txt
+          name: ${{ github.ref_type == 'tag' && github.ref_name || format('main-{0}', github.sha) }}
+          draft: false
+          make_latest: ${{ github.ref_type == 'tag' && !contains(github.ref_name, 'beta') && !contains(github.ref_name, 'alpha') }}
+          prerelease: ${{ github.ref_type != 'tag' || contains(github.ref_name, 'beta') || contains(github.ref_name, 'alpha') }}
+          overwrite_files: true
+          # see: https://github.com/softprops/action-gh-release/issues/79#issuecomment-930339070
+          files: |
+            build-provenance.txt
+            checksums.txt
+            app/build/outputs/apk/release/output-metadata.json
+            app/build/outputs/apk/release/yuhaiin-x86_64-release*.apk
+            app/build/outputs/apk/release/yuhaiin-arm64-v8a-release*.apk
