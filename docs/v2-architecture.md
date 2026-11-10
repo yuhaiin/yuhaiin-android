@@ -114,6 +114,13 @@ changing the pool through the RPC API: the VPN route moved to the new pool.
   shown only while the core starts or after a failure (retry, logs).
 * A restarted core changes the platform token (and maybe the port); the WebView
   reconnects then. A VPN rebuild does not reload it.
+* The Web UI has its own light/dark setting. The host reads the loaded local
+  page's resolved theme (`evaluateJavascript` of one attribute, on page load and
+  history changes; only `light`/`dark` are accepted) and, when it differs from
+  the system's, uses it for the system bar icon contrast, the WebView
+  background, the start/error screen and dialogs (`WebTheme`). It is remembered
+  for the next start. This is host → page only; the page still cannot call the app.
+* `VIBRATE` is declared so the Web UI's `navigator.vibrate` haptics work.
 * The Web UI detects Android through `GET /android/v1/capabilities`, never the
   User-Agent. Device controls appear only when that response says `session:true`.
 
