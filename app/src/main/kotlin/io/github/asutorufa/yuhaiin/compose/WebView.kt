@@ -111,9 +111,19 @@ fun WebViewComponent(
     // A new token or port means the core restarted; the old page cannot reach the platform API.
     val identity = "$port/${session.token}/$renderer"
 
+    // Reads the page's resolved theme (native -> page only; nothing is exposed to scripts).
+    // The Web UI changes it on its settings page, so every history change re-reads it.
+    fun syncTheme(web: WebView) {
+        if (!NativeAction.isLocalPage(web.url, port)) return
+        web.evaluateJavascript("document.documentElement.getAttribute('data-bs-theme')") {
+            WebTheme.report(context, it)
+        }
+    }
+
     fun updateHistory(web: WebView) {
         canBack = web.canGoBack()
         if (NativeAction.isLocalPage(web.url, port)) state.url = web.url
+        syncTheme(web)
     }
 
     // Opens the Core's bundled Web UI so a broken OTA frontend can be repaired or reverted.
@@ -313,6 +323,8 @@ fun WebViewComponent(
                             web.destroy()
                             if (view === web) view = null
                         },
+                        // The page background follows the Web UI's theme once it is known.
+                        update = { it.setBackgroundColor(pageBackground) },
                         modifier = Modifier.fillMaxSize(),
                     )
                 }
