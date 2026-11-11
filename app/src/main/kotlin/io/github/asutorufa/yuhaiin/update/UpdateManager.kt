@@ -326,7 +326,9 @@ class UpdateManager(context: Context) {
         val temporary = File(directory, "${release.assetName}.part")
 
         if (release.checksumUrl != null) {
-            for (candidate in listOf(output, temporary)) {
+            // A ".part" file is an unfinished download and can never match the checksum, so only a
+            // completed APK is worth verifying; checking the partial file just delays the download.
+            for (candidate in listOf(output)) {
                 if (!candidate.isFile || candidate.length() == 0L) continue
                 _state.value =
                     _state.value.copy(
