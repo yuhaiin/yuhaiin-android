@@ -1,1 +1,1 @@
-include ':app', ':yuhaiin', ':benchmark'
+include ':app', ':benchmark'

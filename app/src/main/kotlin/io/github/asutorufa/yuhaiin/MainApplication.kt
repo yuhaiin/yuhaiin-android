@@ -6,7 +6,10 @@ import android.net.ConnectivityManager
 import android.os.Build
 import android.util.Log
 import androidx.core.content.getSystemService
-import go.Seq
+import io.github.asutorufa.yuhaiin.core.NativeHost
+import io.github.asutorufa.yuhaiin.core.NativeRuntime
+import io.github.asutorufa.yuhaiin.core.Store
+import io.github.asutorufa.yuhaiin.core.remoteStore
 import io.github.asutorufa.yuhaiin.data.AppSettings
 import io.github.asutorufa.yuhaiin.service.VpnActions
 import io.github.asutorufa.yuhaiin.update.UpdateManager
@@ -19,13 +22,10 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
-import yuhaiin.AddressIter
-import yuhaiin.AddressPrefix
-import yuhaiin.Interface
-import yuhaiin.InterfaceIter
-import yuhaiin.Interfaces
-import yuhaiin.Store
-import yuhaiin.Yuhaiin
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 
 open class MainApplication : Application() {
 
@@ -66,48 +66,38 @@ open class MainApplication : Application() {
 
     val connectivity by lazy { this.getSystemService<ConnectivityManager>()!! }
 
-    inner class UidDumper : yuhaiin.UidDumper {
-        private fun processLookupMode(): String =
-            store.getString(Constants.PROCESS_LOOKUP_MODE_KEY).ifBlank { "always" }
+    private fun processLookupMode(): String =
+        store.getString(Constants.PROCESS_LOOKUP_MODE_KEY).ifBlank { "always" }
 
-        override fun dumpUid(
-            p0: Int,
-            srcIp: String?,
-            srcPort: Int,
-            destIp: String?,
-            destPort: Int,
-        ): Int =
-            if (processLookupMode() == "off") {
-                0
-            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                connectivity.getConnectionOwnerUid(
-                    p0,
-                    InetSocketAddress(srcIp, srcPort),
-                    InetSocketAddress(destIp, destPort),
-                )
-            } else {
-                0
-            }
-
-        override fun getUidInfo(p0: Int): String {
-            if (processLookupMode() == "off") return ""
-            return packageManager.getNameForUid(p0) ?: "unknown"
+    private fun dumpUid(protocol: Int, srcIp: String, srcPort: Int, destIp: String, destPort: Int): Int =
+        if (processLookupMode() == "off") {
+            0
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            connectivity.getConnectionOwnerUid(
+                protocol,
+                InetSocketAddress(srcIp, srcPort),
+                InetSocketAddress(destIp, destPort),
+            )
+        } else {
+            0
         }
+
+    private fun uidName(uid: Int): String {
+        if (processLookupMode() == "off") return ""
+        return packageManager.getNameForUid(uid) ?: "unknown"
     }
 
     override fun onCreate() {
         super.onCreate()
-        Seq.setContext(this)
-        Yuhaiin.setSavePath(
-            (getExternalFilesDir("yuhaiin") ?: java.io.File(filesDir, "yuhaiin"))
-                .apply { mkdirs() }
-                .absolutePath
-        )
-        Yuhaiin.setConfigLockPath(java.io.File(noBackupFilesDir, "configuration.lock").absolutePath)
-        // The management HTTPS key stays in internal storage, outside Auto Backup, and is
-        // reused across VPN reconnects and app restarts.
-        Yuhaiin.setManagementTLSDir(java.io.File(noBackupFilesDir, "management-tls").absolutePath)
-        store = Yuhaiin.getStore()
+        // The Go runtime lives in ":bg" only. The UI process reaches preferences through
+        // StoreProvider, so it never loads libyuhaiin.so.
+        if (isBackgroundProcess()) {
+            NativeRuntime.ensureInit(this)
+            store = NativeRuntime.store
+            installHostCallbacks()
+        } else {
+            store = remoteStore(this)
+        }
         updateManager = UpdateManager(this)
         installedApps =
             io.github.asutorufa.yuhaiin.data.InstalledAppsRepository(
@@ -134,8 +124,6 @@ open class MainApplication : Application() {
                     sendBroadcast(Intent(VpnActions.REFRESH_MONITORING).setPackage(packageName))
                 }
         }
-        Yuhaiin.setInterfaces(GetInterfaces())
-        Yuhaiin.setProcessDumper(UidDumper())
     }
 
     private fun ensureBatteryDefaults() {
@@ -189,94 +177,68 @@ open class MainApplication : Application() {
         }
     }
 
-    class InterfaceIterImpl(private val data: MutableList<Interface>) : InterfaceIter {
-        private var index = 0
+    private fun isBackgroundProcess(): Boolean =
+        (if (Build.VERSION.SDK_INT >= 28) getProcessName()
+        else
+            runCatching { java.io.File("/proc/self/cmdline").readText().trimEnd('\u0000') }
+                .getOrDefault(""))
+            .endsWith(":bg")
 
-        override fun next(): Interface? {
-            return if (index < data.size) {
-                data[index++]
-            } else {
-                null
-            }
-        }
-
-        override fun hasNext(): Boolean = index < data.size
-
-        override fun reset() {
-            index = 0
-        }
-    }
-
-    class AddressIterImpl(private val data: ArrayList<AddressPrefix>) : AddressIter {
-        private var index = 0
-
-        override fun next(): AddressPrefix? {
-            return if (index < data.size) {
-                data[index++]
-            } else {
-                null
-            }
-        }
-
-        override fun hasNext(): Boolean {
-            return index < data.size
-        }
-
-        override fun reset() {
-            index = 0
+    /** Android answers for the Go core: network interfaces and process (uid) lookup. */
+    private fun installHostCallbacks() {
+        NativeHost.uidLookup = ::dumpUid
+        NativeHost.register("interfaces.list") { interfacesJson() }
+        NativeHost.register("uid.name") {
+            val uid = Json.parseToJsonElement(it!!.decodeToString())
+                .let { e -> (e as kotlinx.serialization.json.JsonObject)["uid"] as JsonPrimitive }
+                .content.toInt()
+            uidName(uid).toByteArray()
         }
     }
 
-    inner class GetInterfaces : Interfaces {
-        override fun getInterfaces(): InterfaceIter {
-            val interfaces: List<NetworkInterface> =
-                NetworkInterface.getNetworkInterfaces().toList()
-            val sb = mutableListOf<Interface>()
-            for (nif in interfaces) {
-
-                try {
-                    sb.add(
-                        Interface().apply {
-                            name = nif.name
-                            displayName = nif.displayName
-                            index = nif.index
-                            mtu = nif.mtu
-                            isVirtual = nif.isVirtual
-                            hardwareAddr = nif.hardwareAddress
-                            isUp = nif.isUp
-                            broadcast = nif.supportsMulticast()
-                            isLoopback = nif.isLoopback
-                            isPointToPoint = nif.isPointToPoint
-                            supportsMulticast = nif.supportsMulticast()
-                            address =
-                                AddressIterImpl(
-                                    ArrayList<AddressPrefix>().apply {
-                                        for (ia in nif.interfaceAddresses) {
-                                            add(
-                                                AddressPrefix().apply {
-                                                    address = ia.address.toString().trimStart('/')
-                                                    mask = ia.networkPrefixLength.toInt()
-                                                    broadcast =
-                                                        ia.broadcast?.toString()?.trimStart('/')
-                                                }
-                                            )
-                                        }
-                                    }
-                                )
+    private fun interfacesJson(): ByteArray {
+        val list = mutableListOf<kotlinx.serialization.json.JsonElement>()
+        for (nif in NetworkInterface.getNetworkInterfaces().toList()) {
+            try {
+                list.add(
+                    buildJsonObject {
+                        put("name", nif.name)
+                        put("displayName", nif.displayName)
+                        put("index", nif.index)
+                        put("mtu", nif.mtu)
+                        put("isVirtual", nif.isVirtual)
+                        nif.hardwareAddress?.let {
+                            put("hardwareAddr", kotlin.io.encoding.Base64.Default.encode(it))
                         }
-                    )
-                } catch (_: Exception) {
-                    continue
-                }
+                        put("isUp", nif.isUp)
+                        put("broadcast", nif.supportsMulticast())
+                        put("isLoopback", nif.isLoopback)
+                        put("isPointToPoint", nif.isPointToPoint)
+                        put("supportsMulticast", nif.supportsMulticast())
+                        put(
+                            "addresses",
+                            JsonArray(
+                                nif.interfaceAddresses.map { ia ->
+                                    buildJsonObject {
+                                        put("address", ia.address.toString().trimStart('/'))
+                                        put("mask", ia.networkPrefixLength.toInt())
+                                        put("broadcast", ia.broadcast?.toString()?.trimStart('/').orEmpty())
+                                    }
+                                }
+                            ),
+                        )
+                    }
+                )
+            } catch (_: Exception) {
+                continue
             }
-
-            return InterfaceIterImpl(sb)
         }
+        return JsonArray(list).toString().toByteArray()
     }
 }
 
 fun Store.getStringSet(key: String?): Set<String> {
-    val data = getString(key)
+    val data = getString(key.orEmpty())
     if (data.isEmpty()) return HashSet()
     return runCatching { Json.decodeFromString<Set<String>>(data) }
         .getOrElse {
@@ -286,5 +248,5 @@ fun Store.getStringSet(key: String?): Set<String> {
 }
 
 fun Store.putStringSet(key: String?, values: Set<String?>?) {
-    putString(key, Json.encodeToString(values))
+    putString(key.orEmpty(), Json.encodeToString(values))
 }

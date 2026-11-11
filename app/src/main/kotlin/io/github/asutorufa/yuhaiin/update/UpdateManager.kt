@@ -9,6 +9,8 @@ import android.os.Build
 import android.provider.Settings
 import io.github.asutorufa.yuhaiin.BuildConfig
 import io.github.asutorufa.yuhaiin.IYuhaiinVpnBinder
+import io.github.asutorufa.yuhaiin.core.NativeCore
+import io.github.asutorufa.yuhaiin.core.NativeRuntime
 import io.github.asutorufa.yuhaiin.R
 import java.io.File
 import java.io.FileInputStream
@@ -522,14 +524,17 @@ class UpdateManager(context: Context) {
         }
     }
 
-    // In ":bg" (v2) the core runs in this process; the UI process goes through the Binder.
+    // In ":bg" the core runs in this process; the UI process never loads it and uses the Binder.
+    private fun directCore(): NativeCore =
+        if (NativeRuntime.isReady) NativeCore else throw IllegalStateException("core is not initialized")
+
     private fun proxyGet(url: String): ByteArray =
-        proxyBinder?.proxyGet(url) ?: yuhaiin.Yuhaiin.proxyGet(url)
+        proxyBinder?.proxyGet(url) ?: directCore().proxyGet(url)
 
     private fun proxyDownload(url: String, destination: String) {
         val binder = proxyBinder
         if (binder != null) binder.proxyDownload(url, destination)
-        else yuhaiin.Yuhaiin.proxyDownload(url, destination)
+        else directCore().proxyDownload(url, destination)
     }
 
     private fun cleanupOldDownloads() {

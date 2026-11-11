@@ -24,6 +24,9 @@ tasks.withType<org.jetbrains.kotlin.gradle.internal.KaptWithoutKotlincTask>().co
     kaptProcessJvmArgs.add("-Xmx512m")
 }
 
+// Output of scripts/build-core.sh or the downloaded CI artifact: <dir>/<abi>/libyuhaiin.so.
+val coreLibraryDir = rootProject.file("yuhaiin/core")
+
 android {
     namespace = "io.github.asutorufa.yuhaiin"
     compileSdk = 37
@@ -96,12 +99,23 @@ android {
     sourceSets {
         named("main") {
             java { directories.add("src/main/kotlin") }
+            // libyuhaiin.so (the Go core, built with -buildmode=c-shared) per ABI.
+            jniLibs.directories.add(coreLibraryDir.absolutePath)
+        }
+    }
+
+    packaging {
+        jniLibs {
+            // Uncompressed, page-aligned libraries are mapped directly from the APK.
+            useLegacyPackaging = false
         }
     }
 
     testOptions {
         unitTests.apply {
             isIncludeAndroidResources = true
+            // android.util.Log in pure-logic classes returns defaults instead of throwing.
+            isReturnDefaultValues = true
         }
 
         unitTests.all {
@@ -135,8 +149,6 @@ dependencies {
     val nav3Version = "1.2.1"
     implementation("androidx.navigation3:navigation3-runtime:${nav3Version}")
     implementation("androidx.navigation3:navigation3-ui:${nav3Version}")
-
-    implementation(project(":yuhaiin"))
 
     val composeBom = platform("androidx.compose:compose-bom:2026.09.00")
     implementation(composeBom)

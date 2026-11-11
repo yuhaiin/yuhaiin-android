@@ -36,10 +36,13 @@ jobs:
       - uses: actions/download-artifact@v8
         with:
           artifact-ids: ${{ env.CORE_ARTIFACT_ID }}
-          path: yuhaiin
+          path: yuhaiin/core
           github-token: ${{ secrets.GITHUB_TOKEN }}
           repository: yuhaiin/yuhaiin
           run-id: ${{ env.CORE_RUN_ID }}
+
+      - name: Verify native core
+        run: bash scripts/check-core.sh yuhaiin/core
 
       - name: Set up JDK 25
         uses: actions/setup-java@v6
@@ -76,7 +79,7 @@ jobs:
             echo "core.commit=$CORE_COMMIT"
             echo "core.run=$CORE_RUN_ID"
             echo "core.artifact=$CORE_ARTIFACT_ID"
-            sha256sum yuhaiin/yuhaiin.aar
+            (cd yuhaiin/core && sha256sum */libyuhaiin.so yuhaiin_abi.h)
             java -version 2>&1
           } > build-provenance.txt
 

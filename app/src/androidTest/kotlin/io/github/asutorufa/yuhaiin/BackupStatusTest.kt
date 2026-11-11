@@ -16,7 +16,8 @@ import kotlinx.coroutines.runBlocking
 import org.junit.Assert.*
 import org.junit.Rule
 import org.junit.Test
-import yuhaiin.Yuhaiin
+import io.github.asutorufa.yuhaiin.core.NativeCore
+import io.github.asutorufa.yuhaiin.core.NativeRuntime
 
 class BackupStatusTest {
     @get:Rule val compose = createAndroidComposeRule<MainActivity>()
@@ -76,8 +77,10 @@ class BackupStatusTest {
                 !snapshot().healthChecking && decodeNativeHealth(snapshot().nativeHealth) != null
             }
             assertTrue(decodeNativeHealth(snapshot().nativeHealth)!!.checkedAt > 0)
-            val backup = Yuhaiin.exportConfig()
-            val rejected = runCatching { Yuhaiin.importConfig(backup) }.exceptionOrNull()
+            // The test process is not ':bg'; it loads the core itself to contend for the lock.
+            NativeRuntime.ensureInit(InstrumentationRegistry.getInstrumentation().targetContext)
+            val backup = NativeCore.exportConfig()
+            val rejected = runCatching { NativeCore.importConfig(backup) }.exceptionOrNull()
             assertNotNull("A running core must reject import", rejected)
             activity.vpnBinder!!.stop()
             waitFor { activity.state.value == State.DISCONNECTED }

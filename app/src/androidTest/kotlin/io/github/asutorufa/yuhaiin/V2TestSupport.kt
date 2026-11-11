@@ -2,7 +2,7 @@ package io.github.asutorufa.yuhaiin
 
 import java.net.HttpURLConnection
 import java.net.URL
-import yuhaiin.Yuhaiin
+import io.github.asutorufa.yuhaiin.Constants
 
 /** Calls the core's Android platform API with the WebView's session, as the Web UI does. */
 fun platformApi(activity: MainActivity, method: String, path: String, body: String? = null): Pair<Int, String> {
@@ -14,7 +14,7 @@ fun platformApi(activity: MainActivity, method: String, path: String, body: Stri
         conn.requestMethod = method
         conn.connectTimeout = 3000
         conn.readTimeout = 10000
-        conn.setRequestProperty("Cookie", "${Yuhaiin.PlatformCookieName}=${session.token}")
+        conn.setRequestProperty("Cookie", "${Constants.PLATFORM_COOKIE_NAME}=${session.token}")
         if (body != null) {
             conn.doOutput = true
             conn.setRequestProperty("Content-Type", "application/json")

@@ -17,3 +17,13 @@
 #}
 
 -dontobfuscate
+# Called by name from the JNI bridge in libyuhaiin.so (cmd/androidlib/jni_android.c in the core).
+-keep class io.github.asutorufa.yuhaiin.core.NativeException { <init>(int, java.lang.String); }
+-keep class io.github.asutorufa.yuhaiin.core.NativeHost {
+    boolean protect(int);
+    long bind(int, java.lang.String);
+    int dumpUid(int, java.lang.String, int, java.lang.String, int);
+    int establish(long, byte[], byte[][]);
+    byte[] call(java.lang.String, byte[]);
+}
+-keep class io.github.asutorufa.yuhaiin.core.NativeBridge { native <methods>; }

@@ -15,7 +15,8 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-import yuhaiin.PlatformActions
+import io.github.asutorufa.yuhaiin.core.NativeCore
+import io.github.asutorufa.yuhaiin.core.PlatformActions
 
 @Serializable data class PolicySection(val title: String, val body: String)
 
@@ -113,7 +114,7 @@ class AndroidPlatformActions(
         val file = File(path)
         core.restart {
             try {
-                yuhaiin.Yuhaiin.importConfig(file.readBytes())
+                NativeCore.importConfig(file.readBytes())
             } finally {
                 file.delete()
             }

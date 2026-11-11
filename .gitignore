@@ -9,14 +9,13 @@
 /.idea/
 /java_*.hprof
 /script/
-yuhaiin/build/
 app/release/
 ./build_release
 /build_release
-/yuhaiin/yuhaiin.aar
-/yuhaiin/yuhaiin-sources.jar
+/yuhaiin/core/
 /yuhaiin/build_local.sh
 *.keystore
 /benchmark/build
 /.kotlin
 /app/src/release
+
