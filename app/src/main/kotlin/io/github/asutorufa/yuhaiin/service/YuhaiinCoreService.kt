@@ -377,14 +377,13 @@ class YuhaiinCoreService : android.app.Service() {
     }
 
     /**
-     * Allow LAN binds the management server to 0.0.0.0, but Android 17 drops LAN TCP without
-     * ACCESS_LOCAL_NETWORK. Only the foreground Activity may ask, so this just records the state
-     * (the permission is read live, so a restarted service always reports the current grant).
+     * Android 17 drops LAN TCP (inbound clients and outgoing LAN connections) without
+     * ACCESS_LOCAL_NETWORK. Only the foreground Activity may ask, and it does so the next time it
+     * is visible, so this just records the state. The core is never blocked on the permission.
      */
     private fun warnIfLanBlocked() {
-        if (LocalNetworkAccess.state(this) != LocalNetworkAccess.State.DENIED) return
-        if (runCatching { MainApplication.store.getBoolean(Constants.ALLOW_LAN_KEY) }.getOrDefault(false))
-            Log.w(tag, "Allow LAN is on but ACCESS_LOCAL_NETWORK is not granted; LAN clients are blocked by Android")
+        if (LocalNetworkAccess.state(this) == LocalNetworkAccess.State.DENIED)
+            Log.w(tag, "ACCESS_LOCAL_NETWORK is not granted; Android blocks LAN connections of the core")
     }
 
     // ---- VPN ----

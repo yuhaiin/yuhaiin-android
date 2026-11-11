@@ -101,10 +101,14 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
-        // The permission is needed by the Allow LAN management server, which only the running core
-        // knows has (re)started, so re-evaluate whenever the session changes while visible.
+        // The permission is wanted once the core or the VPN is in use, so re-evaluate whenever the
+        // core session or the VPN state changes while visible (a core started in the background is
+        // handled when the Activity next becomes visible).
         lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) { session.collect { evaluateLocalNetwork() } }
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch { session.collect { evaluateLocalNetwork() } }
+                launch { state.collect { evaluateLocalNetwork() } }
+            }
         }
         setContent { Main(this) }
     }
@@ -314,24 +318,28 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
-     * Android 17 blocks LAN TCP (including accepting a LAN client's connection) without
-     * ACCESS_LOCAL_NETWORK, while loopback keeps working. The permission is only needed once Allow
-     * LAN is on, so that is when the standard dialog is requested (once); afterwards a dismissible
-     * notice explains why LAN clients cannot connect. Android 16 and older are never asked.
+     * Android 17 blocks LAN TCP (accepting a LAN client, and dialing LAN hosts such as proxies or
+     * WireGuard/Tailscale peers) without ACCESS_LOCAL_NETWORK, while loopback keeps working. It is
+     * wanted once the core or the VPN is in use, so that is when the standard dialog is requested
+     * (once); afterwards a dismissible notice explains the limitation and never blocks the core or
+     * the VPN. Android 16 and older are never asked.
      */
     fun evaluateLocalNetwork() {
         if (!LocalNetworkAccess.isEnforced()) return
         lifecycleScope.launch {
-            val allowLan =
-                withContext(Dispatchers.IO) {
-                    runCatching { MainApplication.store.getBoolean(Constants.ALLOW_LAN_KEY) }
-                        .getOrDefault(false)
-                }
+            val needed =
+                LocalNetworkAccess.isNeeded(
+                    coreActive =
+                        session.value.state == CoreState.STARTING ||
+                            session.value.state == CoreState.RUNNING,
+                    vpnActive =
+                        state.value == State.CONNECTED || state.value == State.CONNECTING,
+                )
             if (localNetworkRequesting) return@launch
             val prompt =
                 LocalNetworkAccess.prompt(
                     state = LocalNetworkAccess.state(this@MainActivity),
-                    needed = allowLan,
+                    needed = needed,
                     askedBefore = localNetworkPrefs.getBoolean("asked", false),
                     canAskAgain = canAskLocalNetworkAgain(),
                 )

@@ -36,7 +36,23 @@ class LocalNetworkAccessTest {
     }
 
     @Test
-    fun doesNotAskForAFeatureThatIsNotInUse() {
+    fun neededWheneverTheCoreOrTheVpnIsInUse() {
+        // Independent of Allow LAN: the core also dials LAN hosts and the VPN carries LAN traffic.
+        assertTrue(LocalNetworkAccess.isNeeded(coreActive = true, vpnActive = false))
+        assertTrue(LocalNetworkAccess.isNeeded(coreActive = false, vpnActive = true))
+        assertTrue(LocalNetworkAccess.isNeeded(coreActive = true, vpnActive = true))
+        assertFalse(LocalNetworkAccess.isNeeded(coreActive = false, vpnActive = false))
+    }
+
+    @Test
+    fun deniedPermissionNeverBlocksTheCoreOrTheVpn() {
+        // The prompt is purely informational: it has no "block" outcome.
+        assertTrue(Prompt.entries.none { it.name.contains("BLOCK") })
+        assertFalse(LocalNetworkAccess.isUsable(State.DENIED))
+    }
+
+    @Test
+    fun doesNotAskWhileNothingIsInUse() {
         assertEquals(Prompt.NONE, prompt(needed = false))
         assertEquals(Prompt.NONE, prompt(needed = false, asked = true, canAskAgain = true))
     }

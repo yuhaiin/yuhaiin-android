@@ -16,6 +16,9 @@ import androidx.core.content.ContextCompat
  * management server.
  *
  * This is independent of the core's `allow_lan` setting, which only chooses the bind address.
+ * Besides the Allow LAN management server, the core also dials LAN hosts (proxy chains, SOCKS,
+ * WireGuard/Tailscale/ZeroTier peers, DNS), so the permission is wanted whenever the core or the
+ * VPN is in use rather than being tied to one setting.
  * Only an Activity may ask the user; background components must merely report the state.
  */
 object LocalNetworkAccess {
@@ -56,7 +59,7 @@ object LocalNetworkAccess {
      * never answered by another dialog. [canAskAgain] is `shouldShowRequestPermissionRationale`:
      * false after a request means the system will not show the dialog again.
      *
-     * @param needed a feature that depends on LAN traffic is in use (Allow LAN, or the VPN).
+     * @param needed the core or the VPN is in use (see [isNeeded]).
      */
     fun prompt(
         state: State,
@@ -70,6 +73,9 @@ object LocalNetworkAccess {
             canAskAgain -> Prompt.NOTICE_REQUEST
             else -> Prompt.NOTICE_SETTINGS
         }
+
+    /** The permission is wanted once the core is starting or running, or the VPN is up. */
+    fun isNeeded(coreActive: Boolean, vpnActive: Boolean) = coreActive || vpnActive
 
     /** True when LAN features work, or the OS does not restrict them. */
     fun isUsable(state: State) = state != State.DENIED

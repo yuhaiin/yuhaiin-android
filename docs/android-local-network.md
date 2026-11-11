@@ -15,18 +15,22 @@ why turning the VPN off or restarting the core changed nothing.
 
 `allow_lan` and the permission are independent. `allow_lan` only makes the core bind
 `0.0.0.0` instead of `127.0.0.1`; the permission decides whether the OS lets LAN peers reach the
-socket.
+socket. The core also dials LAN hosts (SOCKS/HTTP proxies, DNS, WireGuard, Tailscale, ZeroTier),
+so the permission is wanted whenever the core or the VPN is in use, with Allow LAN on or off.
+yuhaiin does not analyse which feature needs it.
 
 ## Behaviour
 
 - The manifest declares the permission. Nothing is requested below API 37.
-- When Allow LAN is on and the permission is missing, the foreground `MainActivity` shows the
-  standard system dialog once. After a refusal it only shows a dismissible notice (never another
+- When the core is starting or running, or the VPN is up, and the permission is missing, the
+  foreground `MainActivity` shows the standard system dialog once. A core started in the
+  background is handled the next time the Activity is visible. A refusal never stops the core or
+  the VPN. After a refusal it only shows a dismissible notice (never another
   dialog): **Allow** asks again while the system still permits it, **Open settings** leads to the
   app's system settings once the system will not ask again.
 - The state is read live from the OS (`LocalNetworkAccess.state`), so it is correct after a core
   restart, a process kill or a revocation in system settings. `YuhaiinCoreService` (`:bg`) never
-  asks; it only logs a warning when Allow LAN is on without the permission.
+  asks; it only logs a warning when the permission is missing.
 - The Web UI can trigger the same flow with the native action
   `yuhaiin-android://action/network/local` (main frame, user gesture, local page only).
 - The Android platform API stays loopback-only: LAN clients still get 403 on `/android/v1/*`
