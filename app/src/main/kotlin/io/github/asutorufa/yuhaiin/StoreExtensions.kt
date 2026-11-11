@@ -1,6 +1,6 @@
 package io.github.asutorufa.yuhaiin
 
-import yuhaiin.Store
+import io.github.asutorufa.yuhaiin.core.Store
 
 fun Store.remove(key: String) {
     try {

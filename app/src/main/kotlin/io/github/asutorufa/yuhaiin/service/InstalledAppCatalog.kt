@@ -6,8 +6,8 @@ import java.io.ByteArrayOutputStream
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-import yuhaiin.AppCatalog
-import yuhaiin.AppIconProvider
+import io.github.asutorufa.yuhaiin.core.AppCatalog
+import io.github.asutorufa.yuhaiin.core.AppIconProvider
 
 @Serializable
 private data class CatalogApp(val name: String, val packageName: String, val system: Boolean)

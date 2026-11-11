@@ -34,7 +34,7 @@ jobs:
       - uses: actions/download-artifact@v8
         with:
           artifact-ids: ${{ env.CORE_ARTIFACT_ID }}
-          path: yuhaiin
+          path: yuhaiin/core
           github-token: ${{ secrets.GITHUB_TOKEN }}
           repository: yuhaiin/yuhaiin
           run-id: ${{ env.CORE_RUN_ID }}

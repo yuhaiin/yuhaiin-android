@@ -10,44 +10,44 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.runBlocking
 import org.junit.Test
-import yuhaiin.Store
+import io.github.asutorufa.yuhaiin.core.Store
 
 private class MemoryStore : Store {
-    val values = mutableMapOf<String?, Any?>()
+    val values = mutableMapOf<String, Any?>()
 
-    override fun getString(key: String?) = values[key]?.toString().orEmpty()
+    override fun getString(key: String) = values[key]?.toString().orEmpty()
 
-    override fun getBoolean(key: String?) = values[key] as? Boolean ?: false
+    override fun getBoolean(key: String) = values[key] as? Boolean ?: false
 
-    override fun getInt(key: String?) = values[key] as? Int ?: 0
+    override fun getInt(key: String) = values[key] as? Int ?: 0
 
-    override fun getLong(key: String?) = values[key] as? Long ?: 0L
+    override fun getLong(key: String) = values[key] as? Long ?: 0L
 
-    override fun getFloat(key: String?) = values[key] as? Float ?: 0f
+    override fun getFloat(key: String) = values[key] as? Float ?: 0f
 
-    override fun getBytes(key: String?) = values[key] as? ByteArray
+    override fun getBytes(key: String) = values[key] as? ByteArray ?: ByteArray(0)
 
-    override fun putString(key: String?, value: String?) {
+    override fun putString(key: String, value: String) {
         values[key] = value
     }
 
-    override fun putBoolean(key: String?, value: Boolean) {
+    override fun putBoolean(key: String, value: Boolean) {
         values[key] = value
     }
 
-    override fun putInt(key: String?, value: Int) {
+    override fun putInt(key: String, value: Int) {
         values[key] = value
     }
 
-    override fun putLong(key: String?, value: Long) {
+    override fun putLong(key: String, value: Long) {
         values[key] = value
     }
 
-    override fun putFloat(key: String?, value: Float) {
+    override fun putFloat(key: String, value: Float) {
         values[key] = value
     }
 
-    override fun putBytes(key: String?, value: ByteArray?) {
+    override fun putBytes(key: String, value: ByteArray) {
         values[key] = value
     }
 }

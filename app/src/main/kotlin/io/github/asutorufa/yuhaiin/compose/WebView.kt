@@ -32,10 +32,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.asutorufa.yuhaiin.BuildConfig
 import io.github.asutorufa.yuhaiin.CoreSession
+import io.github.asutorufa.yuhaiin.Constants
 import io.github.asutorufa.yuhaiin.R
 import io.github.asutorufa.yuhaiin.service.CoreState
 import kotlinx.coroutines.launch
-import yuhaiin.Yuhaiin
 
 class WebPageState(private val savedState: SavedStateHandle) : ViewModel() {
     // History survives rotation in memory; only a small URL goes into the system saved state.
@@ -69,7 +69,7 @@ internal fun managementUrl(port: Int, saved: String?): String {
 private fun installPlatformSession(port: Int, token: String) {
     val cookies = CookieManager.getInstance()
     val value =
-        "${Yuhaiin.PlatformCookieName}=$token; Path=/android/; HttpOnly; SameSite=Strict"
+        "${Constants.PLATFORM_COOKIE_NAME}=$token; Path=/android/; HttpOnly; SameSite=Strict"
     cookies.setCookie("http://127.0.0.1:$port", value)
     cookies.flush()
 }

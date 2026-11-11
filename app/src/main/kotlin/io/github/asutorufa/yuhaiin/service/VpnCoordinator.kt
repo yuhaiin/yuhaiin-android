@@ -21,10 +21,8 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import yuhaiin.SocketBind
-import yuhaiin.SocketProtect
-import yuhaiin.VpnProvider
-import yuhaiin.Yuhaiin
+import io.github.asutorufa.yuhaiin.core.NativeCore
+import io.github.asutorufa.yuhaiin.core.NativeHost
 
 /**
  * Same-process coordinator between the Go core and [YuhaiinVpnService], both in ":bg".
@@ -34,7 +32,7 @@ import yuhaiin.Yuhaiin
  * releases that generation. Go reads a duplicate it owns, so neither side closes the other's
  * descriptor. Releases and revokes name a generation, so stale callbacks are ignored.
  */
-object VpnCoordinator : VpnProvider {
+object VpnCoordinator {
     private const val TAG = "VpnCoordinator"
     private const val SERVICE_TIMEOUT_SECONDS = 10L
 
@@ -66,13 +64,26 @@ object VpnCoordinator : VpnProvider {
     fun init(application: Application) {
         if (::app.isInitialized) return
         app = application
-        Yuhaiin.setVpnProvider(this)
-        _status.value = PlatformVpnStatus.parse(Yuhaiin.vpnStatus())
+        // The core calls these on Go threads; Binder, UI and Go never share a lock with them.
+        NativeHost.vpnEstablish = { generation, config -> establish(generation, config.decodeToString()) }
+        NativeHost.socketProtect = socketProtect
+        NativeHost.socketBind = socketBind
+        NativeHost.register("vpn.authorization") { authorization().toByteArray() }
+        NativeHost.register("vpn.release") {
+            release(
+                kotlinx.serialization.json.Json.parseToJsonElement(it!!.decodeToString())
+                    .let { e -> (e as kotlinx.serialization.json.JsonObject)["generation"] }
+                    .let { g -> (g as kotlinx.serialization.json.JsonPrimitive).content.toLong() }
+            )
+            null
+        }
+        NativeHost.register("vpn.status_changed") { statusChanged(it!!.decodeToString()); null }
+        _status.value = PlatformVpnStatus.parse(NativeCore.vpnStatus())
     }
 
-    // ---- VpnProvider (called on Go threads) ----
+    // ---- core callbacks (called on Go threads) ----
 
-    override fun authorization(): String =
+    private fun authorization(): String =
         VpnAuthorization(
                 prepared = runCatching { VpnService.prepare(app) == null }.getOrDefault(false),
                 consent = PrivacyConsent.forContext(app).has(Purpose.VPN),
@@ -81,7 +92,7 @@ object VpnCoordinator : VpnProvider {
             )
             .encode()
 
-    override fun establish(generation: Long, config: String): Int {
+    private fun establish(generation: Long, config: String): Int {
         val parsed = PlatformVpnConfig.parse(config)
         if (!PrivacyConsent.forContext(app).has(Purpose.VPN))
             throw IllegalStateException("consent_required: the VPN data disclosure was not accepted")
@@ -98,7 +109,7 @@ object VpnCoordinator : VpnProvider {
         return descriptor.fd
     }
 
-    override fun release(generation: Long) {
+    private fun release(generation: Long) {
         val (descriptor, empty) =
             synchronized(lock) { interfaces.remove(generation) to interfaces.isEmpty() }
         if (descriptor != null) {
@@ -108,7 +119,7 @@ object VpnCoordinator : VpnProvider {
         if (empty) main.post { stopServiceIfIdle() }
     }
 
-    override fun statusChanged(status: String) {
+    private fun statusChanged(status: String) {
         _status.value = PlatformVpnStatus.parse(status)
     }
 
@@ -173,7 +184,7 @@ object VpnCoordinator : VpnProvider {
         val generation = generations.lastOrNull() ?: return
         // Off the main thread: the core may be waiting for this thread to bind the
         // VpnService for a rebuild while it holds the accepter lock.
-        Thread({ Yuhaiin.notifyVpnRevoked(generation) }, "vpn-revoke").start()
+        Thread({ NativeCore.notifyVpnRevoked(generation) }, "vpn-revoke").start()
     }
 
     /** Releases every interface after the core stopped or crashed. */
@@ -206,12 +217,12 @@ object VpnCoordinator : VpnProvider {
     }
 
     /** Protects sockets from the VPN. Without a VPN there is nothing to bypass. */
-    val socketProtect = SocketProtect { fd ->
+    private val socketProtect: (Int) -> Boolean = { fd ->
         val vpn = service
         if (vpn == null || !hasInterface()) true else vpn.protect(fd)
     }
 
-    val socketBind = SocketBind { socket, iface -> bindOutboundSocket(socket, iface) }
+    private val socketBind: (Int, String) -> Long = { socket, iface -> bindOutboundSocket(socket, iface) }
 
     // Called only for outbound sockets, after protect(). VpnService's setUnderlyingNetworks is a
     // hint; it does not bind an individual socket.

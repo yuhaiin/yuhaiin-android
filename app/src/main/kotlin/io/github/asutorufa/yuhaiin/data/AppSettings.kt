@@ -15,7 +15,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import yuhaiin.Store
+import io.github.asutorufa.yuhaiin.core.Store
 
 /**
  * One persisted truth: the native Store. All UI writes use this process-lifetime IO queue.

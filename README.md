@@ -25,16 +25,25 @@ git clone https://github.com/Asutorufa/yuhaiin-android.git
 cd yuhaiin-android
 ```
 
-Download the latest available native AAR from a successful upstream `go.yml` build on `main`, using an authenticated GitHub CLI (`gh auth login`). The shared resolver selects published AAR artifacts and verifies their individual workflow runs, avoiding stale results from GitHub's workflow-run listing API. CI uses the same resolver:
+The Go core is a single native library, `libyuhaiin.so` (Go `-buildmode=c-shared` with the JNI bridge compiled in), loaded with `System.loadLibrary("yuhaiin")`. Gradle packages whatever is in `yuhaiin/core/<abi>/`. Either build it from an adjacent checkout (Go and the Android NDK required; `ANDROID_NDK_HOME` must be set):
+
+```bash
+bash scripts/build-core.sh ../yuhaiin
+```
+
+or download the latest published core from a successful upstream `go.yml` build on `main`, using an authenticated GitHub CLI (`gh auth login`). The shared resolver selects published `yuhaiin-android-core` artifacts and verifies their individual workflow runs, avoiding stale results from GitHub's workflow-run listing API. CI uses the same resolver:
 
 ```bash
 set -e
 core_source=$(bash scripts/resolve-latest-core.sh)
 core_run=$(printf '%s\n' "$core_source" | sed -n 's/^CORE_RUN_ID=//p')
-gh run download "$core_run" --repo yuhaiin/yuhaiin --name yuhaiin.aar --dir yuhaiin
+gh run download "$core_run" --repo yuhaiin/yuhaiin --name yuhaiin-android-core --dir yuhaiin/core
+bash scripts/check-core.sh yuhaiin/core   # exports, SONAME and 16 KB alignment
 ```
 
-Android CI downloads the selected artifact by ID and records its upstream commit, workflow run, artifact ID and AAR checksum in `build-provenance.txt`. See [Android verification](scripts/README.md) for more details.
+Android CI downloads the selected artifact by ID and records its upstream commit, workflow run, artifact ID and library checksums in `build-provenance.txt`. See [Android verification](scripts/README.md) for more details.
+
+Only the `:bg` process loads the Go runtime; the UI process reaches preferences through `StoreProvider`.
 
 Run lint and unit tests, then build the release APKs:
 
@@ -100,4 +109,4 @@ The home connection card shows selected TCP/UDP node names, reachability and lat
 
 Traffic summaries show upload/download for this VPN session, active/opened/failed connection counts and persisted lifetime totals. Disconnecting preserves the last session summary on the device. These values measure traffic accounted by the Go core, including proxy traffic outside Android TUN routes, rather than Android system-wide data usage.
 
-These features require the matching Go core changes in `cmd/android` and `pkg/storage/sqlite`. For a local build with the adjacent `yuhaiin` checkout, run `bash yuhaiin/build.sh` before Gradle so the AAR contains the new backup/status JNI methods. Upstream Android CI needs an AAR built from that core revision.
+These features require the matching Go core changes in `cmd/android` and `pkg/storage/sqlite`. For a local build with the adjacent `yuhaiin` checkout, run `bash scripts/build-core.sh` before Gradle so the library contains the new backup/status JNI methods. Upstream Android CI needs a core library built from that core revision.

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Exercise AAR selection when GitHub's workflow-run list returns stale history."""
+"""Exercise core library selection when GitHub's workflow-run list returns stale history."""
 import json
 import os
 from pathlib import Path
@@ -12,7 +12,7 @@ SCRIPT = Path(__file__).with_name('resolve-latest-core.sh')
 
 
 def artifact(identifier, run, branch='main', expired=False):
-    return {'id': identifier, 'name': 'yuhaiin.aar', 'expired': expired,
+    return {'id': identifier, 'name': 'yuhaiin-android-core', 'expired': expired,
             'workflow_run': {'id': run, 'head_branch': branch}}
 
 
@@ -63,7 +63,7 @@ raise SystemExit(result.returncode)
         result = self.resolve([artifact(320, 32)], {'32': workflow(32)}, branch='v2')
         self.assertNotEqual(result.returncode, 0)
 
-    def test_newest_successful_main_aar_despite_stale_run_list(self):
+    def test_newest_successful_main_core_despite_stale_run_list(self):
         # Unordered artifacts include an old rerun, a fork branch, expired data,
         # an unfinished build, a failed build, and another workflow's output.
         artifacts = [artifact(100, 1), artifact(20, 2), artifact(200, 2),

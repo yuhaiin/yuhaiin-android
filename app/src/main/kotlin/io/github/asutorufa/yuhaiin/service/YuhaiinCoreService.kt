@@ -19,6 +19,9 @@ import androidx.core.content.ContextCompat
 import io.github.asutorufa.yuhaiin.Constants
 import io.github.asutorufa.yuhaiin.IYuhaiinVpnBinder
 import io.github.asutorufa.yuhaiin.IYuhaiinVpnCallback
+import io.github.asutorufa.yuhaiin.core.NativeCore
+import io.github.asutorufa.yuhaiin.core.NativeHost
+import io.github.asutorufa.yuhaiin.core.PlatformHost
 import io.github.asutorufa.yuhaiin.MainApplication
 import io.github.asutorufa.yuhaiin.R
 import io.github.asutorufa.yuhaiin.network.LocalNetworkAccess
@@ -34,11 +37,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import yuhaiin.App
-import yuhaiin.Closer
-import yuhaiin.Opts
-import yuhaiin.TUN
-import yuhaiin.Yuhaiin
 
 /**
  * Owns the Go core in the ":bg" process: DNS, FakeIP, routing, nodes, inbounds and the HTTP/HTTPS
@@ -78,7 +76,9 @@ class YuhaiinCoreService : android.app.Service() {
     private val serviceJob = SupervisorJob()
     private val scope = CoroutineScope(serviceJob + Dispatchers.Main.immediate)
     private val commands = Mutex()
-    private val app = App()
+    private val app = NativeCore
+    // Set per start; the core calls it when it exits without a stop request.
+    @Volatile private var closedListener: (() -> Unit)? = null
     private val notification by lazy { VpnNotification(this) }
     private val power by lazy { getSystemService(PowerManager::class.java) }
     private val alarm by lazy { getSystemService(AlarmManager::class.java) }
@@ -127,9 +127,13 @@ class YuhaiinCoreService : android.app.Service() {
     override fun onCreate() {
         super.onCreate()
         VpnCoordinator.init(application)
-        Yuhaiin.setAppCatalog(InstalledAppCatalog)
-        Yuhaiin.setAppIconProvider(InstalledAppCatalog)
-        Yuhaiin.setPlatformActions(
+        NativeHost.register("core.closed") {
+            closedListener?.invoke()
+            null
+        }
+        PlatformHost.install(
+            InstalledAppCatalog,
+            InstalledAppCatalog,
             AndroidPlatformActions(
                 this,
                 object : AndroidPlatformActions.CoreControl {
@@ -210,7 +214,7 @@ class YuhaiinCoreService : android.app.Service() {
             VpnActions.RECONNECT -> {
                 setResumeAt(0)
                 if (ensureCore()) {
-                    if (app.vpnEnabled()) Yuhaiin.requestVpnReconfigure() else setVpn(true)
+                    if (app.vpnEnabled()) app.requestVpnReconfigure() else setVpn(true)
                 }
             }
             VpnActions.RESUME -> {
@@ -273,18 +277,10 @@ class YuhaiinCoreService : android.app.Service() {
         val result =
             withContext(Dispatchers.IO) {
                 runCatching {
-                    app.start(
-                        Opts().apply {
-                            tun =
-                                TUN().apply {
-                                    socketProtect = VpnCoordinator.socketProtect
-                                    socketBind = VpnCoordinator.socketBind
-                                }
-                            closeFallback = Closer {
-                                scope.launch { commands.withLock { onCoreClosed(epoch) } }
-                            }
-                        }
-                    )
+                    closedListener = {
+                        scope.launch { commands.withLock { onCoreClosed(epoch) } }
+                    }
+                    app.start()
                 }
             }
         if (epoch != coreEpoch) return app.running()
@@ -540,7 +536,7 @@ class YuhaiinCoreService : android.app.Service() {
 
     private suspend fun evaluateIdle() {
         val policy =
-            MainApplication.store.getString(Yuhaiin.CoreBackgroundPolicyKey).ifBlank {
+            MainApplication.store.getString(Constants.CORE_BACKGROUND_POLICY_KEY).ifBlank {
                 "while_needed"
             }
         val vpnEnabled =
@@ -714,10 +710,10 @@ class YuhaiinCoreService : android.app.Service() {
             }
 
             override fun proxyGet(url: String?): ByteArray =
-                Yuhaiin.proxyGet(url ?: throw IllegalArgumentException("proxy URL is empty"))
+                app.proxyGet(url ?: throw IllegalArgumentException("proxy URL is empty"))
 
             override fun proxyDownload(url: String?, destination: String?) {
-                Yuhaiin.proxyDownload(
+                app.proxyDownload(
                     url ?: throw IllegalArgumentException("proxy URL is empty"),
                     destination ?: throw IllegalArgumentException("proxy destination is empty"),
                 )
@@ -775,6 +771,6 @@ class YuhaiinCoreService : android.app.Service() {
                 }
             }
 
-            override fun vpnStatus(): String = Yuhaiin.vpnStatus()
+            override fun vpnStatus(): String = app.vpnStatus()
         }
 }

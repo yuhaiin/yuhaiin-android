@@ -99,6 +99,13 @@
             android:exported="false"
             android:process=":bg" />
 
+        <!-- Preferences for the UI process, which never loads the Go runtime. Not exported. -->
+        <provider
+            android:name=".core.StoreProvider"
+            android:authorities="${applicationId}.store"
+            android:exported="false"
+            android:process=":bg" />
+
         <!-- Log sharing from the native startup-failure screen, when no Web UI exists. -->
         <provider
             android:name="androidx.core.content.FileProvider"

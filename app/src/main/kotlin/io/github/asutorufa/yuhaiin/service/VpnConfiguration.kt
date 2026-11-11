@@ -11,7 +11,7 @@ import io.github.asutorufa.yuhaiin.Constants
 import io.github.asutorufa.yuhaiin.MainApplication
 import io.github.asutorufa.yuhaiin.R
 import io.github.asutorufa.yuhaiin.getStringSet
-import yuhaiin.Yuhaiin
+import io.github.asutorufa.yuhaiin.core.NativeCore
 
 /** Exact complement of the existing IPv4 preset; do not silently redefine local networks. */
 internal val nonLocalExclusions =
@@ -59,13 +59,14 @@ fun VpnService.Builder.configure(
             context.resources.getStringArray(R.array.all_routes_except_local).toList(),
             Constants.NON_LOCAL_ROUTE,
             Build.VERSION.SDK_INT,
-            Yuhaiin.isIPv6(),
+            NativeCore.isIPv6(),
         )
-    plan.routes.forEach { addCidr(it) }
+    // Invalid rules fail establishment visibly instead of being ignored: the core rejects the
+    // whole list. One call parses every route.
+    NativeCore.parseCidrs(plan.routes).forEach { addRoute(it.ip, it.mask) }
     if (Build.VERSION.SDK_INT >= 33)
-        plan.excludes.forEach {
-            val prefix = Yuhaiin.parseCIDR(it)
-            excludeRoute(IpPrefix(java.net.InetAddress.getByName(prefix.ip), prefix.mask))
+        NativeCore.parseCidrs(plan.excludes).forEach {
+            excludeRoute(IpPrefix(java.net.InetAddress.getByName(it.ip), it.mask))
         }
     config.dns.forEach { addDnsServer(it) }
     if (Build.VERSION.SDK_INT >= 29) {
@@ -75,10 +76,4 @@ fun VpnService.Builder.configure(
         if (port in 1..65535 && store.getBoolean(Constants.APPEND_HTTP_PROXY_KEY))
             setHttpProxy(ProxyInfo.buildDirectProxy("127.0.0.1", port))
     }
-}
-
-private fun VpnService.Builder.addCidr(cidr: String) {
-    // Invalid rules fail establishment visibly instead of being ignored.
-    val prefix = Yuhaiin.parseCIDR(cidr)
-    addRoute(prefix.ip, prefix.mask)
 }

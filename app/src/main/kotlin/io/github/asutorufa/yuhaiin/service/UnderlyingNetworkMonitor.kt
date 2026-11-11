@@ -10,9 +10,8 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import java.net.NetworkInterface
-import yuhaiin.UnderlyingNetwork
-import yuhaiin.UnderlyingNetworkIter
-import yuhaiin.Yuhaiin
+import io.github.asutorufa.yuhaiin.core.NativeCore
+import io.github.asutorufa.yuhaiin.core.UnderlyingNetwork
 
 /** Observe actual non-VPN Network identities without retaining networks with requestNetwork. */
 class UnderlyingNetworkMonitor(
@@ -47,18 +46,13 @@ class UnderlyingNetworkMonitor(
 
     private fun publish() {
         if (!haveSnapshot) return
-        val items = networks.values.iterator()
-        val snapshot =
-            object : UnderlyingNetworkIter {
-                override fun hasNext() = items.hasNext()
-                override fun next() = items.next()
-            }
+        val snapshot = networks.values.toList()
         // Before API 31, leave selection with Android when its default is our
         // own VPN. Source/interface affinity still distinguishes physical paths.
         val selected = best ?: connectivity.activeNetwork?.takeIf { networks.containsKey(it) }
         interfaces = networks.entries.groupBy({ it.value.interfaceName }, { it.key })
         selection = selected
-        runCatching { Yuhaiin.reportUnderlyingNetworks(snapshot, selected?.networkHandle ?: 0L) }
+        runCatching { NativeCore.reportUnderlyingNetworks(snapshot, selected?.networkHandle ?: 0L) }
             .onFailure { Log.w("UnderlyingNetworkMonitor", "Cannot publish underlying networks", it) }
     }
 
@@ -84,15 +78,16 @@ class UnderlyingNetworkMonitor(
                             ?: return
                     val name = link.interfaceName ?: return
                     next[network] =
-                        UnderlyingNetwork().apply {
-                            handle = network.networkHandle
-                            interfaceName = name
-                            interfaceIndex = NetworkInterface.getByName(name)?.index ?: 0
-                            addresses = link.linkAddresses.joinToString(" ") { it.address.hostAddress ?: "" }
-                            available = true
-                            validated = caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
-                            vpn = false
-                        }
+                        UnderlyingNetwork(
+                            handle = network.networkHandle,
+                            interfaceIndex = NetworkInterface.getByName(name)?.index ?: 0,
+                            interfaceName = name,
+                            addresses =
+                                link.linkAddresses.joinToString(" ") { it.address.hostAddress ?: "" },
+                            available = true,
+                            validated = caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED),
+                            vpn = false,
+                        )
                 }
                 networks = next
                 haveSnapshot = true

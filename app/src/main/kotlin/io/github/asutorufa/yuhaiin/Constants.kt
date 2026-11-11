@@ -2,6 +2,10 @@ package io.github.asutorufa.yuhaiin
 
 /** Persisted/native protocol identifiers. Never translate or derive these from UI labels. */
 object Constants {
+    /** Cookie the core's platform API expects (mirrors cmd/android PlatformCookieName). */
+    const val PLATFORM_COOKIE_NAME = "yuhaiin_android_platform"
+    /** Core-owned background policy setting (mirrors cmd/android CoreBackgroundPolicyKey). */
+    const val CORE_BACKGROUND_POLICY_KEY = "core_background_policy"
     const val APPEND_HTTP_PROXY_KEY = "Append HTTP Proxy to VPN"
     const val LEGACY_UI_HTTP_PROXY_KEY = "append_http_proxy_to_vpn"
     const val HTTP_PORT_KEY = "http_port"
