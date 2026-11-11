@@ -179,4 +179,10 @@
     <string name="route_cleared">已清空路由内容</string>
     <string name="undo">撤销</string>
     <string name="web_restore_bundled">恢复内置网页界面</string>
+    <string name="local_network_title">Android 已阻止局域网访问</string>
+    <string name="local_network_body">已开启允许局域网，但缺少本地网络权限，Android 17 会丢弃来自同一网络中其他设备的连接。本机自身的使用不受影响。</string>
+    <string name="local_network_body_settings">已开启允许局域网，但本地网络权限被拒绝，Android 不会再次询问。请在应用的系统设置（权限 → 附近设备）中开启，其他设备才能连接。</string>
+    <string name="local_network_allow">允许</string>
+    <string name="local_network_open_settings">打开设置</string>
+    <string name="local_network_dismiss">关闭</string>
 </resources>

@@ -125,4 +125,10 @@
     <string name="tun_loss_recovery_note">Classic uses duplicate acknowledgments and SACK; RACK-TLP uses time-based loss detection and tail loss probes.</string>
     <string name="tun_output_scheduler_title">Output Scheduler</string>
     <string name="tun_output_scheduler_note">Controls the lightweight stack’s outbound packet queue only, not Android’s physical network. FIFO is the default. Reconnect VPN to apply.</string>
+    <string name="local_network_title">LAN access is blocked by Android</string>
+    <string name="local_network_body">Allow LAN is on, but without the local network permission Android 17 drops connections from other devices on your network. This phone still works locally.</string>
+    <string name="local_network_body_settings">Allow LAN is on, but the local network permission is denied and Android will not ask again. Turn it on in the app\'s system settings (Permissions → Nearby devices) so other devices can connect.</string>
+    <string name="local_network_allow">Allow</string>
+    <string name="local_network_open_settings">Open settings</string>
+    <string name="local_network_dismiss">Dismiss</string>
 </resources>

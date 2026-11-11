@@ -5,10 +5,12 @@ import android.content.ComponentName
 import android.content.Intent
 import android.content.ServiceConnection
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.net.VpnService
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
+import android.provider.Settings
 import android.util.Log
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -19,6 +21,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import io.github.asutorufa.yuhaiin.compose.Main
+import io.github.asutorufa.yuhaiin.network.LocalNetworkAccess
 import io.github.asutorufa.yuhaiin.privacy.PrivacyConsent
 import io.github.asutorufa.yuhaiin.privacy.PrivacyConsent.Purpose
 import io.github.asutorufa.yuhaiin.service.CoreState
@@ -64,6 +67,10 @@ class MainActivity : AppCompatActivity() {
     val navigationAction = MutableStateFlow<String?>(null)
     val vpnDisclosure = MutableStateFlow(false)
     val appsDisclosure = MutableStateFlow(false)
+    /** Non-modal notice for the Android 17 local network permission; NONE when not needed. */
+    val localNetwork = MutableStateFlow(LocalNetworkAccess.Prompt.NONE)
+    private var localNetworkDismissed = false
+    private var localNetworkRequesting = false
     private var pendingAction: String? = null
     private var startingSince = 0L
 
@@ -93,6 +100,11 @@ class MainActivity : AppCompatActivity() {
                     delay(1000)
                 }
             }
+        }
+        // The permission is needed by the Allow LAN management server, which only the running core
+        // knows has (re)started, so re-evaluate whenever the session changes while visible.
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) { session.collect { evaluateLocalNetwork() } }
         }
         setContent { Main(this) }
     }
@@ -134,6 +146,12 @@ class MainActivity : AppCompatActivity() {
         // The app is visible, so starting the foreground core service is allowed.
         startCore()
         bindCoreService()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // The grant can change while visible (multi-window, or returning from system settings).
+        evaluateLocalNetwork()
     }
 
     /** Starts the core; the service keeps it running independently of the VPN. */
@@ -272,6 +290,83 @@ class MainActivity : AppCompatActivity() {
                 error.value = getString(R.string.vpn_permission_cancelled)
             }
         }
+
+    private val localNetworkPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) {
+            localNetworkRequesting = false
+            // A refusal is answered by the notice only, never by another dialog.
+            evaluateLocalNetwork()
+        }
+
+    private val localNetworkPrefs by lazy {
+        getSharedPreferences("local_network_permission", MODE_PRIVATE)
+    }
+
+    private fun canAskLocalNetworkAgain() =
+        shouldShowRequestPermissionRationale(LocalNetworkAccess.PERMISSION)
+
+    private fun launchLocalNetworkRequest() {
+        if (localNetworkRequesting) return
+        localNetworkRequesting = true
+        localNetworkPrefs.edit().putBoolean("asked", true).apply()
+        localNetwork.value = LocalNetworkAccess.Prompt.NONE
+        localNetworkPermissionLauncher.launch(LocalNetworkAccess.PERMISSION)
+    }
+
+    /**
+     * Android 17 blocks LAN TCP (including accepting a LAN client's connection) without
+     * ACCESS_LOCAL_NETWORK, while loopback keeps working. The permission is only needed once Allow
+     * LAN is on, so that is when the standard dialog is requested (once); afterwards a dismissible
+     * notice explains why LAN clients cannot connect. Android 16 and older are never asked.
+     */
+    fun evaluateLocalNetwork() {
+        if (!LocalNetworkAccess.isEnforced()) return
+        lifecycleScope.launch {
+            val allowLan =
+                withContext(Dispatchers.IO) {
+                    runCatching { MainApplication.store.getBoolean(Constants.ALLOW_LAN_KEY) }
+                        .getOrDefault(false)
+                }
+            if (localNetworkRequesting) return@launch
+            val prompt =
+                LocalNetworkAccess.prompt(
+                    state = LocalNetworkAccess.state(this@MainActivity),
+                    needed = allowLan,
+                    askedBefore = localNetworkPrefs.getBoolean("asked", false),
+                    canAskAgain = canAskLocalNetworkAgain(),
+                )
+            if (prompt == LocalNetworkAccess.Prompt.REQUEST) launchLocalNetworkRequest()
+            else {
+                if (prompt == LocalNetworkAccess.Prompt.NONE) localNetworkDismissed = false
+                localNetwork.value =
+                    if (localNetworkDismissed) LocalNetworkAccess.Prompt.NONE else prompt
+            }
+        }
+    }
+
+    /** User action (notice button or the Web UI): ask again, or open settings if the OS won't. */
+    fun requestLocalNetworkAccess() {
+        if (!LocalNetworkAccess.isEnforced()) return
+        if (LocalNetworkAccess.state(this) != LocalNetworkAccess.State.DENIED) return
+        localNetworkDismissed = false
+        if (!localNetworkPrefs.getBoolean("asked", false) || canAskLocalNetworkAgain())
+            launchLocalNetworkRequest()
+        else openLocalNetworkSettings()
+    }
+
+    fun openLocalNetworkSettings() {
+        runCatching {
+                startActivity(
+                    Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", packageName, null))
+                )
+            }
+            .onFailure { Log.w("MainActivity", "cannot open app settings", it) }
+    }
+
+    fun dismissLocalNetworkNotice() {
+        localNetworkDismissed = true
+        localNetwork.value = LocalNetworkAccess.Prompt.NONE
+    }
 
     private val notificationPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { prepareVpn() }

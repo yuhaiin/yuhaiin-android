@@ -179,4 +179,10 @@
     <string name="route_cleared">ルートの内容をクリアしました</string>
     <string name="undo">元に戻す</string>
     <string name="web_restore_bundled">内蔵 Web UI に復元</string>
+    <string name="local_network_title">Android が LAN アクセスをブロックしています</string>
+    <string name="local_network_body">LAN を許可していますが、ローカルネットワーク権限がないため、Android 17 は同じネットワーク上の他の端末からの接続を遮断します。この端末内での利用には影響しません。</string>
+    <string name="local_network_body_settings">LAN を許可していますが、ローカルネットワーク権限が拒否され、Android は再度確認しません。他の端末から接続するには、アプリのシステム設定（権限 → 付近のデバイス）で許可してください。</string>
+    <string name="local_network_allow">許可する</string>
+    <string name="local_network_open_settings">設定を開く</string>
+    <string name="local_network_dismiss">閉じる</string>
 </resources>

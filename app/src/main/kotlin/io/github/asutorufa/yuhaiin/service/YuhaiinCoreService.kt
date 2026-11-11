@@ -21,6 +21,7 @@ import io.github.asutorufa.yuhaiin.IYuhaiinVpnBinder
 import io.github.asutorufa.yuhaiin.IYuhaiinVpnCallback
 import io.github.asutorufa.yuhaiin.MainApplication
 import io.github.asutorufa.yuhaiin.R
+import io.github.asutorufa.yuhaiin.network.LocalNetworkAccess
 import io.github.asutorufa.yuhaiin.privacy.PrivacyConsent
 import io.github.asutorufa.yuhaiin.privacy.PrivacyConsent.Purpose
 import io.github.asutorufa.yuhaiin.service.YuhaiinVpnService.Companion.State
@@ -371,7 +372,19 @@ class YuhaiinCoreService : android.app.Service() {
         status = status.copy(coreState = next)
         publish()
         val port = if (next == CoreState.RUNNING) app.httpPort() else 0
+        if (next == CoreState.RUNNING) warnIfLanBlocked()
         broadcast { it.onCoreChanged(next.ordinal, port) }
+    }
+
+    /**
+     * Allow LAN binds the management server to 0.0.0.0, but Android 17 drops LAN TCP without
+     * ACCESS_LOCAL_NETWORK. Only the foreground Activity may ask, so this just records the state
+     * (the permission is read live, so a restarted service always reports the current grant).
+     */
+    private fun warnIfLanBlocked() {
+        if (LocalNetworkAccess.state(this) != LocalNetworkAccess.State.DENIED) return
+        if (runCatching { MainApplication.store.getBoolean(Constants.ALLOW_LAN_KEY) }.getOrDefault(false))
+            Log.w(tag, "Allow LAN is on but ACCESS_LOCAL_NETWORK is not granted; LAN clients are blocked by Android")
     }
 
     // ---- VPN ----
