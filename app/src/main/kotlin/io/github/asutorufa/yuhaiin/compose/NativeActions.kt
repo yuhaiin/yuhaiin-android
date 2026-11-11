@@ -6,11 +6,13 @@ import java.net.URI
  * The fixed set of OS dialogs the Web UI may ask for. There is no JavaScript bridge: the page
  * navigates to `yuhaiin-android://action/<path>` from a user gesture, and the WebView client
  * accepts it only for a main-frame navigation of the local management page. Consent is never
- * granted by the page itself; these open the in-app disclosures and the Android VPN dialog.
+ * granted by the page itself; these open the in-app disclosures, the Android VPN dialog and the local network permission request.
  */
 enum class NativeAction(val path: String) {
     VPN_AUTHORIZE("vpn/authorize"),
-    APPS_CONSENT("consent/apps");
+    APPS_CONSENT("consent/apps"),
+    /** Android 17 local network permission: asks again, or opens system settings if blocked. */
+    LOCAL_NETWORK("network/local");
 
     companion object {
         const val SCHEME = "yuhaiin-android"

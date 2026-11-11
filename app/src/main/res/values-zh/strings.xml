@@ -179,4 +179,10 @@
     <string name="route_cleared">已清空路由内容</string>
     <string name="undo">撤销</string>
     <string name="web_restore_bundled">恢复内置网页界面</string>
+    <string name="local_network_title">Android 已阻止局域网访问</string>
+    <string name="local_network_body">缺少本地网络权限时，Android 17 会阻止本机与同一网络中其他设备之间的连接：包括供其他设备访问的管理页面，以及 Yuhaiin 所连接的局域网服务器（代理、DNS、WireGuard、Tailscale、ZeroTier 等）。应用和 VPN 仍可正常使用。</string>
+    <string name="local_network_body_settings">本地网络权限被拒绝，且 Android 不会再次询问，因此与同一网络中设备的连接（供其他设备访问的管理页面、Yuhaiin 所连接的局域网服务器）会被阻止。请在应用的系统设置（权限 → 附近设备）中开启。应用和 VPN 仍可正常使用。</string>
+    <string name="local_network_allow">允许</string>
+    <string name="local_network_open_settings">打开设置</string>
+    <string name="local_network_dismiss">关闭</string>
 </resources>

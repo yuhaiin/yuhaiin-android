@@ -125,4 +125,10 @@
     <string name="tun_loss_recovery_note">Classic uses duplicate acknowledgments and SACK; RACK-TLP uses time-based loss detection and tail loss probes.</string>
     <string name="tun_output_scheduler_title">Output Scheduler</string>
     <string name="tun_output_scheduler_note">Controls the lightweight stack’s outbound packet queue only, not Android’s physical network. FIFO is the default. Reconnect VPN to apply.</string>
+    <string name="local_network_title">LAN access is blocked by Android</string>
+    <string name="local_network_body">Without the local network permission, Android 17 blocks connections between this phone and other devices on your network: the management page for other devices, and servers on your LAN that Yuhaiin connects to (proxies, DNS, WireGuard, Tailscale, ZeroTier). The app and the VPN keep working.</string>
+    <string name="local_network_body_settings">The local network permission is denied and Android will not ask again, so connections to and from devices on your network (the management page for other devices, LAN servers Yuhaiin connects to) are blocked. Turn it on in the app\'s system settings (Permissions → Nearby devices). The app and the VPN keep working.</string>
+    <string name="local_network_allow">Allow</string>
+    <string name="local_network_open_settings">Open settings</string>
+    <string name="local_network_dismiss">Dismiss</string>
 </resources>

@@ -1,10 +1,12 @@
 package io.github.asutorufa.yuhaiin.compose
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.asutorufa.yuhaiin.MainActivity
 import io.github.asutorufa.yuhaiin.MainApplication
+import io.github.asutorufa.yuhaiin.network.LocalNetworkAccess
 import io.github.asutorufa.yuhaiin.privacy.PrivacyConsent.Purpose
 
 /**
@@ -19,6 +21,7 @@ fun Main(activity: MainActivity) {
     val vpnDisclosure by activity.vpnDisclosure.collectAsStateWithLifecycle()
     val appsDisclosure by activity.appsDisclosure.collectAsStateWithLifecycle()
     val session by activity.session.collectAsStateWithLifecycle()
+    val localNetwork by activity.localNetwork.collectAsStateWithLifecycle()
 
     androidx.activity.compose.ReportDrawnAfter {
         runCatching { MainApplication.settings.ready.await() }
@@ -39,15 +42,28 @@ fun Main(activity: MainActivity) {
                 onDismiss = activity::dismissAppsDisclosure,
             )
         RouteShortcutPicker(activity, navigationAction)
-        WebViewComponent(
-            session = session,
-            onRetry = activity::startCore,
-            onNativeAction = { action ->
-                when (action) {
-                    NativeAction.VPN_AUTHORIZE -> activity.startService()
-                    NativeAction.APPS_CONSENT -> activity.requestAppsConsent()
-                }
-            },
-        )
+        Box {
+            WebViewComponent(
+                session = session,
+                onRetry = activity::startCore,
+                onNativeAction = { action ->
+                    when (action) {
+                        NativeAction.VPN_AUTHORIZE -> activity.startService()
+                        NativeAction.APPS_CONSENT -> activity.requestAppsConsent()
+                        NativeAction.LOCAL_NETWORK -> activity.requestLocalNetworkAccess()
+                    }
+                },
+            )
+            if (localNetwork != LocalNetworkAccess.Prompt.NONE)
+                LocalNetworkNotice(
+                    openSettings = localNetwork == LocalNetworkAccess.Prompt.NOTICE_SETTINGS,
+                    onAction = {
+                        if (localNetwork == LocalNetworkAccess.Prompt.NOTICE_SETTINGS)
+                            activity.openLocalNetworkSettings()
+                        else activity.requestLocalNetworkAccess()
+                    },
+                    onDismiss = activity::dismissLocalNetworkNotice,
+                )
+        }
     }
 }

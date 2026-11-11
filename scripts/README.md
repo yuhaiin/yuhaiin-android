@@ -7,6 +7,7 @@ Automatic Android CI runs lint, unit tests, the release build and static APK/ELF
 - Build, lint and unit tests: `./gradlew :app:assembleDebug :app:lintDebug :app:testDebugUnitTest`
 - Native AAR selection regressions: `python3 scripts/test-resolve-latest-core.py` (requires `jq`).
 - Device regressions: `ANDROID_SERIAL=emulator-5554 ./gradlew :app:connectedDebugAndroidTest`
+- Allow LAN from a non-loopback client (Android 17 `ACCESS_LOCAL_NETWORK`): with Allow LAN on, `ANDROID_SERIAL=emulator-5554 scripts/check-lan-inbound.sh` expects HTTP and HTTPS 200 through the emulator's `redir` (a real eth0 peer; `adb forward` is loopback and proves nothing). Run it with `--expect-blocked` while the permission is revoked. See [docs/android-local-network.md](../docs/android-local-network.md).
 - API 35 16 KB emulator: use SDK image `system-images;android-35;google_apis_ps16k;x86_64`; check `adb shell getconf PAGESIZE` is `16384`, use at least 4 GB emulator RAM, then run the same device regressions.
 - APK/ELF gate: `python3 scripts/check-native-pages.py app/build/outputs/apk/release/yuhaiin-arm64-v8a-release-unsigned.apk --sdk "$ANDROID_HOME"`
 - Baseline profile: set the app language to English, then `./gradlew :app:generateReleaseBaselineProfile` on an API 33+ emulator/device. Review generated source profiles before committing them.

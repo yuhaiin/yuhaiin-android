@@ -23,6 +23,15 @@ class NativeActionTest {
             NativeAction.APPS_CONSENT,
             parse("yuhaiin-android://action/consent/apps", "https://127.0.0.1:8080/"),
         )
+        assertEquals(NativeAction.LOCAL_NETWORK, parse("yuhaiin-android://action/network/local"))
+    }
+
+    @Test
+    fun localNetworkActionRequiresAGestureOnTheLocalPage() {
+        val target = "yuhaiin-android://action/network/local"
+        assertNull(parse(target, gesture = false))
+        assertNull(parse(target, pageUrl = "http://192.168.20.13:8080/"))
+        assertNull(parse(target, mainFrame = false))
     }
 
     @Test

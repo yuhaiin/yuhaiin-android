@@ -11,6 +11,10 @@
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <!-- Haptic feedback requested by the Web UI (navigator.vibrate); a normal permission. -->
     <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- Android 17+ (API 37) Local Network Protections: required to accept inbound LAN TCP
+         connections (Allow LAN management/proxy/DNS) and to reach LAN hosts. Ignored on older
+         releases, where the INTERNET permission implies local network access. -->
+    <uses-permission android:name="android.permission.ACCESS_LOCAL_NETWORK" />
     <!-- Per-app VPN routing must include apps without launcher activities. -->
     <uses-permission
         android:name="android.permission.QUERY_ALL_PACKAGES"
