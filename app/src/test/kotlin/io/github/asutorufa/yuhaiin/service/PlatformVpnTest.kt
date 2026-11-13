@@ -71,7 +71,7 @@ class PlatformVpnTest {
     @Test
     fun coreRoutingModeInstallsExactlyTheGeneratedRoutes() {
         val generated = listOf("1.0.0.0/8", "8.0.0.0/7", "2000::/16")
-        val config = core.copy(routes = generated, excludes = listOf("8.8.8.8/32"), routeMode = "non_private")
+        val config = core.copy(routes = generated, excludes = listOf("8.8.8.8/32"), routeMode = "system_network")
         for (sdk in listOf(30, 34)) {
             val result = plan(config, profile = "Non-Local IPs", lines = preset, sdk = sdk)
             // Same set as desktop: no profile routes, no 2000::/3 catch-all, no exclusions.
@@ -82,10 +82,10 @@ class PlatformVpnTest {
             assertEquals(emptyList<String>(), result.excludes)
             assertFalse(result.defaultWithExclusions)
         }
-        val parsed = PlatformVpnConfig.parse("""{"mtu":1500,"routes":["0.0.0.0/1"],"routeMode":"global"}""")
-        assertEquals("global", parsed.routeMode)
+        val parsed = PlatformVpnConfig.parse("""{"mtu":1500,"routes":["0.0.0.0/1"],"routeMode":"system_network"}""")
+        assertEquals("system_network", parsed.routeMode)
         assertEquals("", PlatformVpnConfig.parse("""{"mtu":1500}""").routeMode)
-        assertEquals("tun-mode:custom", statusRoute("custom", "All (Default)"))
+        assertEquals("tun-mode:system_network", statusRoute("system_network", "All (Default)"))
         assertEquals("All (Default)", statusRoute("", "All (Default)"))
     }
 
