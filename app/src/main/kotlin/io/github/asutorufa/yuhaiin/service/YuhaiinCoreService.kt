@@ -430,9 +430,13 @@ class YuhaiinCoreService : android.app.Service() {
                 mtu = applied?.mtu ?: 0,
                 ipv4 = applied?.ipv4.orEmpty(),
                 ipv6 = applied?.ipv6.orEmpty(),
-                route = MainApplication.store.getString(Constants.ROUTE_KEY).ifBlank {
-                    Constants.ALL_ROUTE
-                },
+                route =
+                    statusRoute(
+                        applied?.routeMode.orEmpty(),
+                        MainApplication.store.getString(Constants.ROUTE_KEY).ifBlank {
+                            Constants.ALL_ROUTE
+                        },
+                    ),
             )
         connectedGeneration = if (next == State.CONNECTED) platform.generation else 0
         refreshNetworkStatus()

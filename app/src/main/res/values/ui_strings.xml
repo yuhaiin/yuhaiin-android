@@ -32,6 +32,9 @@
     <string name="route_all_label">All traffic</string>
     <string name="route_non_local_label">Exclude local networks</string>
     <string name="route_non_chinese_label">Non-Chinese IP addresses</string>
+    <string name="route_mode_global_label">Global (TUN routing mode)</string>
+    <string name="route_mode_non_private_label">Non-private (TUN routing mode)</string>
+    <string name="route_mode_custom_label">Custom (TUN routing mode)</string>
     <string name="route_current">Current route: %1$s</string>
     <string name="route_preset_count">Preset · %1$d CIDRs</string>
     <string name="route_custom_count">Custom · %1$d CIDRs</string>
