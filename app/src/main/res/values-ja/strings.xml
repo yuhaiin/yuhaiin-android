@@ -106,9 +106,7 @@
     <string name="route_name_exists">同じ名前のルートが存在します。</string>
     <string name="route_non_chinese_label">中国以外の IP</string>
     <string name="route_non_local_label">ローカルネットワークを除外</string>
-    <string name="route_mode_global_label">グローバル（TUN ルーティングモード）</string>
-    <string name="route_mode_non_private_label">プライベート以外（TUN ルーティングモード）</string>
-    <string name="route_mode_custom_label">カスタム（TUN ルーティングモード）</string>
+    <string name="route_mode_system_network_label">システムネットワークのルール</string>
     <string name="route_preset_count">プリセット · %1$d CIDR</string>
     <string name="route_section">ルーティング</string>
     <string name="route_too_large">ルートが編集上限の 2 MB を超えています。</string>
