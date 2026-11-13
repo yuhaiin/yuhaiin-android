@@ -69,6 +69,27 @@ class PlatformVpnTest {
     }
 
     @Test
+    fun coreRoutingModeInstallsExactlyTheGeneratedRoutes() {
+        val generated = listOf("1.0.0.0/8", "8.0.0.0/7", "2000::/16")
+        val config = core.copy(routes = generated, excludes = listOf("8.8.8.8/32"), routeMode = "non_private")
+        for (sdk in listOf(30, 34)) {
+            val result = plan(config, profile = "Non-Local IPs", lines = preset, sdk = sdk)
+            // Same set as desktop: no profile routes, no 2000::/3 catch-all, no exclusions.
+            assertEquals(
+                listOf("172.19.0.0/24", networkOf("fdfe:dcba:9876::1", 64)) + generated + core.fakeIpRoutes,
+                result.routes,
+            )
+            assertEquals(emptyList<String>(), result.excludes)
+            assertFalse(result.defaultWithExclusions)
+        }
+        val parsed = PlatformVpnConfig.parse("""{"mtu":1500,"routes":["0.0.0.0/1"],"routeMode":"global"}""")
+        assertEquals("global", parsed.routeMode)
+        assertEquals("", PlatformVpnConfig.parse("""{"mtu":1500}""").routeMode)
+        assertEquals("tun-mode:custom", statusRoute("custom", "All (Default)"))
+        assertEquals("All (Default)", statusRoute("", "All (Default)"))
+    }
+
+    @Test
     fun nonLocalPresetUsesExclusionsOnApi33() {
         val result = plan(profile = "Non-Local IPs", lines = preset)
         assertTrue(result.defaultWithExclusions)

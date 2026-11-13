@@ -106,6 +106,9 @@
     <string name="route_name_exists">此名称的路由已存在。</string>
     <string name="route_non_chinese_label">非中国 IP</string>
     <string name="route_non_local_label">排除局域网</string>
+    <string name="route_mode_global_label">全局（TUN 路由模式）</string>
+    <string name="route_mode_non_private_label">非私有地址（TUN 路由模式）</string>
+    <string name="route_mode_custom_label">自定义（TUN 路由模式）</string>
     <string name="route_preset_count">预设 · %1$d 条 CIDR</string>
     <string name="route_section">分流</string>
     <string name="route_too_large">路由内容超过 2 MB 编辑上限。</string>
