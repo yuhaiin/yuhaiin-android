@@ -88,7 +88,6 @@ fun routeLabelResource(route: String): Int? =
     when (route) {
         Constants.ALL_ROUTE -> R.string.route_all_label
         Constants.NON_LOCAL_ROUTE -> R.string.route_non_local_label
-        Constants.NON_CHINESE_ROUTE -> R.string.route_non_chinese_label
         TUN_ROUTE_MODE_PREFIX + "system_network" -> R.string.route_mode_system_network_label
         else -> null
     }

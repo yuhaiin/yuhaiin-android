@@ -9,12 +9,10 @@
     <string translatable="false" name="allow_lan_key">allow_lan</string>
     <string translatable="false" name="adv_route_Key">route</string>
     <string translatable="false" name="adv_route_all">All (Default)</string>
-    <string translatable="false" name="adv_route_non_chn">Non-Chinese IPs</string>
     <string translatable="false" name="adv_route_non_local">Non-Local IPs</string>
     <string-array translatable="false" name="adv_routes">
         <item>@string/adv_route_all</item>
         <item>@string/adv_route_non_local</item>
-        <item>@string/adv_route_non_chn</item>
     </string-array>
     <string translatable="false" name="dns_hijacking">dns_hijacking</string>
 
