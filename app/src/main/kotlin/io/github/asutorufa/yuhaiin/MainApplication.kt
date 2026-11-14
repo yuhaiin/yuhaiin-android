@@ -3,6 +3,9 @@ package io.github.asutorufa.yuhaiin
 import android.app.Application
 import android.content.Intent
 import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
+import android.net.RouteInfo
+import android.os.Process
 import android.os.Build
 import android.util.Log
 import androidx.core.content.getSystemService
@@ -188,12 +191,54 @@ open class MainApplication : Application() {
     private fun installHostCallbacks() {
         NativeHost.uidLookup = ::dumpUid
         NativeHost.register("interfaces.list") { interfacesJson() }
+        NativeHost.register("routes.list") { routesJson() }
         NativeHost.register("uid.name") {
             val uid = Json.parseToJsonElement(it!!.decodeToString())
                 .let { e -> (e as kotlinx.serialization.json.JsonObject)["uid"] as JsonPrimitive }
                 .content.toInt()
             uidName(uid).toByteArray()
         }
+    }
+
+    /**
+     * The routes Android holds for each network. Apps may not read the kernel
+     * routing table, but LinkProperties lists every network's routes. ownVpn
+     * marks the routes of this app's VPN; before API 29 the owner is unknown,
+     * and Android runs one VPN at a time, so a VPN network is taken as ours.
+     */
+    @Suppress("DEPRECATION")
+    private fun routesJson(): ByteArray {
+        val cm = getSystemService<ConnectivityManager>() ?: return "[]".toByteArray()
+        val list = mutableListOf<kotlinx.serialization.json.JsonElement>()
+        for (network in cm.allNetworks) {
+            val lp = cm.getLinkProperties(network) ?: continue
+            val caps = cm.getNetworkCapabilities(network)
+            val ownVpn = caps != null && caps.hasTransport(NetworkCapabilities.TRANSPORT_VPN) &&
+                (Build.VERSION.SDK_INT < 29 || caps.ownerUid == Process.myUid())
+            for (r in lp.routes) {
+                list.add(
+                    buildJsonObject {
+                        put("destination", r.destination.toString())
+                        if (r.hasGateway()) {
+                            put("gateway", r.gateway?.hostAddress?.substringBefore('%').orEmpty())
+                        }
+                        put("interface", r.`interface` ?: lp.interfaceName.orEmpty())
+                        if (Build.VERSION.SDK_INT >= 29) {
+                            put(
+                                "type",
+                                when (r.type) {
+                                    RouteInfo.RTN_UNREACHABLE -> "unreachable"
+                                    RouteInfo.RTN_THROW -> "throw"
+                                    else -> "unicast"
+                                },
+                            )
+                        }
+                        put("ownVpn", ownVpn)
+                    }
+                )
+            }
+        }
+        return JsonArray(list).toString().toByteArray()
     }
 
     private fun interfacesJson(): ByteArray {
