@@ -25,7 +25,6 @@ object Constants {
     const val TUN_LOSS_RECOVERY_KEY = "android_tun_loss_recovery"
     const val ALL_ROUTE = "All (Default)"
     const val NON_LOCAL_ROUTE = "Non-Local IPs"
-    const val NON_CHINESE_ROUTE = "Non-Chinese IPs"
     const val SAVED_ROUTES_LIST = "saved_routes_list"
     const val ROUTE_CONTENT_PREFIX = "route_content_"
     const val ROUTE_KEY = "route"

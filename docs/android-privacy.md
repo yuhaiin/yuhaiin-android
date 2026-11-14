@@ -52,7 +52,7 @@ to protect its internal receivers; it does not grant access to other device data
   and connection details. Log export requires confirmation before writing or sharing
   a file. Existing configuration-export credential warnings remain in place.
 
-The in-app policy is localized in English, Chinese and Japanese. Its English
+The in-app policy is localized in English and Japanese. Its English
 web/repository counterpart is [privacy-policy.md](privacy-policy.md); update both
 when changing data handling. Project issues are public and must not receive secrets.
 

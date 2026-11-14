@@ -104,7 +104,6 @@
     <string name="route_empty_hint">1 行につき 1 つの CIDR。空のルールは既定と同じく、すべての通信を VPN に送ります。</string>
     <string name="route_invalid_line">%1$d 行目の CIDR が無効です。</string>
     <string name="route_name_exists">同じ名前のルートが存在します。</string>
-    <string name="route_non_chinese_label">中国以外の IP</string>
     <string name="route_non_local_label">ローカルネットワークを除外</string>
     <string name="route_mode_system_network_label">システムネットワークのルール</string>
     <string name="route_preset_count">プリセット · %1$d CIDR</string>

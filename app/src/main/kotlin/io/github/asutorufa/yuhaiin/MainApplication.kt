@@ -161,7 +161,6 @@ open class MainApplication : Application() {
         if (savedRoutes.isEmpty()) {
             val all = Constants.ALL_ROUTE
             val nonLocal = Constants.NON_LOCAL_ROUTE
-            val nonChn = Constants.NON_CHINESE_ROUTE
 
             store.putString(
                 Constants.ROUTE_CONTENT_PREFIX + all,
@@ -171,12 +170,16 @@ open class MainApplication : Application() {
                 Constants.ROUTE_CONTENT_PREFIX + nonLocal,
                 resources.getStringArray(R.array.all_routes_except_local).joinToString("\n"),
             )
-            store.putString(
-                Constants.ROUTE_CONTENT_PREFIX + nonChn,
-                resources.getStringArray(R.array.simple_route).joinToString("\n"),
-            )
             // Publish the list last, so an interrupted first launch retries initialization.
-            store.putStringSet(Constants.SAVED_ROUTES_LIST, setOf(all, nonLocal, nonChn))
+            store.putStringSet(Constants.SAVED_ROUTES_LIST, setOf(all, nonLocal))
+        } else if (LEGACY_NON_CHINESE_ROUTE in savedRoutes) {
+            // The built-in China IP list was retired: GeoIP rules in the core cover it. Drop the
+            // preset and move anyone still on it to the default route.
+            store.putStringSet(Constants.SAVED_ROUTES_LIST, savedRoutes - LEGACY_NON_CHINESE_ROUTE)
+            store.putString(Constants.ROUTE_CONTENT_PREFIX + LEGACY_NON_CHINESE_ROUTE, "")
+            if (store.getString(Constants.ROUTE_KEY) == LEGACY_NON_CHINESE_ROUTE) {
+                store.putString(Constants.ROUTE_KEY, Constants.ALL_ROUTE)
+            }
         }
     }
 
@@ -296,3 +299,6 @@ fun Store.getStringSet(key: String?): Set<String> {
 fun Store.putStringSet(key: String?, values: Set<String?>?) {
     putString(key.orEmpty(), Json.encodeToString(values))
 }
+
+/** Name of the retired built-in China IP route profile, kept only to migrate it away. */
+private const val LEGACY_NON_CHINESE_ROUTE = "Non-Chinese IPs"

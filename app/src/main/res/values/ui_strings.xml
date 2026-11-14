@@ -31,7 +31,6 @@
     <string name="listener_addresses">Network addresses · tap to copy</string>
     <string name="route_all_label">All traffic</string>
     <string name="route_non_local_label">Exclude local networks</string>
-    <string name="route_non_chinese_label">Non-Chinese IP addresses</string>
     <string name="route_mode_system_network_label">System Network rules</string>
     <string name="route_current">Current route: %1$s</string>
     <string name="route_preset_count">Preset · %1$d CIDRs</string>
