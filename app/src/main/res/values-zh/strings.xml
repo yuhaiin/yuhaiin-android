@@ -139,7 +139,6 @@
     <string name="update_install_completed">安装完成。</string>
     <string name="update_install_confirmation">请在系统对话框中确认安装。</string>
     <string name="update_install_failed">安装失败。</string>
-    <string name="update_install_not_finished">安装未完成。再次安装将复用校验通过的安装包。</string>
     <string name="update_install_permission">请允许从此应用安装，返回后将继续安装。</string>
     <string name="update_install_request_sent">已提交安装请求，正在等待系统确认…</string>
     <string name="update_installer_opened">已打开安装程序，请在系统对话框中确认。</string>
