@@ -77,6 +77,8 @@ class UpdateManager(context: Context) {
     private val preferences = context.getSharedPreferences("software_update", Context.MODE_PRIVATE)
     private val _state = MutableStateFlow(restoreState())
     @Volatile private var proxyBinder: IYuhaiinVpnBinder? = null
+    /** True while install() creates, writes and commits the session; it may not be reconciled. */
+    @Volatile private var writingSession = false
 
     init {
         scope.launch(Dispatchers.IO) { cleanupOldDownloads() }
@@ -461,7 +463,78 @@ class UpdateManager(context: Context) {
         }
     }
 
-    private suspend fun install(apk: File) = withContextIo {
+    /**
+     * Reconciles the published state with the installer and the permission setting. Callers poll
+     * it from ":bg", the process the Web UI reads, so the update never waits on a callback that
+     * a dismissed system dialog or a process restart lost.
+     */
+    fun reconcile() {
+        when (_state.value.stage) {
+            UpdateStage.WAITING_PERMISSION -> resumePendingInstall()
+            UpdateStage.INSTALLING -> reconcileInstall()
+            else -> Unit
+        }
+    }
+
+    private fun reconcileInstall() {
+        if (writingSession) return
+        val id = preferences.getInt("session_id", -1)
+        val info = if (id >= 0) context.packageManager.packageInstaller.getSessionInfo(id) else null
+        when {
+            // Finished without a result reaching this process: an update replaces the app and
+            // restarts it, so a live process here means the install did not happen.
+            info == null -> {
+                clearInstallSession()
+                _state.value =
+                    _state.value.copy(
+                        stage = UpdateStage.ERROR,
+                        reason = null,
+                        error = context.getString(R.string.update_install_not_finished),
+                    )
+            }
+            // Never committed: the process stopped while writing the APK.
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && !info.isCommitted -> {
+                abandonInstallSession()
+                _state.value =
+                    _state.value.copy(
+                        stage = UpdateStage.ERROR,
+                        reason = null,
+                        error = context.getString(R.string.update_download_interrupted),
+                    )
+            }
+        }
+    }
+
+    /**
+     * Abandons a pending installation, e.g. after the system confirmation was dismissed without a
+     * result. The verified APK stays cached, so installing again does not download it.
+     */
+    fun cancelInstall() {
+        if (_state.value.stage != UpdateStage.INSTALLING || writingSession) return
+        abandonInstallSession()
+        _state.value = _state.value.copy(stage = UpdateStage.IDLE, reason = null, error = null)
+    }
+
+    private fun abandonInstallSession() {
+        val id = preferences.getInt("session_id", -1)
+        if (id >= 0) runCatching { context.packageManager.packageInstaller.abandonSession(id) }
+        clearInstallSession()
+    }
+
+    private fun clearInstallSession() {
+        preferences.edit().remove("session_id").remove("pending_apk").remove("phase").apply()
+    }
+
+    private suspend fun install(apk: File) {
+        writingSession = true
+        try {
+            installSession(apk)
+        } finally {
+            writingSession = false
+        }
+    }
+
+    private suspend fun installSession(apk: File) = withContextIo {
         val packageInstaller = context.packageManager.packageInstaller
         val params =
             PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL).apply {
@@ -598,8 +671,14 @@ class UpdateManager(context: Context) {
                 runCatching { json.decodeFromString<AndroidUpdateRelease>(it) }.getOrNull()
             }
         val session = preferences.getInt("session_id", -1)
+        val info = if (session >= 0) context.packageManager.packageInstaller.getSessionInfo(session) else null
+        // A session the previous process never committed cannot finish; drop it.
+        if (info != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && !info.isCommitted) {
+            runCatching { context.packageManager.packageInstaller.abandonSession(session) }
+            preferences.edit().remove("session_id").apply()
+        }
         val installing =
-            session >= 0 && context.packageManager.packageInstaller.getSessionInfo(session) != null
+            info != null && (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q || info.isCommitted)
         val phase = preferences.getString("phase", null)
         val stage =
             when {

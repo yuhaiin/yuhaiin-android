@@ -139,6 +139,7 @@
     <string name="update_install_completed">インストールが完了しました。</string>
     <string name="update_install_confirmation">システム画面でインストールを確認してください。</string>
     <string name="update_install_failed">インストールに失敗しました。</string>
+    <string name="update_install_not_finished">インストールが完了しませんでした。もう一度インストールすると検証済みの APK を再利用します。</string>
     <string name="update_install_permission">このアプリからのインストールを許可して戻ると続行します。</string>
     <string name="update_install_request_sent">インストールを要求しました。システムの確認を待っています…</string>
     <string name="update_installer_opened">インストーラーを開きました。システム画面で確認してください。</string>

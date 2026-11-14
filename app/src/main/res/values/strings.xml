@@ -105,6 +105,7 @@
     <string name="update_install_confirmation">Confirm the installation in the system dialog to finish.</string>
     <string name="update_install_completed">Installation completed.</string>
     <string name="update_install_failed">Installation failed.</string>
+    <string name="update_install_not_finished">The installation did not finish. Install again to reuse the verified download.</string>
     <string name="update_stage_downloading">Downloading update...</string>
     <string name="update_stage_verifying">Verifying APK...</string>
     <string name="update_stage_installing">Waiting for installation confirmation...</string>

@@ -158,11 +158,15 @@ class AndroidPlatformActions(
         core.disableVpn()
     }
 
-    override fun updateState(): String =
-        json.encodeToString(
+    override fun updateState(): String {
+        // The Web UI polls this while an update is in flight; reconcile on the main thread so a
+        // lost installer result or a granted permission shows up on the next poll.
+        runCatching { onMain { MainApplication.updateManager.reconcile() } }
+        return json.encodeToString(
             UpdateStateJson.serializer(),
             MainApplication.updateManager.state.value.toJson(BuildConfig.VERSION_NAME),
         )
+    }
 
     override fun updateAction(action: String, arg: String) {
         val manager = MainApplication.updateManager
@@ -171,6 +175,7 @@ class AndroidPlatformActions(
                 "check" -> manager.check()
                 "apply" -> manager.apply()
                 "permission" -> manager.resumePendingInstall(openSettings = true)
+                "cancel" -> manager.cancelInstall()
                 "channel" ->
                     manager.setChannel(
                         UpdateChannel.entries.firstOrNull { it.value == arg }
