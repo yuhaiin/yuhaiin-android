@@ -203,7 +203,7 @@ open class MainApplication : Application() {
     /**
      * The routes Android holds for each network. Apps may not read the kernel
      * routing table, but LinkProperties lists every network's routes. ownVpn
-     * marks the routes of this app's VPN; before API 29 the owner is unknown,
+     * marks the routes of this app's VPN; before API 30 the owner is unknown,
      * and Android runs one VPN at a time, so a VPN network is taken as ours.
      */
     @Suppress("DEPRECATION")
@@ -214,16 +214,17 @@ open class MainApplication : Application() {
             val lp = cm.getLinkProperties(network) ?: continue
             val caps = cm.getNetworkCapabilities(network)
             val ownVpn = caps != null && caps.hasTransport(NetworkCapabilities.TRANSPORT_VPN) &&
-                (Build.VERSION.SDK_INT < 29 || caps.ownerUid == Process.myUid())
+                (Build.VERSION.SDK_INT < 30 || caps.ownerUid == Process.myUid())
             for (r in lp.routes) {
                 list.add(
                     buildJsonObject {
                         put("destination", r.destination.toString())
-                        if (r.hasGateway()) {
-                            put("gateway", r.gateway?.hostAddress?.substringBefore('%').orEmpty())
+                        // An unspecified gateway (0.0.0.0, ::) means directly connected.
+                        r.gateway?.takeUnless { it.isAnyLocalAddress }?.let {
+                            put("gateway", it.hostAddress?.substringBefore('%').orEmpty())
                         }
                         put("interface", r.`interface` ?: lp.interfaceName.orEmpty())
-                        if (Build.VERSION.SDK_INT >= 29) {
+                        if (Build.VERSION.SDK_INT >= 33) {
                             put(
                                 "type",
                                 when (r.type) {
