@@ -71,7 +71,10 @@ Signed APK names end in `-release.apk`. Release alignment checks, device regress
 
 ## Screenshot
 
-![screenshot](assets/image-v2.png "screenshot")
+<p>
+  <img src="assets/screenshot-home.webp" alt="Home: VPN status, endpoints and traffic" width="320">
+  <img src="assets/screenshot-connections.webp" alt="Active connections" width="320">
+</p>
 
 ## Acknowledgement
 
