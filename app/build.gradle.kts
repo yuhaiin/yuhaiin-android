@@ -29,7 +29,11 @@ val coreLibraryDir = rootProject.file("yuhaiin/core")
 
 android {
     namespace = "io.github.asutorufa.yuhaiin"
-    compileSdk = 37
+    compileSdk {
+        version = release(37) {
+            minorApiLevel = 1
+        }
+    }
     compileOptions {
         // Flag to enable support for the new language APIs
         sourceCompatibility = JavaVersion.VERSION_17
