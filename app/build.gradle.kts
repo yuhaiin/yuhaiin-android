@@ -29,7 +29,11 @@ val coreLibraryDir = rootProject.file("yuhaiin/core")
 
 android {
     namespace = "io.github.asutorufa.yuhaiin"
-    compileSdk = 37
+    compileSdk {
+        version = release(37) {
+            minorApiLevel = 1
+        }
+    }
     compileOptions {
         // Flag to enable support for the new language APIs
         sourceCompatibility = JavaVersion.VERSION_17
@@ -146,11 +150,11 @@ dependencies {
     implementation("fastutil:fastutil:5.0.9")
     implementation("androidx.core:core-ktx:1.19.1")
 
-    val nav3Version = "1.2.1"
+    val nav3Version = "1.2.2"
     implementation("androidx.navigation3:navigation3-runtime:${nav3Version}")
     implementation("androidx.navigation3:navigation3-ui:${nav3Version}")
 
-    val composeBom = platform("androidx.compose:compose-bom:2026.09.00")
+    val composeBom = platform("androidx.compose:compose-bom:2026.11.01")
     implementation(composeBom)
     androidTestImplementation(composeBom)
     implementation("androidx.compose.ui:ui-graphics")
@@ -158,15 +162,15 @@ dependencies {
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
     // The BOM pins 1.4.0; the wavy progress indicators ship in 1.5.0.
-    implementation("androidx.compose.material3:material3:1.5.0-rc01")
+    implementation("androidx.compose.material3:material3:1.5.0")
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.foundation:foundation")
     debugImplementation("androidx.compose.ui:ui-tooling")
     implementation("androidx.compose.ui:ui")
     implementation("androidx.activity:activity-compose:1.13.0")
-    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.11.0")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.11.0")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-navigation3:2.11.0")
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.11.1")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.11.1")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-navigation3:2.11.1")
     androidTestImplementation("androidx.test.ext:junit:1.3.0")
     androidTestImplementation("androidx.test.uiautomator:uiautomator:2.4.1")
     implementation("androidx.fragment:fragment-compose:1.9.1")
